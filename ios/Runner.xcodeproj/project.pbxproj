@@ -682,7 +682,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Dev;
+				DISPLAY_NAME = "Laforika Dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -776,7 +776,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Dev;
+				DISPLAY_NAME = "Laforika Dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -865,7 +865,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Dev;
+				DISPLAY_NAME = "Laforika Dev";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -959,7 +959,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Staging;
+				DISPLAY_NAME = "Laforika Staging";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.staging;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -1053,7 +1053,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Staging;
+				DISPLAY_NAME = "Laforika Staging";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.staging;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -1142,7 +1142,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				DISPLAY_NAME = Laforika Staging;
+				DISPLAY_NAME = "Laforika Staging";
 				PRODUCT_BUNDLE_IDENTIFIER = com.primebuilds.laforika.staging;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
