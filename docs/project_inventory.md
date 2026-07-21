@@ -21,13 +21,13 @@ Documentation baseline on `main`. No Flutter application scaffold is merged yet.
 
 | Field | Value |
 |---|---|
+| Work package | Documentation baseline |
 | Delivery PR | https://github.com/prime-builds/prime-laforika/pull/1 |
-| Merge commit | `03a0ae9c0f0bd09fc4effec4b40c5a8ec4581e8d` |
-| Final reviewed source | Included in merge commit above (docs commits `64d0d07`, `99e6b35`) |
+| Final reviewed implementation commit | `99e6b35173df29614250882188c27a547c0c852b` |
 | Completed scope | Frozen architecture + ADRs 0001–0006; root `AGENTS.md`; repository `README.md`; Apache-2.0 `LICENSE` |
 | Verification | Documentation review; no Flutter quality gates applicable (no app scaffold) |
-| Remaining decisions | Owner decisions O1–O8 unresolved |
-| Next step after this check-in | M0 project bootstrap |
+| Remaining decisions / limitations | Owner decisions O1–O8 unresolved; documentation-only until M0 |
+| Exact next work package | M0 project bootstrap |
 
 ## Current milestone
 
@@ -50,7 +50,7 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 
 ## Verification evidence
 
-- PR [#1](https://github.com/prime-builds/prime-laforika/pull/1) merged to `main` at `03a0ae9c0f0bd09fc4effec4b40c5a8ec4581e8d`
+- PR [#1](https://github.com/prime-builds/prime-laforika/pull/1): final reviewed implementation commit `99e6b35173df29614250882188c27a547c0c852b`
 - No application CI matrix on this baseline (Flutter project not yet present)
 
 ## Known limitations / risks
