@@ -1,0 +1,4 @@
+#include "Debug.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER=com.primebuilds.laforika.staging
+DISPLAY_NAME=Laforika Staging
+FLUTTER_TARGET=lib/main.dart
