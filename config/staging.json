@@ -1,0 +1,6 @@
+{
+  "APP_ENVIRONMENT": "staging",
+  "API_BASE_URL": "",
+  "APP_LOG_LEVEL": "info",
+  "FEATURE_FLAGS_JSON": "{}"
+}

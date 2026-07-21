@@ -1,0 +1,6 @@
+{
+  "APP_ENVIRONMENT": "prod",
+  "API_BASE_URL": "",
+  "APP_LOG_LEVEL": "warning",
+  "FEATURE_FLAGS_JSON": "{}"
+}
