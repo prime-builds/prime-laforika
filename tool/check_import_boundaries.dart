@@ -56,9 +56,10 @@ BoundaryCheckResult checkImportBoundaries(Directory libRoot) {
     for (final directive in directives) {
       if (module.isFeature &&
           module.layer == 'domain' &&
-          _isFlutterUiImport(directive.uri)) {
+          _isFlutterImport(directive.uri)) {
         violations.add(
-          '${file.path}:${directive.line}: domain/ must not import Flutter UI libraries.',
+          '${file.path}:${directive.line}: domain/ must not import Flutter libraries '
+          '(domain is pure Dart).',
         );
         continue;
       }
@@ -139,6 +140,12 @@ _Module? _moduleOf(Directory libRoot, File file) {
   final parts = relative.split('/');
   if (parts.isEmpty) {
     return null;
+  }
+
+  // Composition-root entrypoints belong to app/, not a free zone.
+  if (parts.length == 1 &&
+      (parts.first == 'main.dart' || parts.first == 'bootstrap.dart')) {
+    return _Module.app();
   }
 
   switch (parts.first) {
@@ -278,12 +285,7 @@ String _parentFeatureRoot(File file, String featureName) {
   return normalized.substring(0, index + marker.length - 1);
 }
 
-bool _isFlutterUiImport(String uri) {
-  if (!uri.startsWith('package:flutter/')) {
-    return false;
-  }
-  return uri != 'package:flutter/foundation.dart';
-}
+bool _isFlutterImport(String uri) => uri.startsWith('package:flutter/');
 
 List<String> _detectCycles(Map<String, Set<String>> graph) {
   final violations = <String>[];

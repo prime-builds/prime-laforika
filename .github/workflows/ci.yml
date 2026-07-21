@@ -44,7 +44,13 @@ jobs:
         run: flutter gen-l10n
 
       - name: Verify generated localizations are committed
-        run: git diff --exit-code
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Generated localization check failed: dirty tree after flutter gen-l10n"
+            git status --porcelain
+            git diff -- || true
+            exit 1
+          fi
 
       - name: Format
         run: dart format --output=none --set-exit-if-changed .

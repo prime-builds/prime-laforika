@@ -18,7 +18,7 @@ class LaforikaApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Laforika',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: buildAppTheme(),
       locale: locale,
       supportedLocales: const <Locale>[locale],

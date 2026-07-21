@@ -88,6 +88,59 @@ void main() {
     final cycle = checkImportBoundaries(tempRoot);
     expect(cycle.violations.any((v) => v.contains('cycle')), isTrue);
   });
+
+  test('rejects core or feature importing bootstrap.dart', () {
+    _write(tempRoot, 'bootstrap.dart', 'void bootstrap() {}\n');
+    _write(
+      tempRoot,
+      'core/config/bad.dart',
+      "import 'package:laforika/bootstrap.dart';\n",
+    );
+
+    final coreResult = checkImportBoundaries(tempRoot);
+    expect(coreResult.isClean, isFalse);
+    expect(
+      coreResult.violations.any(
+        (v) => v.contains('core/ must not import/export'),
+      ),
+      isTrue,
+    );
+
+    tempRoot.deleteSync(recursive: true);
+    tempRoot.createSync(recursive: true);
+    _write(tempRoot, 'bootstrap.dart', 'void bootstrap() {}\n');
+    _write(
+      tempRoot,
+      'features/home/presentation/home_screen.dart',
+      "import 'package:laforika/bootstrap.dart';\n",
+    );
+
+    final featureResult = checkImportBoundaries(tempRoot);
+    expect(featureResult.isClean, isFalse);
+    expect(
+      featureResult.violations.any(
+        (v) => v.contains('features/ must not import/export app/'),
+      ),
+      isTrue,
+    );
+  });
+
+  test('rejects domain importing package:flutter/foundation.dart', () {
+    _write(
+      tempRoot,
+      'features/home/domain/entity.dart',
+      "import 'package:flutter/foundation.dart';\n",
+    );
+
+    final result = checkImportBoundaries(tempRoot);
+    expect(result.isClean, isFalse);
+    expect(
+      result.violations.any(
+        (v) => v.contains('domain/ must not import Flutter libraries'),
+      ),
+      isTrue,
+    );
+  });
 }
 
 void _write(Directory root, String relativePath, String contents) {
