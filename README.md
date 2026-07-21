@@ -1,6 +1,6 @@
 # Laforika
 
-Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith. The project is currently at **M0 — Project Bootstrap**.
+Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith. The project is currently at the **documentation baseline**; the next implementation milestone is **M0 — Project Bootstrap**.
 
 ## Technical baseline
 
@@ -12,7 +12,7 @@ Laforika is a Persian-first Flutter mobile application built as a feature-first 
 - `dev`, `staging`, and `prod` native flavors
 - GitHub Actions quality gates
 
-The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/).
+The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
 
 ## Repository structure
 
@@ -30,6 +30,7 @@ integration_test/            # End-to-end flows
 tool/                        # Architecture boundary checks
 config/                      # Non-secret flavor configuration
 docs/architecture/           # Frozen architecture and ADRs
+docs/project_inventory.md    # Merged delivery inventory
 ```
 
 Dependencies flow downward: `app → features → core`. Features expose curated public barrels and must not import another feature's internals.
@@ -87,10 +88,10 @@ Generated Dart files are committed but must never be edited manually. Regenerate
 ## Development workflow
 
 1. Read [`AGENTS.md`](AGENTS.md) and the relevant architecture/ADR sections.
-2. Define each task using [`PROMPT_TEMPLATE.md`](PROMPT_TEMPLATE.md).
-3. Inspect existing code and the closest analog before implementation.
-4. Keep changes within scope and add tests with new logic.
-5. Run the applicable quality gates and report actual results.
+2. Inspect existing code and the closest analog before implementation.
+3. Keep changes within scope and add tests with new logic.
+4. Run the applicable quality gates and report actual results.
+5. Follow the milestone review and inventory workflow in `AGENTS.md`, and keep [`docs/project_inventory.md`](docs/project_inventory.md) current after final review.
 
 Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, and load-bearing dependency changes require explicit approval.
 
