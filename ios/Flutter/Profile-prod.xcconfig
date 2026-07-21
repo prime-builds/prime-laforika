@@ -1,0 +1,4 @@
+#include "Release.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER=com.primebuilds.laforika
+DISPLAY_NAME=Laforika
+FLUTTER_TARGET=lib/main.dart

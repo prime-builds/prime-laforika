@@ -1,0 +1,19 @@
+{
+  "@@locale": "fa",
+  "appTitle": "لفوریکا",
+  "@appTitle": {
+    "description": "Application display title"
+  },
+  "homeWelcomeMessage": "لفوریکا آماده است",
+  "@homeWelcomeMessage": {
+    "description": "Minimal Home screen message for M0"
+  },
+  "fatalStartupTitle": "راه‌اندازی ناموفق",
+  "@fatalStartupTitle": {
+    "description": "Fatal startup failure title"
+  },
+  "fatalStartupMessage": "پیکربندی برنامه معتبر نیست. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
+  "@fatalStartupMessage": {
+    "description": "Fatal startup failure body without technical details"
+  }
+}
