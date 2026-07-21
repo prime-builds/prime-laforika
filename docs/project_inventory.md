@@ -35,7 +35,7 @@ M0 project bootstrap on `main`: runnable Flutter app with native flavors, Persia
 |---|---|
 | Work package | M0 — Project bootstrap |
 | Delivery PR | https://github.com/prime-builds/prime-laforika/pull/3 |
-| Final reviewed implementation commit | `a1c38b2314469637116f4b6c11bced1958fcafc0` |
+| Final reviewed implementation commit | `0981c8f99d276a392e07853afd14a8d455a3c4c5` |
 | Completed scope | Flutter `laforika` / `com.primebuilds`; Android/iOS native `dev`/`staging`/`prod` flavors; checked `AppConfig`; Riverpod bootstrap; `go_router` Home; `fa-IR` RTL + Vazirmatn; localized app title; import-boundary checker; proportionate tests; GitHub Actions quality + three Android debug flavor builds |
 | Verification | Local: format, analyze, tests (15), boundaries, `gen-l10n` clean, Android debug APKs for all flavors; CI green on PR #3 (quality + android-debug-dev/staging/prod); iOS schemes/xcconfigs corrected (Xcode build not run on non-macOS host) |
 | Remaining decisions / limitations | Owner decisions O1–O8 unresolved; iOS build/run not verified on this host |
@@ -68,7 +68,7 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 ## Verification evidence
 
 - PR [#1](https://github.com/prime-builds/prime-laforika/pull/1): final reviewed implementation commit `99e6b35173df29614250882188c27a547c0c852b`
-- PR [#3](https://github.com/prime-builds/prime-laforika/pull/3): final reviewed implementation commit `a1c38b2314469637116f4b6c11bced1958fcafc0` (includes review corrections)
+- PR [#3](https://github.com/prime-builds/prime-laforika/pull/3): final reviewed implementation commit `0981c8f99d276a392e07853afd14a8d455a3c4c5` (includes review corrections)
 
 ## Known limitations / risks
 
