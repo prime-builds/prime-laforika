@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChallengePurpose, DestinationType } from '@prisma/client';
+import type { AuthChallenge, User } from '@prisma/client';
 import {
   importPKCS8,
   importSPKI,
@@ -21,11 +22,21 @@ import {
   randomUuid,
   safeEqualHex,
 } from '../../common/security/crypto.util';
+import { fingerprintOrigin } from '../../common/security/origin.util';
+import {
+  EMAIL_DELIVERY_PORT,
+  SMS_DELIVERY_PORT,
+} from '../delivery/delivery.ports';
+import type {
+  EmailDeliveryPort,
+  SmsDeliveryPort,
+} from '../delivery/delivery.ports';
 
 const ACCESS_TTL_SEC = 10 * 60;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const RESEND_MS = 60 * 1000;
+const TX_RETRY_LIMIT = 3;
 
 @Injectable()
 export class TokenService {
@@ -85,11 +96,35 @@ export class TokenService {
   }
 }
 
+type ChallengeOutcome =
+  | { status: 'ok'; challenge: AuthChallenge }
+  | {
+      status: 'error';
+      code: 'AUTH_CHALLENGE_EXPIRED' | 'AUTH_CHALLENGE_INVALID';
+    };
+
+type RefreshOutcome =
+  | {
+      status: 'ok';
+      accessToken: string;
+      refreshToken: string;
+      user: User;
+    }
+  | { status: 'error'; code: 'AUTH_SESSION_REVOKED' };
+
+function isRetryableTxError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { code?: string }).code;
+  return code === 'P2034' || code === '40001';
+}
+
 @Injectable()
 export class ChallengeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @Inject(SMS_DELIVERY_PORT) private readonly sms: SmsDeliveryPort,
+    @Inject(EMAIL_DELIVERY_PORT) private readonly email: EmailDeliveryPort,
   ) {}
 
   async createChallenge(input: {
@@ -97,12 +132,22 @@ export class ChallengeService {
     destinationType: DestinationType;
     destinationNormalized: string;
     userId?: string;
+    pendingPasswordHash?: string;
+    pendingEmailDisplay?: string;
+    originFingerprint?: string;
   }) {
     await this.enforceRateLimit(
-      `challenge:${input.destinationType}:${input.destinationNormalized}:${input.purpose}`,
+      `challenge:dest:${input.destinationType}:${input.destinationNormalized}:${input.purpose}`,
       5,
       15 * 60 * 1000,
     );
+    if (input.originFingerprint) {
+      await this.enforceRateLimit(
+        `challenge:origin:${input.originFingerprint}`,
+        30,
+        15 * 60 * 1000,
+      );
+    }
 
     const latest = await this.prisma.authChallenge.findFirst({
       where: {
@@ -117,6 +162,7 @@ export class ChallengeService {
       throw new AppError('AUTH_RATE_LIMITED', 429);
     }
 
+    // Invalidate older active challenges; do not reset rate-limit counters.
     await this.prisma.authChallenge.updateMany({
       where: {
         destinationNormalized: input.destinationNormalized,
@@ -131,30 +177,34 @@ export class ChallengeService {
       code,
       this.config.getOrThrow('OTP_CODE_PEPPER'),
     );
+    const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS);
     const challenge = await this.prisma.authChallenge.create({
       data: {
         purpose: input.purpose,
         destinationType: input.destinationType,
         destinationNormalized: input.destinationNormalized,
         codeHash,
-        expiresAt: new Date(Date.now() + CHALLENGE_TTL_MS),
+        expiresAt,
         userId: input.userId,
+        pendingPasswordHash: input.pendingPasswordHash,
+        pendingEmailDisplay: input.pendingEmailDisplay,
       },
     });
 
-    const fixtureEnabled = this.config.get<boolean>('FIXTURE_DELIVERY_ENABLED');
-    if (fixtureEnabled) {
-      await this.prisma.fixtureInboxMessage.create({
-        data: {
-          channel: input.destinationType === 'PHONE' ? 'SMS' : 'EMAIL',
-          destinationNormalized: input.destinationNormalized,
-          purpose: input.purpose,
-          code,
-          payloadJson: {},
-        },
+    if (input.destinationType === 'PHONE') {
+      await this.sms.sendOtp({
+        destinationE164: input.destinationNormalized,
+        purpose: input.purpose,
+        code,
+        expiresAt,
       });
     } else {
-      throw new AppError('DELIVERY_UNAVAILABLE', 503);
+      await this.email.sendCode({
+        destinationEmail: input.destinationNormalized,
+        purpose: input.purpose,
+        code,
+        expiresAt,
+      });
     }
 
     return {
@@ -168,64 +218,123 @@ export class ChallengeService {
     };
   }
 
+  /**
+   * Commit attempt increments / consumption inside the transaction, then map
+   * to a public AppError only after the transaction commits.
+   */
   async consumeChallenge(challengeId: string, code: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const challenge = await tx.authChallenge.findUnique({
-        where: { id: challengeId },
-      });
-      if (
-        !challenge ||
-        challenge.consumedAt ||
-        challenge.expiresAt <= new Date()
-      ) {
-        throw new AppError('AUTH_CHALLENGE_EXPIRED', 400);
-      }
-      if (challenge.attempts >= challenge.maxAttempts) {
-        throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-      }
-      const expected = challenge.codeHash;
-      const actual = hashOpaqueSecret(
-        code,
-        this.config.getOrThrow('OTP_CODE_PEPPER'),
-      );
-      if (!safeEqualHex(expected, actual)) {
-        await tx.authChallenge.update({
+    const outcome = await this.withTxRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          SELECT id FROM auth_challenges WHERE id = ${challengeId}::uuid FOR UPDATE
+        `;
+        const challenge = await tx.authChallenge.findUnique({
           where: { id: challengeId },
-          data: { attempts: { increment: 1 } },
         });
-        throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-      }
-      const updated = await tx.authChallenge.updateMany({
-        where: { id: challengeId, consumedAt: null },
-        data: { consumedAt: new Date() },
-      });
-      if (updated.count !== 1) {
-        throw new AppError('AUTH_CHALLENGE_EXPIRED', 400);
-      }
-      return challenge;
-    });
+        if (
+          !challenge ||
+          challenge.consumedAt ||
+          challenge.expiresAt <= new Date()
+        ) {
+          return {
+            status: 'error',
+            code: 'AUTH_CHALLENGE_EXPIRED',
+          } satisfies ChallengeOutcome;
+        }
+        if (challenge.attempts >= challenge.maxAttempts) {
+          return {
+            status: 'error',
+            code: 'AUTH_CHALLENGE_INVALID',
+          } satisfies ChallengeOutcome;
+        }
+        const actual = hashOpaqueSecret(
+          code,
+          this.config.getOrThrow('OTP_CODE_PEPPER'),
+        );
+        if (!safeEqualHex(challenge.codeHash, actual)) {
+          await tx.authChallenge.update({
+            where: { id: challengeId },
+            data: { attempts: { increment: 1 } },
+          });
+          return {
+            status: 'error',
+            code: 'AUTH_CHALLENGE_INVALID',
+          } satisfies ChallengeOutcome;
+        }
+        const updated = await tx.authChallenge.updateMany({
+          where: {
+            id: challengeId,
+            consumedAt: null,
+            attempts: { lt: challenge.maxAttempts },
+          },
+          data: { consumedAt: new Date() },
+        });
+        if (updated.count !== 1) {
+          return {
+            status: 'error',
+            code: 'AUTH_CHALLENGE_EXPIRED',
+          } satisfies ChallengeOutcome;
+        }
+        return { status: 'ok', challenge } satisfies ChallengeOutcome;
+      }),
+    );
+
+    if (outcome.status === 'error') {
+      throw new AppError(outcome.code, 400);
+    }
+    return outcome.challenge;
   }
 
   async enforceRateLimit(bucketKey: string, limit: number, windowMs: number) {
-    const now = new Date();
-    const bucket = await this.prisma.rateLimitBucket.findUnique({
-      where: { bucketKey },
-    });
-    if (!bucket || now.getTime() - bucket.windowStart.getTime() > windowMs) {
-      await this.prisma.rateLimitBucket.upsert({
+    const limited = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bucketKey}))`;
+      const now = new Date();
+      const bucket = await tx.rateLimitBucket.findUnique({
         where: { bucketKey },
-        create: { bucketKey, windowStart: now, count: 1 },
-        update: { windowStart: now, count: 1 },
       });
-      return;
-    }
-    if (bucket.count >= limit) {
+      if (!bucket || now.getTime() - bucket.windowStart.getTime() > windowMs) {
+        await tx.rateLimitBucket.upsert({
+          where: { bucketKey },
+          create: { bucketKey, windowStart: now, count: 1 },
+          update: { windowStart: now, count: 1 },
+        });
+        return false;
+      }
+      if (bucket.count >= limit) {
+        return true;
+      }
+      await tx.rateLimitBucket.update({
+        where: { bucketKey },
+        data: { count: { increment: 1 } },
+      });
+      return false;
+    });
+    if (limited) {
       throw new AppError('AUTH_RATE_LIMITED', 429);
     }
-    await this.prisma.rateLimitBucket.update({
-      where: { bucketKey },
-      data: { count: { increment: 1 } },
-    });
+  }
+
+  originFingerprintFromRaw(rawOrigin: string | undefined): string | undefined {
+    if (!rawOrigin) return undefined;
+    return fingerprintOrigin(
+      rawOrigin,
+      this.config.getOrThrow('RATE_LIMIT_PEPPER'),
+    );
+  }
+
+  private async withTxRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < TX_RETRY_LIMIT; attempt += 1) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableTxError(error) || attempt === TX_RETRY_LIMIT - 1) {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
   }
 }
 
@@ -273,73 +382,124 @@ export class SessionService {
       this.config.getOrThrow('REFRESH_TOKEN_PEPPER'),
     );
 
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.refreshToken.findUnique({
-        where: { tokenHash },
-        include: { session: { include: { user: true } } },
-      });
-      if (!existing) {
-        throw new AppError('AUTH_SESSION_REVOKED', 401);
-      }
-      if (
-        existing.usedAt ||
-        existing.revokedAt ||
-        existing.expiresAt <= new Date() ||
-        existing.session.revokedAt ||
-        existing.session.absoluteExpiresAt <= new Date() ||
-        existing.session.user.disabledAt
-      ) {
-        await tx.authSession.updateMany({
-          where: { familyId: existing.familyId },
-          data: { revokedAt: new Date() },
+    const outcome = await this.withTxRetry(() =>
+      this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          SELECT id FROM refresh_tokens WHERE token_hash = ${tokenHash} FOR UPDATE
+        `;
+        const existing = await tx.refreshToken.findUnique({
+          where: { tokenHash },
+          include: { session: { include: { user: true } } },
         });
-        await tx.refreshToken.updateMany({
-          where: { familyId: existing.familyId },
-          data: { revokedAt: new Date() },
+        if (!existing) {
+          return {
+            status: 'error',
+            code: 'AUTH_SESSION_REVOKED',
+          } satisfies RefreshOutcome;
+        }
+
+        const unusable =
+          existing.usedAt ||
+          existing.revokedAt ||
+          existing.expiresAt <= new Date() ||
+          existing.session.revokedAt ||
+          existing.session.absoluteExpiresAt <= new Date() ||
+          existing.session.user.disabledAt;
+
+        if (unusable) {
+          await tx.authSession.updateMany({
+            where: { familyId: existing.familyId },
+            data: { revokedAt: new Date() },
+          });
+          await tx.refreshToken.updateMany({
+            where: { familyId: existing.familyId },
+            data: { revokedAt: new Date() },
+          });
+          await tx.securityEvent.create({
+            data: {
+              type: 'REFRESH_REPLAY',
+              accountId: existing.session.userId,
+              sessionId: existing.sessionId,
+              metadataJson: {},
+            },
+          });
+          return {
+            status: 'error',
+            code: 'AUTH_SESSION_REVOKED',
+          } satisfies RefreshOutcome;
+        }
+
+        // Atomic claim — only one concurrent request can mark this row used.
+        const claimed = await tx.refreshToken.updateMany({
+          where: {
+            id: existing.id,
+            usedAt: null,
+            revokedAt: null,
+          },
+          data: { usedAt: new Date() },
         });
-        await tx.securityEvent.create({
+        if (claimed.count !== 1) {
+          await tx.authSession.updateMany({
+            where: { familyId: existing.familyId },
+            data: { revokedAt: new Date() },
+          });
+          await tx.refreshToken.updateMany({
+            where: { familyId: existing.familyId },
+            data: { revokedAt: new Date() },
+          });
+          await tx.securityEvent.create({
+            data: {
+              type: 'REFRESH_REPLAY',
+              accountId: existing.session.userId,
+              sessionId: existing.sessionId,
+              metadataJson: {},
+            },
+          });
+          return {
+            status: 'error',
+            code: 'AUTH_SESSION_REVOKED',
+          } satisfies RefreshOutcome;
+        }
+
+        const nextRefresh = generateRefreshToken();
+        const nextHash = hashOpaqueSecret(
+          nextRefresh,
+          this.config.getOrThrow('REFRESH_TOKEN_PEPPER'),
+        );
+        const replacement = await tx.refreshToken.create({
           data: {
-            type: 'REFRESH_REPLAY',
-            accountId: existing.session.userId,
             sessionId: existing.sessionId,
-            metadataJson: {},
+            tokenHash: nextHash,
+            familyId: existing.familyId,
+            expiresAt: existing.session.absoluteExpiresAt,
           },
         });
-        throw new AppError('AUTH_SESSION_REVOKED', 401);
-      }
+        await tx.refreshToken.update({
+          where: { id: existing.id },
+          data: { replacedById: replacement.id },
+        });
+        await tx.authSession.update({
+          where: { id: existing.sessionId },
+          data: { lastSeenAt: new Date() },
+        });
 
-      const nextRefresh = generateRefreshToken();
-      const nextHash = hashOpaqueSecret(
-        nextRefresh,
-        this.config.getOrThrow('REFRESH_TOKEN_PEPPER'),
-      );
-      const replacement = await tx.refreshToken.create({
-        data: {
+        const accessToken = await this.tokens.issueAccessToken({
+          accountId: existing.session.userId,
           sessionId: existing.sessionId,
-          tokenHash: nextHash,
-          familyId: existing.familyId,
-          expiresAt: existing.session.absoluteExpiresAt,
-        },
-      });
-      await tx.refreshToken.update({
-        where: { id: existing.id },
-        data: { usedAt: new Date(), replacedById: replacement.id },
-      });
-      await tx.authSession.update({
-        where: { id: existing.sessionId },
-        data: { lastSeenAt: new Date() },
-      });
+        });
+        return {
+          status: 'ok',
+          accessToken,
+          refreshToken: nextRefresh,
+          user: existing.session.user,
+        } satisfies RefreshOutcome;
+      }),
+    );
 
-      const accessToken = await this.tokens.issueAccessToken({
-        accountId: existing.session.userId,
-        sessionId: existing.sessionId,
-      });
-      return {
-        accessToken,
-        refreshToken: nextRefresh,
-        user: existing.session.user,
-      };
-    });
+    if (outcome.status === 'error') {
+      throw new AppError(outcome.code, 401);
+    }
+    return outcome;
   }
 
   async assertSessionActive(sessionId: string, accountId: string) {
@@ -397,15 +557,33 @@ export class SessionService {
     id: string;
     phoneE164: string | null;
     emailNormalized: string | null;
+    emailVerifiedAt: Date | null;
   }) {
+    const hasEmail = Boolean(user.emailNormalized && user.emailVerifiedAt);
     return {
       accountId: user.id,
       hasPhone: Boolean(user.phoneE164),
-      hasEmail: Boolean(user.emailNormalized),
+      hasEmail,
       maskedPhone: user.phoneE164 ? maskPhone(user.phoneE164) : null,
-      maskedEmail: user.emailNormalized
-        ? maskEmail(user.emailNormalized)
-        : null,
+      maskedEmail:
+        hasEmail && user.emailNormalized
+          ? maskEmail(user.emailNormalized)
+          : null,
     };
+  }
+
+  private async withTxRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < TX_RETRY_LIMIT; attempt += 1) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableTxError(error) || attempt === TX_RETRY_LIMIT - 1) {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
   }
 }
