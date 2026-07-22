@@ -10,13 +10,13 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 |---|---|
 | App / Dart project | Laforika / `laforika` |
 | Organization | `com.primebuilds` |
-| Frozen architecture | [`ARCHITECTURE.md`](architecture/ARCHITECTURE.md) v1.2 (`FROZEN`) |
+| Frozen architecture | [`ARCHITECTURE.md`](architecture/ARCHITECTURE.md) v1.3 (`FROZEN`) |
 | Agent / delivery rules | [`../AGENTS.md`](../AGENTS.md) |
 | Package prompts | [`prompts/`](prompts/) (versioned on the remote; not gitignored) |
 
 ## Current merged baseline
 
-M0 project bootstrap on `main`, plus versioned milestone package prompts under `docs/prompts/`.
+M1 custom authentication vertical slice on `main`, including ADR-0007 (O1), NestJS auth API, Flutter auth client, and versioned milestone prompts under `docs/prompts/`.
 
 ## Completed check-ins
 
@@ -56,13 +56,25 @@ M0 project bootstrap on `main`, plus versioned milestone package prompts under `
 | Remaining decisions / limitations | Owner decisions O1–O8 unresolved; M1 prompt not yet present (removed before check-in) |
 | Exact next work package | M1 authentication decision and vertical slice |
 
+### M1 — Custom authentication vertical slice — PR [#6](https://github.com/prime-builds/prime-laforika/pull/6)
+
+| Field | Value |
+|---|---|
+| Work package | M1 — Custom authentication vertical slice |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/6 |
+| Final reviewed implementation commit | `247c98f606d57455b596e7624aea2ccb23f31924` |
+| Completed scope | ADR-0007 + architecture v1.3 resolving O1 to custom NestJS/Prisma auth; provider-neutral `core/auth` with Flutter custom adapter; phone OTP and email/password flows; account attach/remove, sessions, logout, password change; shared Dio with refresh, retry, and sanitized logging; Nest `/v1` auth API with RS256 access tokens, rotating refresh, challenges, verified-email credentials, atomic challenge consumption, HMAC destination rate-limit keys, OpenAPI contracts; process-local fixture inbox for controlled delivery; Android backup exclusions for auth storage; M1 package prompt under `docs/prompts/` |
+| Verification | Local: Flutter format/analyze/tests/import boundaries; backend unit + e2e + OpenAPI check; CI green on PR #6 (`backend` + `quality`); Android emulator `flutter run --flavor dev` verified locally after owner VPN/TUN + user-level Aliyun Gradle mirror workaround |
+| Remaining decisions / limitations | O2–O8 unresolved; GitHub Actions Android emulator job and three-flavor debug APK matrix intentionally omitted (owner-approved CI quota deviation); local Android builds may require TUN + user Gradle mirror init script when Google Maven is unreachable |
+| Exact next work package | M2 — Home / discovery shell |
+
 ## Current milestone
 
-**M0 — Project bootstrap** delivered in PR #3. Package prompts are tracked under `docs/prompts/`. Exact next work package: **M1 — authentication decision and vertical slice**.
+**M1 — Custom authentication vertical slice** delivered in PR #6. Exact next work package: **M2 — Home / discovery shell**.
 
 ## Implemented capabilities
 
-- Frozen architecture document and accepted ADRs (0001–0006)
+- Frozen architecture document and accepted ADRs (0001–0007)
 - Repository agent guidance (`AGENTS.md`)
 - Operator-facing README and project inventory
 - Versioned milestone package prompts under `docs/prompts/`
@@ -72,26 +84,28 @@ M0 project bootstrap on `main`, plus versioned milestone package prompts under `
 - Checked compile-time configuration and fatal startup surface
 - Riverpod composition root and `go_router` Home feature
 - Persian `fa-IR` localization, RTL, Vazirmatn theme foundation
-- Import-boundary enforcement tool and CI quality/flavor gates
+- Import-boundary enforcement tool and CI quality gates
+- Custom authentication vertical slice (NestJS API + Flutter client)
 
 ## Deferred capabilities and owner decisions
 
 Deferred until later milestones or owner input (see architecture §14–§15):
 
-- Authentication / identity provider (O1 → M1)
-- Networking, persistence, telemetry, maps, push, Jalali display, final branding, signing/distribution, privacy/account-data lifecycle (O2–O8 and later milestones)
+- Networking beyond auth, persistence, telemetry, maps, push, Jalali display, final branding, signing/distribution, privacy/account-data lifecycle (O2–O8 and later milestones)
 
 ## Verification evidence
 
 - PR [#1](https://github.com/prime-builds/prime-laforika/pull/1): final reviewed implementation commit `99e6b35173df29614250882188c27a547c0c852b`
 - PR [#3](https://github.com/prime-builds/prime-laforika/pull/3): final reviewed implementation commit `0981c8f99d276a392e07853afd14a8d455a3c4c5` (includes review corrections)
 - PR [#4](https://github.com/prime-builds/prime-laforika/pull/4): final reviewed implementation commit `34b6eee3f5152254b5d63897cdc7857f732c02e3`
+- PR [#6](https://github.com/prime-builds/prime-laforika/pull/6): final reviewed implementation commit `247c98f606d57455b596e7624aea2ccb23f31924`
 
 ## Known limitations / risks
 
 - iOS flavor configuration is committed and list membership corrected; iOS build/run was not executed on the delivery host (non-macOS)
-- Owner decisions O1–O8 remain open and must not be assumed
+- Owner decisions O2–O8 remain open and must not be assumed
+- CI no longer runs Android emulator integration or the three-flavor debug APK matrix (owner-approved quota deviation); local emulator verification was performed on the delivery host
 
 ## Exact next step
 
-Begin **M1 — authentication decision and vertical slice** after owner decision **O1**, per architecture §14 and `AGENTS.md`. Place the M1 package prompt under `docs/prompts/` when ready.
+Begin **M2 — Home / discovery shell** per architecture roadmap and `AGENTS.md`.
