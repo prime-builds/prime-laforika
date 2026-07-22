@@ -17,23 +17,28 @@ import 'package:laforika/features/auth/auth.dart';
 
 /// Application bootstrap: binding, config, error zone, and ProviderScope.
 Future<void> bootstrap() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  late final AppConfig config;
-  try {
-    config = Env.load();
-  } on FormatException {
-    _reportSanitizedDiagnostic('Configuration validation failed at startup.');
-    runApp(const FatalStartupApp());
-    return;
-  } on Object {
-    _reportSanitizedDiagnostic('Unexpected configuration failure at startup.');
-    runApp(const FatalStartupApp());
-    return;
-  }
-
   await runZonedGuarded(
     () async {
+      // Binding and runApp must share the same zone (required on web).
+      WidgetsFlutterBinding.ensureInitialized();
+
+      late final AppConfig config;
+      try {
+        config = Env.load();
+      } on FormatException {
+        _reportSanitizedDiagnostic(
+          'Configuration validation failed at startup.',
+        );
+        runApp(const FatalStartupApp());
+        return;
+      } on Object {
+        _reportSanitizedDiagnostic(
+          'Unexpected configuration failure at startup.',
+        );
+        runApp(const FatalStartupApp());
+        return;
+      }
+
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
         _reportSanitizedDiagnostic('A Flutter framework error occurred.');

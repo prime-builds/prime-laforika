@@ -24,9 +24,12 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
   final _attachEmailCodeController = TextEditingController();
   final _attachPhoneController = TextEditingController();
   final _attachPhoneCodeController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
 
   List<SessionDto> _sessions = const [];
   String? _error;
+  String? _success;
   bool _loading = false;
   String? _emailChallengeId;
   String? _phoneChallengeId;
@@ -44,6 +47,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     _attachEmailCodeController.dispose();
     _attachPhoneController.dispose();
     _attachPhoneCodeController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -51,6 +56,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _success = null;
     });
     final me = await ref.read(authRepositoryProvider).me();
     final sessions = await ref.read(authRepositoryProvider).listSessions();
@@ -230,6 +236,41 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     );
   }
 
+  Future<void> _changePassword() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _success = null;
+    });
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .changePassword(
+          currentPassword: _currentPasswordController.text,
+          newPassword: _newPasswordController.text,
+        );
+    if (!mounted) return;
+    await result.when(
+      success: (_) async {
+        setState(() {
+          _loading = false;
+          _success = l10n.accountChangePasswordSuccess;
+          _currentPasswordController.clear();
+          _newPasswordController.clear();
+        });
+        // Backend revokes all sessions on password change.
+        await ref.read(authControllerProvider.notifier).forceUnauthenticated();
+      },
+      failure: (failure) async {
+        setState(() {
+          _loading = false;
+          _error = mapAuthFailure(l10n, failure);
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -372,6 +413,42 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       ),
                     ],
                   ],
+                  if (principal?.hasEmail == true) ...[
+                    const SizedBox(height: AppTokens.spaceLg),
+                    Text(
+                      l10n.accountChangePasswordTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextField(
+                      key: const Key('account_current_password'),
+                      controller: _currentPasswordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.password],
+                      decoration: InputDecoration(
+                        labelText: l10n.accountCurrentPasswordLabel,
+                      ),
+                      enabled: !_loading,
+                    ),
+                    TextField(
+                      key: const Key('account_new_password'),
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.newPassword],
+                      decoration: InputDecoration(
+                        labelText: l10n.authNewPasswordLabel,
+                      ),
+                      enabled: !_loading,
+                    ),
+                    FilledButton(
+                      key: const Key('account_change_password'),
+                      onPressed: _loading ? null : _changePassword,
+                      child: Text(
+                        _loading
+                            ? l10n.authPleaseWait
+                            : l10n.accountChangePasswordAction,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppTokens.spaceLg),
                   Text(
                     l10n.accountSessionsTitle,
@@ -424,6 +501,16 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       _error!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                  if (_success != null) ...[
+                    const SizedBox(height: AppTokens.spaceMd),
+                    Text(
+                      key: const Key('account_security_success'),
+                      _success!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],

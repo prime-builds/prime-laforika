@@ -12,7 +12,14 @@ const _refreshTokenKey = 'auth.refreshToken';
 
 /// Custom API session adapter — Laforika-owned refresh secret in secure storage.
 class CustomApiAuthGateway implements AuthSessionGateway {
-  CustomApiAuthGateway({required this._repository, required this._secureStore});
+  CustomApiAuthGateway({
+    required AuthRepository repository,
+    required SecureStore secureStore,
+  }) : // Public names keep the constructor callable across libraries.
+       // ignore: prefer_initializing_formals
+       _repository = repository,
+       // ignore: prefer_initializing_formals
+       _secureStore = secureStore;
 
   final AuthRepository _repository;
   final SecureStore _secureStore;

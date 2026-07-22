@@ -158,6 +158,19 @@ class AppLocalizationsFa extends AppLocalizations {
   String get accountLogoutAll => 'خروج از همه دستگاه‌ها';
 
   @override
+  String get accountChangePasswordTitle => 'تغییر رمز عبور';
+
+  @override
+  String get accountCurrentPasswordLabel => 'رمز عبور فعلی';
+
+  @override
+  String get accountChangePasswordAction => 'به‌روزرسانی رمز عبور';
+
+  @override
+  String get accountChangePasswordSuccess =>
+      'رمز عبور به‌روز شد. لطفاً دوباره وارد شوید.';
+
+  @override
   String get authErrorInvalidCredentials => 'اطلاعات ورود نادرست است.';
 
   @override

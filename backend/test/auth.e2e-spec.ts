@@ -429,4 +429,34 @@ describe('Auth e2e', () => {
       message: 'Request failed',
     });
   });
+
+  it('password change revokes sessions and requires new password', async () => {
+    const email = 'user10@example.com';
+    const oldPassword = 'correct-horse-battery-10';
+    const newPassword = 'correct-horse-battery-10n';
+    const verified = await signUpEmail(email, oldPassword);
+
+    await request(app.getHttpServer())
+      .put('/v1/account/password')
+      .set('Authorization', `Bearer ${verified.accessToken}`)
+      .send({ currentPassword: oldPassword, newPassword })
+      .expect(HttpStatus.OK);
+
+    await request(app.getHttpServer())
+      .get('/v1/account/me')
+      .set('Authorization', `Bearer ${verified.accessToken}`)
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-in')
+      .send({ email, password: oldPassword })
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-in')
+      .send({ email, password: newPassword })
+      .expect(HttpStatus.OK);
+    const login = loginRes.body as TokenResponse;
+    expect(login.accountId).toBe(verified.accountId);
+  });
 });

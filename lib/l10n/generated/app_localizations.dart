@@ -370,6 +370,30 @@ abstract class AppLocalizations {
   /// **'خروج از همه دستگاه‌ها'**
   String get accountLogoutAll;
 
+  /// No description provided for @accountChangePasswordTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'تغییر رمز عبور'**
+  String get accountChangePasswordTitle;
+
+  /// No description provided for @accountCurrentPasswordLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'رمز عبور فعلی'**
+  String get accountCurrentPasswordLabel;
+
+  /// No description provided for @accountChangePasswordAction.
+  ///
+  /// In fa, this message translates to:
+  /// **'به‌روزرسانی رمز عبور'**
+  String get accountChangePasswordAction;
+
+  /// No description provided for @accountChangePasswordSuccess.
+  ///
+  /// In fa, this message translates to:
+  /// **'رمز عبور به‌روز شد. لطفاً دوباره وارد شوید.'**
+  String get accountChangePasswordSuccess;
+
   /// No description provided for @authErrorInvalidCredentials.
   ///
   /// In fa, this message translates to:
