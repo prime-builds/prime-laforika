@@ -117,6 +117,294 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'پیکربندی برنامه معتبر نیست. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.'**
   String get fatalStartupMessage;
+
+  /// No description provided for @authStartupLoading.
+  ///
+  /// In fa, this message translates to:
+  /// **'در حال بازیابی نشست…'**
+  String get authStartupLoading;
+
+  /// No description provided for @authStartupError.
+  ///
+  /// In fa, this message translates to:
+  /// **'بازیابی نشست ممکن نشد. اتصال را بررسی کنید و دوباره تلاش کنید.'**
+  String get authStartupError;
+
+  /// No description provided for @authRetry.
+  ///
+  /// In fa, this message translates to:
+  /// **'تلاش دوباره'**
+  String get authRetry;
+
+  /// No description provided for @authMethodTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'ورود به لفوریکا'**
+  String get authMethodTitle;
+
+  /// No description provided for @authMethodSubtitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'یکی از روش‌های ورود را انتخاب کنید.'**
+  String get authMethodSubtitle;
+
+  /// No description provided for @authContinueWithPhone.
+  ///
+  /// In fa, this message translates to:
+  /// **'ادامه با شماره موبایل'**
+  String get authContinueWithPhone;
+
+  /// No description provided for @authContinueWithEmail.
+  ///
+  /// In fa, this message translates to:
+  /// **'ادامه با ایمیل و رمز عبور'**
+  String get authContinueWithEmail;
+
+  /// No description provided for @authPhoneTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'ورود با موبایل'**
+  String get authPhoneTitle;
+
+  /// No description provided for @authPhoneLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'شماره موبایل'**
+  String get authPhoneLabel;
+
+  /// No description provided for @authEmailTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'ورود با ایمیل'**
+  String get authEmailTitle;
+
+  /// No description provided for @authEmailLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل'**
+  String get authEmailLabel;
+
+  /// No description provided for @authPasswordLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'رمز عبور'**
+  String get authPasswordLabel;
+
+  /// No description provided for @authNewPasswordLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'رمز عبور جدید'**
+  String get authNewPasswordLabel;
+
+  /// No description provided for @authOtpLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'کد تأیید'**
+  String get authOtpLabel;
+
+  /// No description provided for @authSendCode.
+  ///
+  /// In fa, this message translates to:
+  /// **'ارسال کد'**
+  String get authSendCode;
+
+  /// No description provided for @authVerifyCode.
+  ///
+  /// In fa, this message translates to:
+  /// **'تأیید کد'**
+  String get authVerifyCode;
+
+  /// No description provided for @authResendCode.
+  ///
+  /// In fa, this message translates to:
+  /// **'ارسال مجدد کد'**
+  String get authResendCode;
+
+  /// No description provided for @authPleaseWait.
+  ///
+  /// In fa, this message translates to:
+  /// **'لطفاً صبر کنید…'**
+  String get authPleaseWait;
+
+  /// No description provided for @authSignUp.
+  ///
+  /// In fa, this message translates to:
+  /// **'ثبت‌نام'**
+  String get authSignUp;
+
+  /// No description provided for @authSignIn.
+  ///
+  /// In fa, this message translates to:
+  /// **'ورود'**
+  String get authSignIn;
+
+  /// No description provided for @authForgotPassword.
+  ///
+  /// In fa, this message translates to:
+  /// **'فراموشی رمز عبور'**
+  String get authForgotPassword;
+
+  /// No description provided for @authPasswordResetTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'بازیابی رمز عبور'**
+  String get authPasswordResetTitle;
+
+  /// No description provided for @authResetPassword.
+  ///
+  /// In fa, this message translates to:
+  /// **'تنظیم رمز جدید'**
+  String get authResetPassword;
+
+  /// No description provided for @authPasswordResetSuccess.
+  ///
+  /// In fa, this message translates to:
+  /// **'رمز عبور به‌روز شد. اکنون می‌توانید وارد شوید.'**
+  String get authPasswordResetSuccess;
+
+  /// No description provided for @authCodeSentTo.
+  ///
+  /// In fa, this message translates to:
+  /// **'کد به {destination} ارسال شد.'**
+  String authCodeSentTo(String destination);
+
+  /// No description provided for @authLogout.
+  ///
+  /// In fa, this message translates to:
+  /// **'خروج'**
+  String get authLogout;
+
+  /// No description provided for @accountSecurityTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'امنیت حساب'**
+  String get accountSecurityTitle;
+
+  /// No description provided for @accountSecurityAction.
+  ///
+  /// In fa, this message translates to:
+  /// **'امنیت حساب'**
+  String get accountSecurityAction;
+
+  /// No description provided for @accountIdLabel.
+  ///
+  /// In fa, this message translates to:
+  /// **'شناسه حساب: {accountId}'**
+  String accountIdLabel(String accountId);
+
+  /// No description provided for @accountPhoneAttached.
+  ///
+  /// In fa, this message translates to:
+  /// **'موبایل تأییدشده: {phone}'**
+  String accountPhoneAttached(String phone);
+
+  /// No description provided for @accountPhoneMissing.
+  ///
+  /// In fa, this message translates to:
+  /// **'موبایل متصل نیست'**
+  String get accountPhoneMissing;
+
+  /// No description provided for @accountEmailAttached.
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل تأییدشده: {email}'**
+  String accountEmailAttached(String email);
+
+  /// No description provided for @accountEmailMissing.
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل متصل نیست'**
+  String get accountEmailMissing;
+
+  /// No description provided for @accountSessionsTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'نشست‌های فعال'**
+  String get accountSessionsTitle;
+
+  /// No description provided for @accountSessionDevice.
+  ///
+  /// In fa, this message translates to:
+  /// **'دستگاه'**
+  String get accountSessionDevice;
+
+  /// No description provided for @accountSessionCurrent.
+  ///
+  /// In fa, this message translates to:
+  /// **'نشست فعلی'**
+  String get accountSessionCurrent;
+
+  /// No description provided for @accountRevokeSession.
+  ///
+  /// In fa, this message translates to:
+  /// **'لغو نشست'**
+  String get accountRevokeSession;
+
+  /// No description provided for @accountLogoutAll.
+  ///
+  /// In fa, this message translates to:
+  /// **'خروج از همه دستگاه‌ها'**
+  String get accountLogoutAll;
+
+  /// No description provided for @authErrorInvalidCredentials.
+  ///
+  /// In fa, this message translates to:
+  /// **'اطلاعات ورود نادرست است.'**
+  String get authErrorInvalidCredentials;
+
+  /// No description provided for @authErrorChallengeExpired.
+  ///
+  /// In fa, this message translates to:
+  /// **'کد منقضی شده است. دوباره درخواست کنید.'**
+  String get authErrorChallengeExpired;
+
+  /// No description provided for @authErrorChallengeInvalid.
+  ///
+  /// In fa, this message translates to:
+  /// **'کد نادرست است.'**
+  String get authErrorChallengeInvalid;
+
+  /// No description provided for @authErrorRateLimited.
+  ///
+  /// In fa, this message translates to:
+  /// **'تعداد درخواست‌ها زیاد است. کمی بعد تلاش کنید.'**
+  String get authErrorRateLimited;
+
+  /// No description provided for @authErrorConflict.
+  ///
+  /// In fa, this message translates to:
+  /// **'این شناسه قبلاً استفاده شده است.'**
+  String get authErrorConflict;
+
+  /// No description provided for @authErrorSessionRevoked.
+  ///
+  /// In fa, this message translates to:
+  /// **'نشست شما پایان یافته است. دوباره وارد شوید.'**
+  String get authErrorSessionRevoked;
+
+  /// No description provided for @authErrorLastCredential.
+  ///
+  /// In fa, this message translates to:
+  /// **'نمی‌توان آخرین روش ورود را حذف کرد.'**
+  String get authErrorLastCredential;
+
+  /// No description provided for @authErrorValidation.
+  ///
+  /// In fa, this message translates to:
+  /// **'اطلاعات واردشده معتبر نیست.'**
+  String get authErrorValidation;
+
+  /// No description provided for @authErrorNetwork.
+  ///
+  /// In fa, this message translates to:
+  /// **'ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.'**
+  String get authErrorNetwork;
+
+  /// No description provided for @authErrorGeneric.
+  ///
+  /// In fa, this message translates to:
+  /// **'خطایی رخ داد. لطفاً دوباره تلاش کنید.'**
+  String get authErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

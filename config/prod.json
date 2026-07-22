@@ -1,6 +1,6 @@
 {
   "APP_ENVIRONMENT": "prod",
-  "API_BASE_URL": "",
+  "API_BASE_URL": "https://api.laforika.invalid/v1",
   "APP_LOG_LEVEL": "warning",
   "FEATURE_FLAGS_JSON": "{}"
 }

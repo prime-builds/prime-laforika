@@ -1,6 +1,6 @@
 {
   "APP_ENVIRONMENT": "dev",
-  "API_BASE_URL": "",
+  "API_BASE_URL": "http://10.0.2.2:3000/v1",
   "APP_LOG_LEVEL": "debug",
   "FEATURE_FLAGS_JSON": "{}"
 }

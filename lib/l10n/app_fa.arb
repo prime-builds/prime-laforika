@@ -15,5 +15,81 @@
   "fatalStartupMessage": "پیکربندی برنامه معتبر نیست. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.",
   "@fatalStartupMessage": {
     "description": "Fatal startup failure body without technical details"
-  }
+  },
+  "authStartupLoading": "در حال بازیابی نشست…",
+  "authStartupError": "بازیابی نشست ممکن نشد. اتصال را بررسی کنید و دوباره تلاش کنید.",
+  "authRetry": "تلاش دوباره",
+  "authMethodTitle": "ورود به لفوریکا",
+  "authMethodSubtitle": "یکی از روش‌های ورود را انتخاب کنید.",
+  "authContinueWithPhone": "ادامه با شماره موبایل",
+  "authContinueWithEmail": "ادامه با ایمیل و رمز عبور",
+  "authPhoneTitle": "ورود با موبایل",
+  "authPhoneLabel": "شماره موبایل",
+  "authEmailTitle": "ورود با ایمیل",
+  "authEmailLabel": "ایمیل",
+  "authPasswordLabel": "رمز عبور",
+  "authNewPasswordLabel": "رمز عبور جدید",
+  "authOtpLabel": "کد تأیید",
+  "authSendCode": "ارسال کد",
+  "authVerifyCode": "تأیید کد",
+  "authResendCode": "ارسال مجدد کد",
+  "authPleaseWait": "لطفاً صبر کنید…",
+  "authSignUp": "ثبت‌نام",
+  "authSignIn": "ورود",
+  "authForgotPassword": "فراموشی رمز عبور",
+  "authPasswordResetTitle": "بازیابی رمز عبور",
+  "authResetPassword": "تنظیم رمز جدید",
+  "authPasswordResetSuccess": "رمز عبور به‌روز شد. اکنون می‌توانید وارد شوید.",
+  "authCodeSentTo": "کد به {destination} ارسال شد.",
+  "@authCodeSentTo": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "authLogout": "خروج",
+  "accountSecurityTitle": "امنیت حساب",
+  "accountSecurityAction": "امنیت حساب",
+  "accountIdLabel": "شناسه حساب: {accountId}",
+  "@accountIdLabel": {
+    "placeholders": {
+      "accountId": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPhoneAttached": "موبایل تأییدشده: {phone}",
+  "@accountPhoneAttached": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "accountPhoneMissing": "موبایل متصل نیست",
+  "accountEmailAttached": "ایمیل تأییدشده: {email}",
+  "@accountEmailAttached": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accountEmailMissing": "ایمیل متصل نیست",
+  "accountSessionsTitle": "نشست‌های فعال",
+  "accountSessionDevice": "دستگاه",
+  "accountSessionCurrent": "نشست فعلی",
+  "accountRevokeSession": "لغو نشست",
+  "accountLogoutAll": "خروج از همه دستگاه‌ها",
+  "authErrorInvalidCredentials": "اطلاعات ورود نادرست است.",
+  "authErrorChallengeExpired": "کد منقضی شده است. دوباره درخواست کنید.",
+  "authErrorChallengeInvalid": "کد نادرست است.",
+  "authErrorRateLimited": "تعداد درخواست‌ها زیاد است. کمی بعد تلاش کنید.",
+  "authErrorConflict": "این شناسه قبلاً استفاده شده است.",
+  "authErrorSessionRevoked": "نشست شما پایان یافته است. دوباره وارد شوید.",
+  "authErrorLastCredential": "نمی‌توان آخرین روش ورود را حذف کرد.",
+  "authErrorValidation": "اطلاعات واردشده معتبر نیست.",
+  "authErrorNetwork": "ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.",
+  "authErrorGeneric": "خطایی رخ داد. لطفاً دوباره تلاش کنید."
 }

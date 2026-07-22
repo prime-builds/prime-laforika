@@ -1,6 +1,6 @@
 {
   "APP_ENVIRONMENT": "staging",
-  "API_BASE_URL": "",
+  "API_BASE_URL": "https://api.staging.laforika.invalid/v1",
   "APP_LOG_LEVEL": "info",
   "FEATURE_FLAGS_JSON": "{}"
 }

@@ -8,8 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laforika/app/app.dart';
 import 'package:laforika/app/config/env.dart';
 import 'package:laforika/app/fatal_startup_app.dart';
+import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/config/app_config.dart';
 import 'package:laforika/core/config/app_config_provider.dart';
+import 'package:laforika/core/network/dio_provider.dart';
+import 'package:laforika/core/storage/secure_store_provider.dart';
+import 'package:laforika/features/auth/auth.dart';
 
 /// Application bootstrap: binding, config, error zone, and ProviderScope.
 Future<void> bootstrap() async {
@@ -37,7 +41,15 @@ Future<void> bootstrap() async {
 
       runApp(
         ProviderScope(
-          overrides: [appConfigProvider.overrideWithValue(config)],
+          overrides: [
+            appConfigProvider.overrideWithValue(config),
+            authSessionGatewayProvider.overrideWith((ref) {
+              return CustomApiAuthGateway(
+                repository: AuthRepository(ref.watch(dioProvider)),
+                secureStore: ref.watch(secureStoreProvider),
+              );
+            }),
+          ],
           child: const LaforikaApp(),
         ),
       );

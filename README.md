@@ -1,98 +1,171 @@
 # Laforika
 
-Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith. The project is currently at **M0 — Project Bootstrap** (complete in this codebase).
+Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith, with a sibling NestJS authentication API under `backend/`.
+
+Current work package in progress: **M1 — Authentication decision and real vertical slice** (O1 resolved: custom NestJS + PostgreSQL).
 
 ## Technical baseline
 
 - Flutter `3.44.6` stable · Dart `3.12.2`
 - Android API 24+ · iOS deployment target from the Flutter toolchain (do not change without approval)
 - Riverpod for state management and dependency injection
-- `go_router` for navigation
+- `go_router` for navigation · `dio` for HTTP
 - Persian (`fa-IR`) and RTL from day one
 - Native flavors: `dev`, `staging`, `prod`
-- GitHub Actions quality gates
+- Backend: NestJS on Node.js 24 LTS + PostgreSQL (Prisma)
+- GitHub Actions quality gates (Flutter + backend + Android-emulator auth integration)
 
-The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
+The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) (v1.3). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
 
 ## Prerequisites
+
+### Flutter client
 
 - Flutter `3.44.6` stable (Dart `3.12.2`)
 - Android SDK with API 24+
 - Xcode (for iOS builds on macOS)
 
-## Install dependencies
+### Backend (native Windows)
 
-```bash
+- Node.js **24 LTS** and npm
+- PostgreSQL 16+ installed as a native Windows service (Docker/WSL are **not** required)
+- OpenSSL (or PowerShell) available to generate development RS256 keys
+
+## Install Flutter dependencies
+
+```powershell
 flutter pub get
 ```
 
-## Localization
+## Localization and DTO generation
 
 ARB sources live in `lib/l10n/`. Generated output is committed under `lib/l10n/generated/`.
 
-```bash
+```powershell
 flutter gen-l10n
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 After regenerating, the working tree must remain clean (`git diff --exit-code`).
 
-## Run an environment
+## Backend local setup (PowerShell)
+
+1. Create a local PostgreSQL database and role (example names only):
+
+```powershell
+# After PostgreSQL is installed and `psql` is on PATH:
+createdb laforika_dev
+```
+
+2. Copy environment templates and generate development keys:
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+npm run keys:generate
+# Edit .env: set DATABASE_URL, peppers, FIXTURE_INBOX_KEY, and key paths
+npm ci
+npx prisma migrate deploy
+npm run start:dev
+```
+
+Health check: `GET http://127.0.0.1:3000/v1/health`
+
+See [`backend/README.md`](backend/README.md) for full operator commands, fixture inbox usage, and test database setup.
+
+**Secrets:** never commit `.env`, PEM/key files, database dumps, or fixture inbox contents.
+
+## Run the Flutter app
 
 `config/*.json` contains **non-secret** values only. Never put credentials or signing material there.
 
-```bash
-FLAVOR=dev
+Dev default API base URL targets the Android emulator loopback to the local backend:
 
-flutter run --flavor "$FLAVOR" \
-  --dart-define=APP_FLAVOR="$FLAVOR" \
+`http://10.0.2.2:3000/v1`
+
+For iOS simulator or a physical device, use an ignored local override of `API_BASE_URL` (do not commit machine-specific hosts).
+
+```powershell
+$FLAVOR = "dev"
+
+flutter run --flavor $FLAVOR `
+  --dart-define=APP_FLAVOR=$FLAVOR `
   --dart-define-from-file="config/$FLAVOR.json"
 ```
 
-| Flavor | Android application ID / iOS bundle ID |
-|---|---|
-| `dev` | `com.primebuilds.laforika.dev` |
-| `staging` | `com.primebuilds.laforika.staging` |
-| `prod` | `com.primebuilds.laforika` |
+| Flavor | Android application ID / iOS bundle ID | API URL policy |
+|---|---|---|
+| `dev` | `com.primebuilds.laforika.dev` | HTTP emulator loopback allowed |
+| `staging` | `com.primebuilds.laforika.staging` | HTTPS only (placeholder `.invalid` until real host) |
+| `prod` | `com.primebuilds.laforika` | HTTPS only (placeholder `.invalid` until real host) |
+
+Staging/prod configs with `.invalid` hosts are **not deployable** until replaced with real HTTPS endpoints and delivery adapters.
 
 ## Quality gates
 
-```bash
+### Flutter
+
+```powershell
+flutter pub get
+flutter gen-l10n
+dart run build_runner build --delete-conflicting-outputs
 dart format --output=none --set-exit-if-changed .
 flutter analyze --fatal-infos
 flutter test
 dart run tool/check_import_boundaries.dart
 ```
 
-Before opening a pull request, verify all flavor debug builds:
+### Backend
 
-```bash
-for FLAVOR in dev staging prod; do
-  flutter build apk --debug --flavor "$FLAVOR" \
-    --dart-define=APP_FLAVOR="$FLAVOR" \
+```powershell
+npm ci --prefix backend
+npm run format:check --prefix backend
+npm run lint --prefix backend
+npm run typecheck --prefix backend
+npm run prisma:format:check --prefix backend
+npm run prisma:validate --prefix backend
+npm run test --prefix backend
+npm run test:e2e --prefix backend
+npm run openapi:check --prefix backend
+```
+
+### Flavor debug builds
+
+```powershell
+foreach ($FLAVOR in @("dev","staging","prod")) {
+  flutter build apk --debug --flavor $FLAVOR `
+    --dart-define=APP_FLAVOR=$FLAVOR `
     --dart-define-from-file="config/$FLAVOR.json"
-done
+}
+```
+
+### Android-emulator auth integration
+
+With PostgreSQL migrated and the backend running in `dev` fixture mode:
+
+```powershell
+flutter test integration_test/auth_flow_test.dart --flavor dev `
+  --dart-define=APP_FLAVOR=dev `
+  --dart-define-from-file=config/dev.json `
+  -d <emulator-id>
 ```
 
 ## Repository structure
 
 ```text
-lib/
-├─ main.dart                 # Thin entry point
-├─ bootstrap.dart            # Initialization and ProviderScope
-├─ app/                      # Root app, router, environment wiring
-├─ core/                     # Product-agnostic shared infrastructure
-├─ features/                 # Independently bounded product modules
-└─ l10n/                     # ARB files and generated localization
-
+lib/                         # Flutter application
+backend/                     # NestJS authentication API
 test/                        # Mirrors lib/
+integration_test/            # Real-backend end-to-end flows
 tool/                        # Architecture boundary checks
 config/                      # Non-secret flavor configuration
 assets/fonts/vazirmatn/      # Bundled Vazirmatn font + OFL license
 docs/architecture/           # Frozen architecture and ADRs
+docs/prompts/                # Versioned milestone package prompts
 docs/project_inventory.md    # Merged delivery inventory
 ```
 
-Dependencies flow downward: `app → features → core`. Features expose curated public barrels and must not import another feature's internals.
+Dependencies flow downward: `app → features → core`. Features expose curated public barrels and must not import another feature's internals. The backend does not import Flutter code.
 
 ## Development workflow
 
@@ -106,12 +179,12 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 ## Roadmap
 
 - **M0:** Bootstrap, flavors, RTL localization, theme, routing, CI, and boundary enforcement ✅
-- **M1:** Owner-approved authentication and protected-route vertical slice
+- **M1:** Custom authentication vertical slice (in progress)
 - **M2:** Authenticated Home/discovery shell
 - **M3:** First production feature module
 - **M4:** First justified complex/offline module
 
-Do not create future modules or infrastructure before a concrete milestone need. Owner decisions **O1–O8** remain unresolved.
+Do not create future modules or infrastructure before a concrete milestone need. Owner decisions **O2–O8** remain unresolved; **O1 is resolved**. Real-account builds remain controlled-test-only until **O8**.
 
 ## License
 
