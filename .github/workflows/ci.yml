@@ -278,12 +278,19 @@ jobs:
 
       - name: Build backend
         working-directory: backend
-        run: npm run build
+        run: |
+          npm run build
+          test -f dist/main.js
 
       - name: Start backend
         working-directory: backend
         run: |
-          npm run start:prod &
+          set -a
+          # shellcheck disable=SC1091
+          . ./.env
+          set +a
+          npm run start:prod > /tmp/laforika-backend.log 2>&1 &
+          echo $! > /tmp/laforika-backend.pid
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/v1/health >/dev/null; then
               echo "backend ready"
@@ -292,6 +299,7 @@ jobs:
             sleep 2
           done
           echo "backend failed to become ready"
+          cat /tmp/laforika-backend.log || true
           exit 1
 
       - name: Enable KVM
