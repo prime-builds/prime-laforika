@@ -14,6 +14,90 @@ permissions:
   contents: read
 
 jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: laforika_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Generate ephemeral RS256 keys and env
+        working-directory: backend
+        run: |
+          mkdir -p secrets
+          openssl genrsa -out secrets/jwt-private.pem 2048
+          openssl rsa -in secrets/jwt-private.pem -pubout -out secrets/jwt-public.pem
+          PEPPER=$(openssl rand -hex 32)
+          FIXTURE=$(openssl rand -hex 32)
+          cat > .env <<EOF
+          APP_ENVIRONMENT=test
+          PORT=3000
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/laforika_test
+          JWT_ISSUER=https://auth.laforika.local
+          JWT_AUDIENCE=laforika-app
+          JWT_ACTIVE_KID=ci-1
+          JWT_PRIVATE_KEY_PATH=./secrets/jwt-private.pem
+          JWT_PUBLIC_KEY_PATH=./secrets/jwt-public.pem
+          REFRESH_TOKEN_PEPPER=$PEPPER
+          OTP_CODE_PEPPER=$PEPPER
+          PASSWORD_PEPPER=$PEPPER
+          FIXTURE_DELIVERY_ENABLED=true
+          FIXTURE_INBOX_KEY=$FIXTURE
+          CORS_ORIGINS=*
+          EOF
+          cp .env .env.test
+
+      - name: Prisma validate and migrate
+        working-directory: backend
+        run: |
+          npm run prisma:validate
+          npx prisma migrate deploy
+          npx prisma generate
+
+      - name: Format check
+        run: npm run format:check --prefix backend
+
+      - name: Lint
+        run: npm run lint --prefix backend
+
+      - name: Typecheck
+        run: npm run typecheck --prefix backend
+
+      - name: Unit tests
+        run: npm run test --prefix backend
+
+      - name: E2E tests
+        working-directory: backend
+        run: npm run test:e2e
+
+      - name: OpenAPI export
+        working-directory: backend
+        run: npm run openapi:export
+
   quality:
     name: quality
     runs-on: ubuntu-latest
@@ -43,10 +127,13 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Verify generated localizations are committed
+      - name: Generate DTOs
+        run: dart run build_runner build
+
+      - name: Verify generated outputs are committed
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "Generated localization check failed: dirty tree after flutter gen-l10n"
+            echo "Generated output check failed: dirty tree after codegen"
             git status --porcelain
             git diff -- || true
             exit 1
@@ -112,3 +199,110 @@ jobs:
           name: laforika-${{ matrix.flavor }}-debug-apk
           path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
+
+  android-auth-integration:
+    name: android-auth-integration
+    needs: [quality, backend]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: laforika_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.6"
+          channel: stable
+          cache: true
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Prepare backend secrets and migrate
+        working-directory: backend
+        run: |
+          mkdir -p secrets
+          openssl genrsa -out secrets/jwt-private.pem 2048
+          openssl rsa -in secrets/jwt-private.pem -pubout -out secrets/jwt-public.pem
+          PEPPER=$(openssl rand -hex 32)
+          FIXTURE=$(openssl rand -hex 32)
+          cat > .env <<EOF
+          APP_ENVIRONMENT=dev
+          PORT=3000
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/laforika_test
+          JWT_ISSUER=https://auth.laforika.local
+          JWT_AUDIENCE=laforika-app
+          JWT_ACTIVE_KID=ci-1
+          JWT_PRIVATE_KEY_PATH=./secrets/jwt-private.pem
+          JWT_PUBLIC_KEY_PATH=./secrets/jwt-public.pem
+          REFRESH_TOKEN_PEPPER=$PEPPER
+          OTP_CODE_PEPPER=$PEPPER
+          PASSWORD_PEPPER=$PEPPER
+          FIXTURE_DELIVERY_ENABLED=true
+          FIXTURE_INBOX_KEY=$FIXTURE
+          CORS_ORIGINS=*
+          EOF
+          npx prisma migrate deploy
+          npx prisma generate
+          echo "FIXTURE_INBOX_KEY=$FIXTURE" >> "$GITHUB_ENV"
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          npm run start:prod &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/v1/health >/dev/null; then
+              echo "backend ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "backend failed to become ready"
+          exit 1
+        env:
+          NODE_ENV: production
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Android emulator auth integration
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_4
+          script: |
+            flutter pub get
+            flutter test integration_test/auth_flow_test.dart --flavor dev \
+              --dart-define=APP_FLAVOR=dev \
+              --dart-define-from-file=config/dev.json
