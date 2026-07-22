@@ -9,13 +9,13 @@ void main() {
       final config = Env.parse(
         flavor: 'dev',
         environment: 'dev',
-        apiBaseUrl: '',
+        apiBaseUrl: 'http://10.0.2.2:3000/v1',
         logLevel: 'debug',
         featureFlagsJson: '{"homeEnabled":true}',
       );
 
       expect(config.environment, AppEnvironment.dev);
-      expect(config.apiBaseUrl, isNull);
+      expect(config.apiBaseUrl, 'http://10.0.2.2:3000/v1');
       expect(config.logLevel, AppLogLevel.debug);
       expect(config.featureFlags, <String, bool>{'homeEnabled': true});
     });
@@ -35,7 +35,7 @@ void main() {
             name: 'flavor/environment mismatch',
             flavor: 'dev',
             environment: 'prod',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'debug',
             featureFlagsJson: '{}',
           ),
@@ -43,7 +43,7 @@ void main() {
             name: 'missing environment',
             flavor: 'dev',
             environment: '',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'debug',
             featureFlagsJson: '{}',
           ),
@@ -51,7 +51,7 @@ void main() {
             name: 'unsupported environment',
             flavor: 'qa',
             environment: 'qa',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'debug',
             featureFlagsJson: '{}',
           ),
@@ -59,7 +59,7 @@ void main() {
             name: 'invalid log level',
             flavor: 'dev',
             environment: 'dev',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'verbose',
             featureFlagsJson: '{}',
           ),
@@ -67,7 +67,7 @@ void main() {
             name: 'malformed feature flags',
             flavor: 'dev',
             environment: 'dev',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'debug',
             featureFlagsJson: '{bad',
           ),
@@ -75,9 +75,17 @@ void main() {
             name: 'non-boolean feature flag entry',
             flavor: 'dev',
             environment: 'dev',
-            apiBaseUrl: '',
+            apiBaseUrl: 'http://10.0.2.2:3000/v1',
             logLevel: 'debug',
             featureFlagsJson: '{"x":1}',
+          ),
+          (
+            name: 'missing API URL',
+            flavor: 'dev',
+            environment: 'dev',
+            apiBaseUrl: '',
+            logLevel: 'debug',
+            featureFlagsJson: '{}',
           ),
           (
             name: 'non-development non-HTTPS API URL',

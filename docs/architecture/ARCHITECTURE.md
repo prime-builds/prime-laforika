@@ -1,6 +1,6 @@
 # Laforika — Architecture
 
-**Status:** `FROZEN` · **Version:** 1.2 · **Owner:** Principal Architect · **Last updated:** 2026-07-21
+**Status:** `FROZEN` · **Version:** 1.3 · **Owner:** Principal Architect · **Last updated:** 2026-07-22
 
 This document is the **single source of truth** for how Laforika is built. Any code that
 contradicts it is a bug in the code or a needed change to this document — not both silently.
@@ -17,8 +17,9 @@ wrong; several map to owner decisions in §15.
 
 - **[A1]** Android minSdk 24 (Android 7.0+); Flutter 3.44.6 stable and Dart 3.12.2 are
   the frozen M0 toolchain baseline. Toolchain upgrades are explicit reviewed changes.
-- **[A2]** Authentication is required, but the backend and identity-provider session model are
-  undecided (see §8/O1). The client architecture remains provider-neutral until O1 is resolved.
+- **[A2]** Authentication is required. O1 is resolved: Laforika owns a custom NestJS + PostgreSQL
+  authentication API (see §8 and [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md)).
+  The Flutter client keeps the provider-neutral session boundary from [ADR-0006](./adr/0006-authentication-and-session.md).
 - **[A3]** A single Persian locale (`fa-IR`) at launch; all strings are localized so another
   locale can be added without structural refactoring, but it still requires ARB content, locale
   configuration, and tests.
@@ -44,6 +45,9 @@ build, one deployable, clear internal module boundaries.
 │  core/         network · auth · storage · theme · l10n ... │  shared infrastructure
 └──────────────────────────────────────────────────────────┘
         dependencies point downward only:  app → features → core
+
+Repository topology (M1+): Flutter application at the repository root plus sibling
+`backend/` NestJS API. The backend does not import Flutter code; Flutter talks to it over HTTP.
 ```
 
 **Why this and not the alternatives.** Full Clean Architecture (four layers everywhere) and a
@@ -65,7 +69,7 @@ pay that cost up front.
 | Navigation | `go_router`, redirect-based guards, per-feature route registry | [0003](./adr/0003-go-router-navigation.md) |
 | Networking + errors | `dio` + interceptors; sealed `Failure`/`Result`, no `dartz` | [0004](./adr/0004-networking-and-error-model.md) |
 | Local data / offline | secure storage + prefs now; **Drift** as the deferred default store | [0005](./adr/0005-local-persistence-and-offline.md) |
-| Auth | Provider-neutral session state, secure credential handling, redirect guard; concrete token model deferred to O1 | [0006](./adr/0006-authentication-and-session.md) |
+| Auth | Provider-neutral Flutter session boundary; custom NestJS backend owns credentials/sessions | [0006](./adr/0006-authentication-and-session.md), [0007](./adr/0007-custom-authentication-backend-and-session-security.md) |
 
 ---
 
@@ -101,14 +105,20 @@ laforika/
 │  │     ├─ domain/                 # (complex only) entities, use cases, repo interfaces
 │  │     └─ data/                   # (as needed) dto, data sources, repo impl, mappers
 │  └─ l10n/                         # app_fa.arb (+ generated output per l10n.yaml)
+├─ backend/                         # NestJS custom authentication API (M1+)
+│  ├─ src/                          # Nest modules (auth, users, config, common, database)
+│  ├─ prisma/                       # schema + committed migrations
+│  ├─ test/                         # unit + e2e
+│  ├─ scripts/                      # key generation, OpenAPI export helpers
+│  └─ package.json                  # npm lockfile committed
 ├─ assets/{fonts,images}/           # Vazirmatn font, static images
 ├─ test/                            # mirrors lib/ ; unit + widget + golden
-├─ integration_test/                # end-to-end flows
+├─ integration_test/                # end-to-end flows (real backend from M1)
 ├─ tool/check_import_boundaries.dart # executable §3 boundary gate
 ├─ l10n.yaml                         # explicit gen_l10n configuration
 ├─ config/{dev,staging,prod}.json   # --dart-define-from-file (NO secrets committed)
 ├─ docs/architecture/               # this document + ADRs
-├─ .github/workflows/ci.yml         # format → analyze → test → build
+├─ .github/workflows/ci.yml         # Flutter + backend + emulator gates
 ├─ analysis_options.yaml            # flutter_lints baseline
 └─ pubspec.yaml
 ```
@@ -239,8 +249,8 @@ Startup configuration failures render a deterministic fatal-startup surface rath
 with partial or guessed values.
 
 **Environments (flavors).** Three: `dev`, `staging`, `prod`. Runtime configuration is passed via
-**`--dart-define-from-file`** and read into `AppConfig` (environment name, optional API base URL
-until networking exists, feature flags, log level). Android Gradle product flavors provide the
+**`--dart-define-from-file`** and read into `AppConfig` (environment name, required API base URL
+once networking exists, feature flags, log level). Android Gradle product flavors provide the
 identity suffixes above; iOS schemes mirror them.
 
 A single checked build entry accepts one flavor value and derives both the native flavor and the
@@ -254,9 +264,13 @@ flutter build apk --debug --flavor "$FLAVOR" --dart-define=APP_FLAVOR="$FLAVOR" 
   --dart-define-from-file="config/$FLAVOR.json"
 ```
 
-`config/*.json` contains only non-secret values. Configuration validates every field required by
-the current milestone and rejects unknown environments; any configured non-development API URL
-must use HTTPS. Secrets and signing material never live in the repository (see §12).
+`config/*.json` contains only non-secret values. From M1, `API_BASE_URL` is required: `dev`
+defaults to the Android-emulator loopback (`http://10.0.2.2:3000/v1`); `staging`/`prod` use
+explicit HTTPS hosts (or documented non-routable `.invalid` placeholders until real hosts exist).
+Configuration validates every field required by the current milestone and rejects unknown
+environments; any configured non-development API URL must use HTTPS. Secrets and signing material
+never live in the repository (see §12). Physical-device or iOS-simulator host overrides use an
+ignored local config; do not commit machine-specific URLs.
 
 ---
 
@@ -335,34 +349,40 @@ unknown locations are discarded. Router tests cover the matrix and loop preventi
 
 ## 8. Authentication, session & route protection
 
-Full model in [ADR-0006](./adr/0006-authentication-and-session.md). Auth is **required**; the
-backend and identity provider are an **owner decision** (§15). Until O1 is resolved, the accepted
-architecture defines provider-neutral session behavior rather than assuming that Laforika owns
-JWT access and refresh tokens.
+Full Flutter session contract in [ADR-0006](./adr/0006-authentication-and-session.md). Concrete
+backend and token model in [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md).
+O1 is **resolved**: Laforika owns a custom NestJS + PostgreSQL authentication API.
 
 - **Session state:** `authControllerProvider` exposes
   `AuthState = { unknown, authenticated(principal), unauthenticated }`. The authenticated principal
-  exposes an opaque, stable `accountId` for scoping only. `unknown` covers provider/session
-  hydration so the UI shows a startup surface rather than flashing login.
+  exposes an opaque, stable `accountId` for scoping only. `unknown` covers session hydration so the
+  UI shows a startup surface rather than flashing login. Temporary transport failures during
+  hydration are recoverable and must not destroy a potentially valid refresh secret.
 - **Provider adapter:** `core/auth/` defines the provider-neutral session contract and overridable
-  provider. The auth feature exports the selected adapter through its public barrel, and `app/`
-  composition supplies the override. The provider may manage tokens itself (for example Firebase
-  Auth), or Laforika may own credentials for a custom API; that choice is made with O1.
-- **Credential storage:** only small credentials or session secrets that Laforika itself owns are
-  stored in `flutter_secure_storage`. Provider-managed SDK sessions remain provider-managed.
-  Credentials are never stored in preferences and never logged.
-- **Refresh/recovery:** refresh semantics belong to the selected provider adapter. If O1 chooses a
-  bearer + refresh-token API, use single-flight refresh and retry the failed request once. Do not
-  implement token refresh before that model is confirmed.
-- **Logout:** invokes the provider's sign-out/revocation behavior when available, stops outbox
-  replay, clears Laforika-owned session secrets, disposes the current `{environment, accountId}`
-  provider scope, and transitions to `unauthenticated`. Retention/purge follows the approved module
-  policy; account deletion purges all data in that scope.
+  provider. The auth feature exports the custom API adapter through its public barrel, and `app/`
+  composition supplies the override. `core/` never imports `features/`.
+- **Credentials:** phone OTP and email/password are two credentials on one stable account.
+  Credential attachment is not account merging. Normalized identifiers are globally unique.
+- **Tokens:** short-lived RS256 access JWTs (in memory on the client) and opaque rotating refresh
+  tokens (environment-scoped in `flutter_secure_storage`). Refresh uses token families with reuse
+  detection and family revocation. Protected API requests enforce active session status server-side.
+- **Credential storage:** only Laforika-owned refresh/session secret material uses
+  `flutter_secure_storage`. Passwords, OTPs, and form contents are never persisted. Credentials are
+  never stored in preferences and never logged.
+- **Refresh/recovery:** single-flight refresh; concurrent 401s await the same refresh; retry each
+  original request once; never recursively refresh the refresh call. Definitive session invalidation
+  clears secrets and becomes `unauthenticated`; temporary network failure does not.
+- **Logout:** revokes the current session (or all sessions when requested), clears Laforika-owned
+  secrets, disposes the current `{environment, accountId}` provider scope, and transitions to
+  `unauthenticated`. Account deletion awaits O8.
+- **Delivery:** OTP/email verification lifecycle is real; development uses fixture delivery;
+  staging/prod fail closed until real adapters are configured.
 - **Route protection:** a stable `GoRouter` reads the current auth state in `redirect`. An
   app-owned `Listenable` adapter, created with the router provider, subscribes to
   `authControllerProvider` through Riverpod and calls `notifyListeners()` when session state
   changes; it is supplied as `refreshListenable`. This re-runs redirects without reconstructing
   the router. Public and protected routes preserve the intended destination through login.
+- **Authority:** client guards are UX; the NestJS API is authoritative for access control.
 
 ---
 
@@ -371,12 +391,15 @@ JWT access and refresh tokens.
 Full model in [ADR-0004](./adr/0004-networking-and-error-model.md).
 
 - **Client:** one configured **`dio`** instance behind `dioProvider` in `core/network/`
-  (base URL from `AppConfig`, sane timeouts). Interceptors, in order: request authentication
-  whenever the selected backend requires authenticated Dio calls, retry with backoff for
-  safe/idempotent requests, and sanitized logging in debug development builds only. Credential
-  retrieval and refresh delegate to the selected auth adapter whether the session is SDK-managed
-  or Laforika-owned. HTTP logging is disabled in profile/release and must redact `Authorization`,
-  `Cookie`, `Set-Cookie`, token-like fields, and personal query/body values; the redactor is tested.
+  (base URL from `AppConfig`, sane timeouts). Interceptors, in order: request authentication for
+  eligible API calls, bounded retry with backoff for safe/idempotent requests, and sanitized
+  logging in debug development builds only. Credential retrieval and refresh delegate to the
+  custom auth adapter. HTTP logging is disabled in profile/release and must redact
+  `Authorization`, `Cookie`, `Set-Cookie`, token-like fields, passwords, OTP/code fields, email,
+  phone, and personal query/body values; the redactor is tested.
+- **API contract:** the NestJS backend publishes a versioned `/v1` OpenAPI contract generated from
+  source annotations. Flutter maps stable machine-readable error codes to ARB strings; backend
+  messages are not the UI localization source.
 - **DTOs:** `data/dto/*_dto.dart` with `json_serializable`. DTOs are the wire format and stay in
   `data/`. They never leak into `presentation/` of a complex module (mapped to entities); a simple
   module may use the DTO directly as its model when shapes match (§4).
@@ -477,8 +500,10 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   ships. Before any build using real accounts leaves controlled testing, O8 must define
   auth/account data collection, processors, retention, local deletion, account deletion, and
   applicable notice or consent. Until then, real authentication is test-only.
-- **Auth boundaries:** protected routes are enforced by redirect (§8); the backend or selected
-  identity provider remains authoritative for access control — client guards are UX, not security.
+- **Auth boundaries:** protected routes are enforced by redirect (§8); the NestJS API remains
+  authoritative for access control — client guards are UX, not security.
+- **Backend secrets:** JWT signing keys, refresh/OTP peppers, database URLs, and fixture inbox
+  keys never live in the Flutter tree or tracked config. Staging/prod reject fixture delivery.
 
 ---
 
@@ -505,18 +530,28 @@ generator-policy changes are reviewed changes.
 **CI (GitHub Actions) — required gates on every PR:**
 
 ```bash
-# All milestones
+# Flutter (all milestones)
 dart format --output=none --set-exit-if-changed .
 flutter analyze --fatal-infos
 flutter test
 dart run tool/check_import_boundaries.dart
+
+# Backend (from M1)
+npm ci --prefix backend
+npm run format:check --prefix backend
+npm run lint --prefix backend
+npm run typecheck --prefix backend
+npm run prisma:validate --prefix backend
+npm run test --prefix backend
+npm run test:e2e --prefix backend
+npm run openapi:check --prefix backend
 
 # Matrix: FLAVOR = dev, staging, prod
 flutter build apk --debug --flavor "$FLAVOR" \
   --dart-define=APP_FLAVOR="$FLAVOR" \
   --dart-define-from-file="config/$FLAVOR.json"
 
-# Required Android-emulator job from M1
+# Required Android-emulator job from M1 (real backend + PostgreSQL)
 flutter test integration_test --flavor dev \
   --dart-define=APP_FLAVOR=dev \
   --dart-define-from-file=config/dev.json -d <emulator-id>
@@ -525,6 +560,7 @@ flutter test integration_test --flavor dev \
 The import-boundary script rejects every §3 violation. Merges are blocked unless all gates
 applicable to the milestone pass. CI artifacts are debug-signed and non-publishable; release
 signing/publishing waits for O5. Coverage is reported, not gated by a hard percentage.
+Backend generated OpenAPI output and Prisma schema/migrations are committed and checked for drift.
 
 ---
 
@@ -539,20 +575,21 @@ before its milestone.**
   `ProviderScope`/bootstrap, `go_router` with one minimal Home route, the executable boundary
   checker, and the CI matrix in §13. _Exit:_ the app runs in `fa-IR` RTL, the root widget test
   passes, all three debug flavor builds succeed, generated files are reproducible, and CI is green.
-- **M1 — Authentication decision and real vertical slice.** Resolve O1, then implement the
-  selected provider adapter, session controller, login/logout, secure handling required by that
-  provider, and protected-route redirects. Introduce Dio interceptors or token refresh only if the
-  chosen model requires them. _Exit:_ real authentication works against the selected backend or
-  identity provider in controlled testing; no fake session or stubbed auth flow remains. Before
-  that real-auth build leaves controlled testing, the O8 distribution gate in §12 is satisfied.
+- **M1 — Authentication decision and real vertical slice.** O1 is resolved (custom NestJS API).
+  Implement the custom API adapter, session controller, phone OTP and email/password flows,
+  credential attachment, secure refresh storage, Dio auth/refresh interceptors, protected-route
+  redirects, account-security controls, backend security invariants, and the Android-emulator
+  integration job against local PostgreSQL. _Exit:_ real authentication works in controlled
+  testing; no fake session or stubbed auth flow remains. Before that real-auth build leaves
+  controlled testing, the O8 distribution gate in §12 is satisfied.
 - **M2 — Home / discovery shell.** Build the authenticated landing surface and establish the
   module-integration pattern with one real screen. Extract shared UI primitives only when the Home
   implementation proves repeated use. _Exit:_ authenticated users land on a navigable Persian RTL
   Home and adding a module follows the documented route-registry boundary.
 - **M3 — First specialized module.** Pick **one** production module (recommended: a read-mostly
   module such as News/Events or Local Heritage) and introduce only the networking, errors, caching,
-  storage, and shared UI it genuinely requires. _Exit:_ one specialized module works end-to-end and
-  proves the simple-module architecture in production shape.
+  storage, and shared UI it genuinely requires beyond auth. _Exit:_ one specialized module works
+  end-to-end and proves the simple-module architecture in production shape.
 - **M4 — First complex/offline module, when justified.** A later module such as Shop, Chat, or
   Villas may introduce Drift and an outbox/synchronization policy after its real data and conflict
   requirements are known. Before implementation, define the app-level schema-contribution seam and
@@ -560,9 +597,8 @@ before its milestone.**
   isolation, transaction/outbox crash recovery, replay idempotency, purge behavior, and Android
   backup policy are verified without creating a speculative app-wide sync framework.
 
-M1 depends on O1; M3's module choice depends on product priority. M0 can proceed immediately, but
-networking, storage, connectivity, and shared UI infrastructure are added only through the first
-real feature that requires them.
+M3's module choice depends on product priority. Connectivity and shared UI infrastructure beyond
+auth are added only through the first real feature that requires them.
 
 ---
 
@@ -573,7 +609,7 @@ architect should not decide them unilaterally. Each has a safe default so work i
 
 | # | Decision | Why it needs the owner | Interim default (unblocks work) |
 |---|---|---|---|
-| O1 | **Backend & identity provider** (custom API? Firebase Auth? OTP/SMS? OAuth?) | Data ownership, cost, session ownership, and Iran-market availability; drives M1. | Keep the session contract provider-neutral; do not implement fake auth or assume JWT/token ownership. |
+| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; phone OTP + email/password; RS256 access + opaque rotating refresh; monorepo `backend/`. See [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1. |
 | O2 | **Maps provider** — Google Maps vs. Iranian providers (Neshan / Balad) | Google services are often unreliable/restricted in Iran; affects a core module + vendor keys/cost. | Defer; maps module not before provider chosen. |
 | O3 | **Push notifications** — FCM vs. local/regional service | FCM depends on Google Play services (unreliable in-market); vendor + privacy. | Defer; no push infra built yet. |
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
@@ -586,10 +622,11 @@ architect should not decide them unilaterally. Each has a safe default so work i
 
 ## Freeze record
 
-Version 1.2 incorporates the final independent freeze review. The architecture pattern, framework,
-state/DI choice, router, HTTP client, storage defaults, localization direction, and roadmap intent
-are unchanged; the revision freezes missing ownership, account-isolation, outbox, identity/flavor,
-CI, auth-neutrality, and privacy contracts.
+Version 1.3 records resolved O1 (custom NestJS authentication backend and session security) via
+ADR-0007 while preserving the Flutter provider-neutral session boundary from ADR-0006. The
+architecture pattern, Flutter toolchain, state/DI choice, router, HTTP client, storage defaults,
+localization direction, and remaining owner decisions O2–O8 are unchanged except where O8 continues
+to gate external distribution of real-account builds.
 
 ---
 

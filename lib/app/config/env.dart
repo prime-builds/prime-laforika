@@ -6,8 +6,7 @@ import 'package:laforika/core/config/app_config.dart';
 ///
 /// - `APP_FLAVOR`: native flavor name (`dev` | `staging` | `prod`)
 /// - `APP_ENVIRONMENT`: config environment; must match `APP_FLAVOR`
-/// - `API_BASE_URL`: optional until networking exists; HTTPS required when set
-///   for non-development environments
+/// - `API_BASE_URL`: required API base URL; HTTPS required for non-dev
 /// - `APP_LOG_LEVEL`: `debug` | `info` | `warning` | `error`
 /// - `FEATURE_FLAGS_JSON`: JSON object of string → boolean flags
 abstract final class Env {
@@ -60,7 +59,7 @@ abstract final class Env {
 
     final parsedLogLevel = AppLogLevel.parse(logLevel);
     final flags = _parseFeatureFlags(featureFlagsJson);
-    final normalizedUrl = _normalizeApiBaseUrl(
+    final normalizedUrl = _requireApiBaseUrl(
       apiBaseUrl: apiBaseUrl,
       environment: parsedEnvironment,
     );
@@ -98,13 +97,13 @@ abstract final class Env {
     return Map<String, bool>.unmodifiable(flags);
   }
 
-  static String? _normalizeApiBaseUrl({
+  static String _requireApiBaseUrl({
     required String apiBaseUrl,
     required AppEnvironment environment,
   }) {
     final trimmed = apiBaseUrl.trim();
     if (trimmed.isEmpty) {
-      return null;
+      throw const FormatException('Missing API_BASE_URL');
     }
 
     final uri = Uri.tryParse(trimmed);

@@ -30,7 +30,7 @@ Never silently copy code that contradicts the frozen architecture. Treat the con
 | Architecture | Feature-first modular monolith with pragmatic layering |
 | State and DI | Riverpod; providers are the dependency graph |
 | Routing | `go_router` |
-| HTTP | One shared `dio` instance, introduced when required |
+| HTTP | One shared `dio` instance |
 | Errors | Plain Dart sealed `Failure` and `Result<T>` |
 | Persistence | `shared_preferences`, `flutter_secure_storage`; Drift deferred until justified |
 | Localization | Persian `fa-IR`, RTL from day one |
@@ -39,6 +39,9 @@ Never silently copy code that contradicts the frozen architecture. Treat the con
 | CI | GitHub Actions |
 | Generated Dart files | Committed, regenerated in CI, never hand-edited |
 | Environments | `dev`, `staging`, `prod` via native flavors and `--dart-define-from-file` |
+| Auth backend | NestJS on Node.js 24 LTS + PostgreSQL (`backend/`) |
+| Access tokens | Short-lived RS256 JWT; opaque rotating refresh tokens |
+| Backend package manager | npm with committed `package-lock.json` |
 
 Toolchain upgrades, deployment-target changes, or replacements for load-bearing libraries require explicit approval and architecture change control.
 
@@ -47,13 +50,14 @@ Toolchain upgrades, deployment-target changes, or replacements for load-bearing 
 Before writing code:
 
 1. Read this file and `docs/architecture/ARCHITECTURE.md` fully.
-2. Read every ADR relevant to the task.
+2. Read every ADR relevant to the task (including ADR-0006 and ADR-0007 for auth work).
 3. Inspect `pubspec.yaml`, `analysis_options.yaml`, `l10n.yaml`, `.gitignore`, and the applicable CI workflow.
-4. Inspect the target feature, its public barrel, its tests, and the closest existing analog.
-5. Confirm the current milestone and do not create future-module infrastructure early.
-6. Confirm actual dependencies before importing a package.
-7. Check whether generated code is used and follow the repository's generation command.
-8. Check configuration and secret handling before touching environment or platform files.
+4. For backend work, inspect `backend/package.json`, Prisma schema/migrations, `.env.example`, and OpenAPI contract generation.
+5. Inspect the target feature, its public barrel, its tests, and the closest existing analog.
+6. Confirm the current milestone and do not create future-module infrastructure early.
+7. Confirm actual dependencies before importing a package.
+8. Check whether generated code is used and follow the repository's generation command.
+9. Check configuration and secret handling before touching environment or platform files.
 
 If a referenced file does not exist because the project has not reached that milestone, do not invent infrastructure unless the task explicitly creates it.
 
@@ -85,6 +89,12 @@ lib/
 │     ├─ data/        # as needed
 │     └─ domain/      # complex features only
 └─ l10n/
+
+backend/              # NestJS API (M1+); does not import Flutter
+├─ src/
+├─ prisma/
+├─ test/
+└─ scripts/
 
 test/                 # mirrors lib/
 integration_test/
@@ -184,33 +194,48 @@ flutter run --flavor "$FLAVOR" \
 
 ## 10. Authentication
 
-Authentication remains provider-neutral until owner decision O1 is resolved.
+O1 is resolved: Laforika owns a custom NestJS + PostgreSQL authentication API
+([ADR-0007](docs/architecture/adr/0007-custom-authentication-backend-and-session-security.md)).
+The Flutter client keeps the provider-neutral session boundary from ADR-0006.
 
 - Session state is `unknown`, `authenticated(principal)`, or `unauthenticated`.
 - The principal exposes an opaque stable `accountId` for scoping only.
 - `unknown` must show a deterministic startup state, not flash login.
-- `core/auth/` defines the provider-neutral contract; the auth feature exports the selected adapter; `app/` supplies the override.
-- Do not assume JWTs, refresh tokens, Firebase, OTP, OAuth, or cookie sessions.
-- Do not build fake production authentication.
+- Temporary hydration transport failures are recoverable; do not destroy a potentially valid refresh secret.
+- `core/auth/` defines the provider-neutral contract; the auth feature exports the custom API adapter; `app/` supplies the override.
+- Access tokens are short-lived RS256 JWTs kept in memory; opaque refresh tokens rotate with family reuse detection.
+- Phone OTP and email/password are credentials on one account; attachment is not account merging.
+- Do not build fake production authentication. Development fixture delivery is allowed only for SMS/email message transport.
 - Test doubles are allowed only in tests.
-- Store only Laforika-owned small credentials/session secrets in secure storage.
-- Logout must stop replay, clear Laforika-owned secrets, dispose the `{environment, accountId}` scope, and transition to unauthenticated.
-- Client guards are UX; backend/provider authorization is authoritative.
+- Store only Laforika-owned refresh/session secrets in secure storage.
+- Logout must revoke server sessions, clear Laforika-owned secrets, dispose the `{environment, accountId}` scope, and transition to unauthenticated.
+- Client guards are UX; NestJS authorization is authoritative.
+- Real authentication remains controlled-test-only until O8 is resolved.
+
+## 10a. Backend authentication service
+
+- Backend lives under `backend/` (NestJS, strict TypeScript, npm lockfile committed).
+- Validate configuration at startup; reject fixture delivery outside `dev`/`test`; fail closed in staging/prod without real delivery adapters.
+- Never commit secrets, PEM keys, `.env` values, dumps, or fixture inbox contents.
+- Persist only hashed/HMAC representations of passwords (Argon2id), OTP/email codes, and refresh tokens.
+- Sanitize structured security logs; never log credentials, OTPs, tokens, passwords, emails, phones, or raw bodies.
+- Version API routes under `/v1`; commit the generated OpenAPI contract and check drift in CI.
+- Prisma migrations are committed; migrate clean databases in tests.
 
 ## 11. Networking and error handling
-
-Introduce networking only when a real feature requires it.
 
 - Use one configured `dio` instance behind `dioProvider`.
 - Repositories are the only owners of endpoint paths, parameters, and DTO shapes.
 - Controllers and use cases never call Dio directly.
-- Interceptors are ordered and added only as needed: request authentication, bounded retry for safe/idempotent requests, then sanitized debug-development logging.
+- Interceptors, in order: request authentication, bounded retry for safe/idempotent requests, then sanitized debug-development logging.
+- Single-flight refresh on eligible 401s; retry each original request at most once; never recursively refresh the refresh call.
+- Distinguish definitive auth rejection from temporary network failure.
 - Disable HTTP logging in profile/release.
-- Redact credentials, cookies, token-like fields, and personal request values; test the redactor.
+- Redact credentials, cookies, token-like fields, passwords, OTP/code fields, email, phone, and personal request values; test the redactor.
 - Catch transport exceptions in data and map them to sealed failures.
 - Repository boundaries return `Result<T>`; do not throw raw exceptions across layers.
 - Do not add `dartz` or a speculative wrapper around Dio.
-- Presentation maps failures to localized messages; raw errors and personal data never reach users or logs.
+- Presentation maps stable backend error codes to localized messages; raw errors and personal data never reach users or logs.
 
 ## 12. Storage, caching, and offline
 
@@ -256,18 +281,21 @@ Build storage infrastructure on demand only.
 - Approved release builds use shrinking plus `--obfuscate --split-debug-info`; do not invent signing or publishing configuration.
 - Exclude private authenticated data from Android backup unless an approved encryption and retention policy explicitly allows it.
 - Real authentication remains controlled-test-only until the privacy/account-data lifecycle gate is approved.
+- Backend JWT keys, peppers, database URLs, and fixture inbox keys are ignored local/CI secrets only.
+- Do not require Docker or WSL for everyday backend development.
 
 If a secret is staged, stop, unstage it, and report it. Never commit and remove it later.
 
 ## 15. Testing requirements
 
-Tests mirror `lib/` under `test/`.
+Tests mirror `lib/` under `test/`. Backend tests live under `backend/test/` (and Nest e2e conventions).
 
 - Unit-test repositories, mappers, use cases, controllers, failure mapping, config validation, redaction, and account scoping.
+- Backend unit/e2e tests cover normalization, password/OTP/token/session security invariants, migrations, and OpenAPI drift.
 - Widget-test meaningful loading, error, empty, and data states plus critical interactions.
 - Keep the root `fa-IR` and RTL assertion.
 - Golden-test design-system components and at least one full RTL screen when golden coverage exists.
-- Integration tests are required from M1 for real auth and each module's primary happy path.
+- Integration tests are required from M1 for real auth and each module's primary happy path; they must hit the real local backend, not a fake auth provider.
 - Use `mocktail`; do not introduce another mocking library.
 - Override Riverpod dependencies with fakes in `ProviderContainer` or `ProviderScope`.
 - Prefer targeted pumps; use `pumpAndSettle()` only when fully settling async/animation work is intentional.
@@ -277,11 +305,12 @@ Every new unit of logic requires matching tests in the same task.
 
 ## 16. Generated files
 
-- Generated Dart sources under `lib/` are committed.
+- Generated Dart sources under `lib/` are committed (l10n, `json_serializable`, and any selected Riverpod generators).
+- Backend Prisma client output follows Prisma conventions; OpenAPI contract output is committed and checked for drift.
 - Never hand-edit generated files.
 - Edit source annotations/ARB/schema, regenerate, and include the generated diff.
 - CI regeneration must leave the repository clean.
-- Commit `pubspec.lock` for the application.
+- Commit `pubspec.lock` for the application and `backend/package-lock.json` for the API.
 
 ## 17. Required quality gates
 
@@ -294,7 +323,21 @@ flutter test
 dart run tool/check_import_boundaries.dart
 ```
 
-Before any PR, run the required `dev`, `staging`, and `prod` debug-build matrix:
+Backend (from M1):
+
+```bash
+npm ci --prefix backend
+npm run format:check --prefix backend
+npm run lint --prefix backend
+npm run typecheck --prefix backend
+npm run prisma:format:check --prefix backend
+npm run prisma:validate --prefix backend
+npm run test --prefix backend
+npm run test:e2e --prefix backend
+npm run openapi:check --prefix backend
+```
+
+Before any PR, run the required `dev`, `staging`, and `prod` debug-build matrix **locally** (not uploaded as CI artifacts on the free Actions plan):
 
 ```bash
 for FLAVOR in dev staging prod; do
@@ -304,12 +347,13 @@ for FLAVOR in dev staging prod; do
 done
 ```
 
-From M1, run the applicable Android-emulator integration flow:
+From M1, run the Android-emulator auth integration **locally** against a started Nest backend (CI does not boot emulators):
 
 ```bash
-flutter test integration_test --flavor dev \
+flutter test integration_test/auth_flow_test.dart --flavor dev \
   --dart-define=APP_FLAVOR=dev \
   --dart-define-from-file=config/dev.json \
+  --dart-define=FIXTURE_INBOX_KEY=<from-backend-env> \
   -d <emulator-id>
 ```
 

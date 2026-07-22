@@ -14,6 +14,97 @@ permissions:
   contents: read
 
 jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: laforika_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Generate ephemeral RS256 keys and env
+        working-directory: backend
+        run: |
+          mkdir -p secrets
+          openssl genrsa -out secrets/jwt-private.pem 2048
+          openssl rsa -in secrets/jwt-private.pem -pubout -out secrets/jwt-public.pem
+          PEPPER=$(openssl rand -hex 32)
+          FIXTURE=$(openssl rand -hex 32)
+          cat > .env <<EOF
+          APP_ENVIRONMENT=test
+          PORT=3000
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/laforika_test
+          TEST_DATABASE_NAME=laforika_test
+          JWT_ISSUER=https://auth.laforika.local
+          JWT_AUDIENCE=laforika-app
+          JWT_ACTIVE_KID=ci-1
+          JWT_PRIVATE_KEY_PATH=./secrets/jwt-private.pem
+          JWT_PUBLIC_KEY_PATH=./secrets/jwt-public.pem
+          REFRESH_TOKEN_PEPPER=$PEPPER
+          OTP_CODE_PEPPER=$PEPPER
+          PASSWORD_PEPPER=$PEPPER
+          RATE_LIMIT_PEPPER=$PEPPER
+          TRUST_FORWARDED_ORIGIN=false
+          DELIVERY_MODE=fixture
+          FIXTURE_DELIVERY_ENABLED=true
+          FIXTURE_INBOX_KEY=$FIXTURE
+          CORS_ORIGINS=*
+          EOF
+          cp .env .env.test
+
+      - name: Prisma validate and migrate
+        working-directory: backend
+        run: |
+          npm run prisma:validate
+          npx prisma migrate deploy
+          npx prisma generate
+
+      - name: Prisma format check
+        run: npm run prisma:format:check --prefix backend
+
+      - name: Format check
+        run: npm run format:check --prefix backend
+
+      - name: Lint
+        run: npm run lint --prefix backend
+
+      - name: Typecheck
+        run: npm run typecheck --prefix backend
+
+      - name: Unit tests
+        run: npm run test --prefix backend
+
+      - name: E2E tests
+        working-directory: backend
+        run: npm run test:e2e
+
+      - name: OpenAPI contract check
+        working-directory: backend
+        run: npm run openapi:check
+
   quality:
     name: quality
     runs-on: ubuntu-latest
@@ -43,10 +134,13 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Verify generated localizations are committed
+      - name: Generate DTOs
+        run: dart run build_runner build
+
+      - name: Verify generated outputs are committed
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "Generated localization check failed: dirty tree after flutter gen-l10n"
+            echo "Generated output check failed: dirty tree after codegen"
             git status --porcelain
             git diff -- || true
             exit 1
@@ -59,56 +153,7 @@ jobs:
         run: flutter analyze --fatal-infos
 
       - name: Test
-        run: flutter test --coverage
+        run: flutter test
 
       - name: Import boundaries
         run: dart run tool/check_import_boundaries.dart
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-lcov
-          path: coverage/lcov.info
-          if-no-files-found: ignore
-
-  android-debug-flavors:
-    name: android-debug-${{ matrix.flavor }}
-    needs: quality
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        flavor: [dev, staging, prod]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.44.6"
-          channel: stable
-          cache: true
-
-      - name: Resolve dependencies
-        run: flutter pub get
-
-      - name: Build debug APK (${{ matrix.flavor }})
-        run: |
-          flutter build apk --debug --flavor "${{ matrix.flavor }}" \
-            --dart-define=APP_FLAVOR="${{ matrix.flavor }}" \
-            --dart-define-from-file="config/${{ matrix.flavor }}.json"
-
-      - name: Upload debug APK (non-publishable)
-        uses: actions/upload-artifact@v4
-        with:
-          name: laforika-${{ matrix.flavor }}-debug-apk
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: error

@@ -16,7 +16,7 @@ enum AppEnvironment {
   String get wireName => name;
 }
 
-/// Local diagnostic verbosity for M0.
+/// Local diagnostic verbosity.
 enum AppLogLevel {
   debug,
   info,
@@ -44,7 +44,9 @@ class AppConfig {
   });
 
   final AppEnvironment environment;
-  final String? apiBaseUrl;
+
+  /// Required API base URL including the `/v1` prefix (e.g. `http://10.0.2.2:3000/v1`).
+  final String apiBaseUrl;
   final AppLogLevel logLevel;
   final Map<String, bool> featureFlags;
 }
