@@ -2,7 +2,39 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 /** HMAC fingerprint of a request origin — never store raw IPs. */
 export function fingerprintOrigin(origin: string, pepper: string): string {
-  return createHmac('sha256', pepper).update(origin).digest('hex');
+  return createHmac('sha256', pepper)
+    .update(`origin:v1:${origin}`)
+    .digest('hex');
+}
+
+/**
+ * HMAC fingerprint of a challenge destination — never store raw email/phone.
+ * Domain-separated from origin fingerprints.
+ */
+export function fingerprintDestination(input: {
+  destinationType: string;
+  destinationNormalized: string;
+  purpose: string;
+  pepper: string;
+}): string {
+  const material = [
+    'destination:v1',
+    input.destinationType,
+    input.destinationNormalized,
+    input.purpose,
+  ].join(':');
+  return createHmac('sha256', input.pepper).update(material).digest('hex');
+}
+
+/** Safe persisted rate-limit key — fingerprint only, no personal identifiers. */
+export function destinationRateLimitBucketKey(input: {
+  destinationType: string;
+  destinationNormalized: string;
+  purpose: string;
+  pepper: string;
+}): string {
+  const fp = fingerprintDestination(input);
+  return `challenge:dest:v1:${input.destinationType}:${fp}:${input.purpose}`;
 }
 
 export function constantTimeEqualString(a: string, b: string): boolean {

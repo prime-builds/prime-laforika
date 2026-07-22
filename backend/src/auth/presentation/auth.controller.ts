@@ -28,6 +28,7 @@ import {
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { PrismaService } from '../../database/prisma.service';
 import { resolveRequestOrigin } from '../../common/security/origin.util';
+import { ApiAuthErrors } from './api-error-responses.decorator';
 import {
   AccountViewDto,
   AttachEmailDto,
@@ -81,6 +82,7 @@ export class AuthController {
   @Post('auth/phone/challenges')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ChallengeResponseDto })
+  @ApiAuthErrors(400, 429, 503)
   requestPhone(@Req() req: Request, @Body() body: PhoneDto) {
     return this.auth.requestPhoneChallenge(
       body.phone,
@@ -91,6 +93,7 @@ export class AuthController {
   @Post('auth/phone/challenges/:challengeId/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: TokenResponseDto })
+  @ApiAuthErrors(400, 401)
   verifyPhone(
     @Param('challengeId') challengeId: string,
     @Body() body: CodeDto,
@@ -101,6 +104,7 @@ export class AuthController {
   @Post('auth/email/sign-up')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ChallengeResponseDto })
+  @ApiAuthErrors(400, 409, 429, 503)
   emailSignUp(@Req() req: Request, @Body() body: EmailSignUpDto) {
     return this.auth.emailSignUp(
       body.email,
@@ -112,6 +116,7 @@ export class AuthController {
   @Post('auth/email/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: TokenResponseDto })
+  @ApiAuthErrors(400, 401, 409)
   emailVerify(@Body() body: EmailVerifyDto) {
     return this.auth.emailVerify(body.challengeId, body.code);
   }
@@ -119,6 +124,7 @@ export class AuthController {
   @Post('auth/email/sign-in')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: TokenResponseDto })
+  @ApiAuthErrors(400, 401)
   emailSignIn(@Body() body: EmailSignInDto) {
     return this.auth.emailSignIn(body.email, body.password);
   }
@@ -126,6 +132,7 @@ export class AuthController {
   @Post('auth/password/reset-challenges')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ChallengeResponseDto })
+  @ApiAuthErrors(400, 429, 503)
   resetChallenge(@Req() req: Request, @Body() body: ResetChallengeDto) {
     return this.auth.requestPasswordReset(
       body.email,
@@ -136,6 +143,7 @@ export class AuthController {
   @Post('auth/password/reset')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: OkResponseDto })
+  @ApiAuthErrors(400)
   resetPassword(@Body() body: ResetPasswordDto) {
     return this.auth.resetPassword(
       body.challengeId,
@@ -147,6 +155,7 @@ export class AuthController {
   @Post('auth/refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: TokenResponseDto })
+  @ApiAuthErrors(400, 401)
   refresh(@Body() body: RefreshDto) {
     return this.auth.refresh(body.refreshToken);
   }
@@ -155,6 +164,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Get('account/me')
   @ApiOkResponse({ type: AccountViewDto })
+  @ApiAuthErrors(401)
   me(@Req() req: { auth: { accountId: string } }) {
     return this.auth.me(req.auth.accountId);
   }
@@ -164,6 +174,7 @@ export class AuthController {
   @Post('account/phone/challenges')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ChallengeResponseDto })
+  @ApiAuthErrors(400, 401, 409, 429, 503)
   attachPhone(
     @Req() req: Request & { auth: { accountId: string } },
     @Body() body: PhoneDto,
@@ -180,6 +191,7 @@ export class AuthController {
   @Post('account/phone/challenges/:challengeId/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AccountViewDto })
+  @ApiAuthErrors(400, 401, 409)
   verifyAttachPhone(
     @Req() req: { auth: { accountId: string } },
     @Param('challengeId') challengeId: string,
@@ -196,6 +208,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Delete('account/phone')
   @ApiOkResponse({ type: AccountViewDto })
+  @ApiAuthErrors(400, 401)
   removePhone(@Req() req: { auth: { accountId: string } }) {
     return this.auth.removePhone(req.auth.accountId);
   }
@@ -205,6 +218,7 @@ export class AuthController {
   @Post('account/email/challenges')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ChallengeResponseDto })
+  @ApiAuthErrors(400, 401, 409, 429, 503)
   attachEmail(
     @Req() req: Request & { auth: { accountId: string } },
     @Body() body: AttachEmailDto,
@@ -222,6 +236,7 @@ export class AuthController {
   @Post('account/email/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AccountViewDto })
+  @ApiAuthErrors(400, 401, 409)
   verifyAttachEmail(
     @Req() req: { auth: { accountId: string } },
     @Body() body: EmailVerifyDto,
@@ -237,6 +252,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Delete('account/email')
   @ApiOkResponse({ type: AccountViewDto })
+  @ApiAuthErrors(400, 401)
   removeEmail(@Req() req: { auth: { accountId: string } }) {
     return this.auth.removeEmail(req.auth.accountId);
   }
@@ -245,6 +261,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Put('account/password')
   @ApiOkResponse({ type: OkResponseDto })
+  @ApiAuthErrors(400, 401)
   changePassword(
     @Req() req: { auth: { accountId: string } },
     @Body() body: ChangePasswordDto,
@@ -260,6 +277,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Get('auth/sessions')
   @ApiOkResponse({ type: SessionListItemDto, isArray: true })
+  @ApiAuthErrors(401)
   async listSessions(
     @Req() req: { auth: { accountId: string; sessionId: string } },
   ) {
@@ -281,6 +299,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Delete('auth/sessions/:sessionId')
   @ApiOkResponse({ type: OkResponseDto })
+  @ApiAuthErrors(401, 404)
   revokeSession(
     @Req() req: { auth: { accountId: string } },
     @Param('sessionId') sessionId: string,
@@ -293,6 +312,7 @@ export class AuthController {
   @Post('auth/logout')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: OkResponseDto })
+  @ApiAuthErrors(401)
   async logout(@Req() req: { auth: { accountId: string; sessionId: string } }) {
     await this.sessions.revokeSession(req.auth.sessionId, req.auth.accountId);
     return { ok: true };
@@ -303,6 +323,7 @@ export class AuthController {
   @Post('auth/logout-all')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: OkResponseDto })
+  @ApiAuthErrors(401)
   async logoutAll(@Req() req: { auth: { accountId: string } }) {
     await this.sessions.revokeAll(req.auth.accountId);
     return { ok: true };

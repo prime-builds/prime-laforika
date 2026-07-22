@@ -1,5 +1,7 @@
 import {
   assertDedicatedTestDatabase,
+  destinationRateLimitBucketKey,
+  fingerprintDestination,
   fingerprintOrigin,
   parseDatabaseName,
   resolveRequestOrigin,
@@ -13,6 +15,82 @@ describe('origin.util', () => {
     expect(a).toBe(b);
     expect(a).not.toBe(c);
     expect(a).not.toContain('203.0.113');
+  });
+
+  describe('fingerprintDestination', () => {
+    const base = {
+      destinationType: 'EMAIL',
+      destinationNormalized: 'user@example.com',
+      purpose: 'EMAIL_VERIFY',
+      pepper: 'rate-limit-pepper',
+    };
+
+    it('same inputs produce the same hash', () => {
+      expect(fingerprintDestination(base)).toBe(fingerprintDestination(base));
+    });
+
+    it('different destinations differ', () => {
+      const other = {
+        ...base,
+        destinationNormalized: 'other@example.com',
+      };
+      expect(fingerprintDestination(base)).not.toBe(
+        fingerprintDestination(other),
+      );
+    });
+
+    it('phone vs email namespaces differ for the same normalized string', () => {
+      const shared = 'shared-normalized-value';
+      const emailFp = fingerprintDestination({
+        ...base,
+        destinationType: 'EMAIL',
+        destinationNormalized: shared,
+      });
+      const phoneFp = fingerprintDestination({
+        ...base,
+        destinationType: 'PHONE',
+        destinationNormalized: shared,
+      });
+      expect(emailFp).not.toBe(phoneFp);
+    });
+
+    it('origin vs destination namespaces differ for the same raw value', () => {
+      const raw = 'user@example.com';
+      const pepper = 'shared-pepper';
+      const originFp = fingerprintOrigin(raw, pepper);
+      const destFp = fingerprintDestination({
+        destinationType: 'EMAIL',
+        destinationNormalized: raw,
+        purpose: 'EMAIL_VERIFY',
+        pepper,
+      });
+      expect(originFp).not.toBe(destFp);
+    });
+
+    it('pepper change alters fingerprint', () => {
+      expect(fingerprintDestination(base)).not.toBe(
+        fingerprintDestination({ ...base, pepper: 'other-pepper' }),
+      );
+    });
+
+    it('destinationRateLimitBucketKey never contains raw email/phone substrings', () => {
+      const emailKey = destinationRateLimitBucketKey(base);
+      expect(emailKey).not.toContain('example.com');
+      expect(emailKey).not.toContain('user@');
+      expect(emailKey).not.toContain(base.destinationNormalized);
+
+      const phoneKey = destinationRateLimitBucketKey({
+        destinationType: 'PHONE',
+        destinationNormalized: '+989121234567',
+        purpose: 'PHONE_SIGN_IN',
+        pepper: base.pepper,
+      });
+      expect(phoneKey).not.toContain('+989');
+      expect(phoneKey).not.toContain('989121234567');
+      expect(phoneKey).toMatch(
+        /^challenge:dest:v1:PHONE:[a-f0-9]+:PHONE_SIGN_IN$/,
+      );
+    });
   });
 
   it('parses database name from URL', () => {
