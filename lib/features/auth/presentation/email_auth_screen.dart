@@ -7,6 +7,7 @@ import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/presentation/auth_error_mapper.dart';
+import 'package:laforika/features/auth/presentation/resend_cooldown_controller.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 class EmailAuthScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,12 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _codeController = TextEditingController();
+  late final ResendCooldownController _resendCooldown =
+      ResendCooldownController(
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
   bool _signUpMode = true;
   bool _loading = false;
   String? _error;
@@ -28,6 +35,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
 
   @override
   void dispose() {
+    _resendCooldown.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _codeController.dispose();
@@ -54,7 +62,10 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
           setState(() {
             _challengeId = value.challengeId;
             _masked = value.maskedDestination;
+            _error = null;
+            _codeController.clear();
           });
+          _resendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
         },
         failure: (failure) {
           setState(() => _error = mapAuthFailure(l10n, failure));
@@ -90,6 +101,11 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
         },
       );
     }
+  }
+
+  Future<void> _resendVerification() async {
+    if (_loading || !_resendCooldown.canResend) return;
+    await _submitCredentials();
   }
 
   Future<void> _verifyEmail() async {
@@ -134,6 +150,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final canResend = _resendCooldown.canResend;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.authEmailTitle)),
@@ -209,6 +226,19 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
                   onPressed: _loading ? null : _verifyEmail,
                   child: Text(
                     _loading ? l10n.authPleaseWait : l10n.authVerifyCode,
+                  ),
+                ),
+                TextButton(
+                  key: const Key('auth_email_resend'),
+                  onPressed: (!_loading && canResend)
+                      ? _resendVerification
+                      : null,
+                  child: Text(
+                    canResend
+                        ? l10n.authResendCode
+                        : l10n.authResendInSeconds(
+                            _resendCooldown.remainingSeconds,
+                          ),
                   ),
                 ),
               ],

@@ -33,6 +33,15 @@
   "authSendCode": "ارسال کد",
   "authVerifyCode": "تأیید کد",
   "authResendCode": "ارسال مجدد کد",
+  "authResendInSeconds": "ارسال مجدد تا {seconds} ثانیه",
+  "@authResendInSeconds": {
+    "description": "Resend cooldown remaining seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "authPleaseWait": "لطفاً صبر کنید…",
   "authSignUp": "ثبت‌نام",
   "authSignIn": "ورود",

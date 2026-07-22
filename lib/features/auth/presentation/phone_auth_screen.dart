@@ -7,10 +7,15 @@ import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/presentation/auth_error_mapper.dart';
+import 'package:laforika/features/auth/presentation/resend_cooldown_controller.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 class PhoneAuthScreen extends ConsumerStatefulWidget {
-  const PhoneAuthScreen({super.key});
+  const PhoneAuthScreen({super.key, @visibleForTesting this.clock});
+
+  /// Optional clock for widget tests (fake time / cooldown).
+  @visibleForTesting
+  final DateTime Function()? clock;
 
   @override
   ConsumerState<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
@@ -19,14 +24,21 @@ class PhoneAuthScreen extends ConsumerStatefulWidget {
 class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
   final _phoneController = TextEditingController();
   final _codeController = TextEditingController();
+  late final ResendCooldownController _resendCooldown =
+      ResendCooldownController(
+        clock: widget.clock,
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
   String? _challengeId;
   String? _masked;
   String? _error;
   bool _loading = false;
-  DateTime? _resendAt;
 
   @override
   void dispose() {
+    _resendCooldown.dispose();
     _phoneController.dispose();
     _codeController.dispose();
     super.dispose();
@@ -50,8 +62,10 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
         setState(() {
           _challengeId = value.challengeId;
           _masked = value.maskedDestination;
-          _resendAt = DateTime.tryParse(value.resendAvailableAt);
+          _error = null;
+          _codeController.clear();
         });
+        _resendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
       },
       failure: (failure) {
         setState(() => _error = mapAuthFailure(l10n, failure));
@@ -101,7 +115,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final canResend = _resendAt == null || DateTime.now().isAfter(_resendAt!);
+    final canResend = _resendCooldown.canResend;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.authPhoneTitle)),
@@ -149,8 +163,15 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
                   ),
                 ),
                 TextButton(
+                  key: const Key('auth_phone_resend'),
                   onPressed: (!_loading && canResend) ? _requestCode : null,
-                  child: Text(l10n.authResendCode),
+                  child: Text(
+                    canResend
+                        ? l10n.authResendCode
+                        : l10n.authResendInSeconds(
+                            _resendCooldown.remainingSeconds,
+                          ),
+                  ),
                 ),
               ],
               if (_error != null) ...[

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/presentation/auth_error_mapper.dart';
+import 'package:laforika/features/auth/presentation/resend_cooldown_controller.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 class PasswordResetScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,12 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
+  late final ResendCooldownController _resendCooldown =
+      ResendCooldownController(
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
   String? _challengeId;
   String? _masked;
   String? _error;
@@ -26,6 +33,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
 
   @override
   void dispose() {
+    _resendCooldown.dispose();
     _emailController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
@@ -50,7 +58,10 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
         setState(() {
           _challengeId = value.challengeId;
           _masked = value.maskedDestination;
+          _error = null;
+          _codeController.clear();
         });
+        _resendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
       },
       failure: (failure) {
         setState(() => _error = mapAuthFailure(l10n, failure));
@@ -88,6 +99,7 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final canResend = _resendCooldown.canResend;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.authPasswordResetTitle)),
@@ -131,6 +143,17 @@ class _PasswordResetScreenState extends ConsumerState<PasswordResetScreen> {
                   onPressed: _loading ? null : _reset,
                   child: Text(
                     _loading ? l10n.authPleaseWait : l10n.authResetPassword,
+                  ),
+                ),
+                TextButton(
+                  key: const Key('auth_password_reset_resend'),
+                  onPressed: (!_loading && canResend) ? _request : null,
+                  child: Text(
+                    canResend
+                        ? l10n.authResendCode
+                        : l10n.authResendInSeconds(
+                            _resendCooldown.remainingSeconds,
+                          ),
                   ),
                 ),
               ],

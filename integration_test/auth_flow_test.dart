@@ -137,6 +137,8 @@ Future<String> _readFixtureCode({
   required String purpose,
   required String fixtureKey,
 }) async {
+  // Hits the real Nest fixture inbox (in-memory in remediations; path unchanged).
+  // No fake auth injection — codes come from GET /v1/dev/fixtures/inbox.
   final dio = Dio(
     BaseOptions(
       baseUrl: 'http://10.0.2.2:3000/v1',

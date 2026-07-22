@@ -8,6 +8,7 @@ import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/auth/presentation/auth_error_mapper.dart';
+import 'package:laforika/features/auth/presentation/resend_cooldown_controller.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 class AccountSecurityScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,20 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
   bool _loading = false;
   String? _emailChallengeId;
   String? _phoneChallengeId;
+  String? _emailMasked;
+  String? _phoneMasked;
+  late final ResendCooldownController _emailResendCooldown =
+      ResendCooldownController(
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
+  late final ResendCooldownController _phoneResendCooldown =
+      ResendCooldownController(
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      );
 
   @override
   void initState() {
@@ -42,6 +57,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
 
   @override
   void dispose() {
+    _emailResendCooldown.dispose();
+    _phoneResendCooldown.dispose();
     _attachEmailController.dispose();
     _attachPasswordController.dispose();
     _attachEmailCodeController.dispose();
@@ -105,7 +122,15 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     result.when(
-      success: (value) => setState(() => _emailChallengeId = value.challengeId),
+      success: (value) {
+        setState(() {
+          _emailChallengeId = value.challengeId;
+          _emailMasked = value.maskedDestination;
+          _error = null;
+          _attachEmailCodeController.clear();
+        });
+        _emailResendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
+      },
       failure: (failure) {
         setState(() => _error = mapAuthFailure(l10n, failure));
       },
@@ -129,7 +154,11 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     if (!mounted) return;
     await result.when(
       success: (account) async {
-        setState(() => _emailChallengeId = null);
+        setState(() {
+          _emailChallengeId = null;
+          _emailMasked = null;
+        });
+        _emailResendCooldown.clear();
         ref
             .read(authControllerProvider.notifier)
             .updatePrincipal(
@@ -165,7 +194,15 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     result.when(
-      success: (value) => setState(() => _phoneChallengeId = value.challengeId),
+      success: (value) {
+        setState(() {
+          _phoneChallengeId = value.challengeId;
+          _phoneMasked = value.maskedDestination;
+          _error = null;
+          _attachPhoneCodeController.clear();
+        });
+        _phoneResendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
+      },
       failure: (failure) {
         setState(() => _error = mapAuthFailure(l10n, failure));
       },
@@ -189,7 +226,11 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     if (!mounted) return;
     await result.when(
       success: (account) async {
-        setState(() => _phoneChallengeId = null);
+        setState(() {
+          _phoneChallengeId = null;
+          _phoneMasked = null;
+        });
+        _phoneResendCooldown.clear();
         ref
             .read(authControllerProvider.notifier)
             .updatePrincipal(
@@ -349,6 +390,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         ),
                       )
                     else ...[
+                      if (_emailMasked != null)
+                        Text(l10n.authCodeSentTo(_emailMasked!)),
                       TextField(
                         key: const Key('account_attach_email_code'),
                         controller: _attachEmailCodeController,
@@ -365,6 +408,19 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         onPressed: _loading ? null : _verifyAttachEmail,
                         child: Text(
                           _loading ? l10n.authPleaseWait : l10n.authVerifyCode,
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key('account_attach_email_resend'),
+                        onPressed: (!_loading && _emailResendCooldown.canResend)
+                            ? _startAttachEmail
+                            : null,
+                        child: Text(
+                          _emailResendCooldown.canResend
+                              ? l10n.authResendCode
+                              : l10n.authResendInSeconds(
+                                  _emailResendCooldown.remainingSeconds,
+                                ),
                         ),
                       ),
                     ],
@@ -393,6 +449,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         ),
                       )
                     else ...[
+                      if (_phoneMasked != null)
+                        Text(l10n.authCodeSentTo(_phoneMasked!)),
                       TextField(
                         key: const Key('account_attach_phone_code'),
                         controller: _attachPhoneCodeController,
@@ -409,6 +467,19 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         onPressed: _loading ? null : _verifyAttachPhone,
                         child: Text(
                           _loading ? l10n.authPleaseWait : l10n.authVerifyCode,
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key('account_attach_phone_resend'),
+                        onPressed: (!_loading && _phoneResendCooldown.canResend)
+                            ? _startAttachPhone
+                            : null,
+                        child: Text(
+                          _phoneResendCooldown.canResend
+                              ? l10n.authResendCode
+                              : l10n.authResendInSeconds(
+                                  _phoneResendCooldown.remainingSeconds,
+                                ),
                         ),
                       ),
                     ],

@@ -18,9 +18,19 @@ class FakeAuthRepository extends AuthRepository {
   Result<void> changePasswordResult = const Success(null);
   Result<void> logoutResult = const Success(null);
   Result<void> logoutAllResult = const Success(null);
+  Result<ChallengeCreatedDto> phoneChallengeResult = const FailureResult(
+    AuthFailure(code: 'AUTH_RATE_LIMITED'),
+  );
+  Result<TokenPairDto> phoneVerifyResult = const FailureResult(
+    AuthFailure(code: 'AUTH_CHALLENGE_INVALID'),
+  );
 
   int refreshCalls = 0;
+  int phoneChallengeCalls = 0;
   Duration? refreshDelay;
+
+  /// Optional factory so each challenge request can return a fresh cooldown.
+  ChallengeCreatedDto Function()? phoneChallengeFactory;
 
   @override
   Future<Result<TokenPairDto>> refresh({required String refreshToken}) async {
@@ -31,6 +41,24 @@ class FakeAuthRepository extends AuthRepository {
     }
     return refreshResult;
   }
+
+  @override
+  Future<Result<ChallengeCreatedDto>> requestPhoneChallenge({
+    required String phone,
+  }) async {
+    phoneChallengeCalls += 1;
+    final factory = phoneChallengeFactory;
+    if (factory != null) {
+      return Success(factory());
+    }
+    return phoneChallengeResult;
+  }
+
+  @override
+  Future<Result<TokenPairDto>> verifyPhoneChallenge({
+    required String challengeId,
+    required String code,
+  }) async => phoneVerifyResult;
 
   @override
   Future<Result<AccountMeDto>> me() async => meResult;

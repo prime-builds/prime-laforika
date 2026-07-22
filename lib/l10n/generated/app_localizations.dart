@@ -220,6 +220,12 @@ abstract class AppLocalizations {
   /// **'ارسال مجدد کد'**
   String get authResendCode;
 
+  /// Resend cooldown remaining seconds
+  ///
+  /// In fa, this message translates to:
+  /// **'ارسال مجدد تا {seconds} ثانیه'**
+  String authResendInSeconds(int seconds);
+
   /// No description provided for @authPleaseWait.
   ///
   /// In fa, this message translates to:

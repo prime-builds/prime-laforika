@@ -74,6 +74,11 @@ class AppLocalizationsFa extends AppLocalizations {
   String get authResendCode => 'ارسال مجدد کد';
 
   @override
+  String authResendInSeconds(int seconds) {
+    return 'ارسال مجدد تا $seconds ثانیه';
+  }
+
+  @override
   String get authPleaseWait => 'لطفاً صبر کنید…';
 
   @override
