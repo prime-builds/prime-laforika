@@ -57,6 +57,7 @@ jobs:
           APP_ENVIRONMENT=test
           PORT=3000
           DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/laforika_test
+          TEST_DATABASE_NAME=laforika_test
           JWT_ISSUER=https://auth.laforika.local
           JWT_AUDIENCE=laforika-app
           JWT_ACTIVE_KID=ci-1
@@ -65,6 +66,9 @@ jobs:
           REFRESH_TOKEN_PEPPER=$PEPPER
           OTP_CODE_PEPPER=$PEPPER
           PASSWORD_PEPPER=$PEPPER
+          RATE_LIMIT_PEPPER=$PEPPER
+          TRUST_FORWARDED_ORIGIN=false
+          DELIVERY_MODE=fixture
           FIXTURE_DELIVERY_ENABLED=true
           FIXTURE_INBOX_KEY=$FIXTURE
           CORS_ORIGINS=*

@@ -11,7 +11,7 @@ import { validateEnv } from './config/env.validation';
       validate: validateEnv,
     }),
     PrismaModule,
-    AuthModule,
+    AuthModule.forRoot(),
   ],
 })
 export class AppModule {}
