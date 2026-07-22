@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 /// Redacts sensitive keys from HTTP log payloads.
 abstract final class HttpRedactor {
   static const Set<String> _sensitiveKeys = {
@@ -15,6 +17,9 @@ abstract final class HttpRedactor {
     'email',
     'phone',
     'phoneNumber',
+    'destination',
+    'purpose',
+    'challengeId',
     'x-fixture-key',
   };
 
@@ -40,6 +45,28 @@ abstract final class HttpRedactor {
         return MapEntry(key, '***');
       }
       return MapEntry(key, value);
+    });
+  }
+
+  /// Path only — never includes query or fragment.
+  static String redactUri(Uri uri) {
+    final path = uri.path;
+    return path.isEmpty ? '/' : path;
+  }
+
+  /// Safe log target: method callers should pair with [RequestOptions.method].
+  static String safeRequestPath(RequestOptions options) {
+    return redactUri(options.uri);
+  }
+
+  /// Redacts sensitive query parameter values; non-sensitive values are kept.
+  static Map<String, String> redactQueryParameters(Map<String, dynamic> query) {
+    return query.map((key, value) {
+      final keyText = key.toString();
+      if (_isSensitive(keyText)) {
+        return MapEntry(keyText, '***');
+      }
+      return MapEntry(keyText, value?.toString() ?? '');
     });
   }
 

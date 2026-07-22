@@ -25,8 +25,10 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  final retry = IdempotentRetryInterceptor();
   dio.interceptors.add(AuthInterceptor(ref));
-  dio.interceptors.add(IdempotentRetryInterceptor());
+  dio.interceptors.add(retry);
+  retry.attach(dio);
   if (kDebugMode && config.logLevel == AppLogLevel.debug) {
     dio.interceptors.add(SanitizedLogInterceptor());
   }
@@ -96,6 +98,14 @@ class AuthInterceptor extends QueuedInterceptor {
 class IdempotentRetryInterceptor extends Interceptor {
   static const _maxRetries = 2;
 
+  Dio? _dio;
+
+  /// Binds retries to the shared [Dio] instance. Must be called after the
+  /// interceptor is added to that instance.
+  void attach(Dio dio) {
+    _dio = dio;
+  }
+
   @override
   Future<void> onError(
     DioException err,
@@ -109,14 +119,18 @@ class IdempotentRetryInterceptor extends Interceptor {
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError;
 
-    if (!isIdempotent || !isTransient || retryCount >= _maxRetries) {
+    final dio = _dio;
+    if (!isIdempotent ||
+        !isTransient ||
+        retryCount >= _maxRetries ||
+        dio == null) {
       return handler.next(err);
     }
 
     err.requestOptions.extra['retryCount'] = retryCount + 1;
     await Future<void>.delayed(Duration(milliseconds: 200 * (retryCount + 1)));
     try {
-      final response = await Dio().fetch<dynamic>(err.requestOptions);
+      final response = await dio.fetch<dynamic>(err.requestOptions);
       return handler.resolve(response);
     } on DioException catch (e) {
       return handler.next(e);
@@ -128,7 +142,7 @@ class SanitizedLogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     debugPrint(
-      '[dio] → ${options.method} ${options.uri} '
+      '[dio] → ${options.method} ${HttpRedactor.safeRequestPath(options)} '
       'headers=${HttpRedactor.redactHeaders(Map<String, dynamic>.from(options.headers))} '
       'data=${HttpRedactor.redact(options.data)}',
     );
@@ -141,7 +155,8 @@ class SanitizedLogInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) {
     debugPrint(
-      '[dio] ← ${response.statusCode} ${response.requestOptions.uri} '
+      '[dio] ← ${response.statusCode} '
+      '${HttpRedactor.safeRequestPath(response.requestOptions)} '
       'data=${HttpRedactor.redact(response.data)}',
     );
     handler.next(response);
@@ -150,7 +165,8 @@ class SanitizedLogInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     debugPrint(
-      '[dio] ✕ ${err.type} ${err.requestOptions.uri} '
+      '[dio] ✕ ${err.type} '
+      '${HttpRedactor.safeRequestPath(err.requestOptions)} '
       'status=${err.response?.statusCode}',
     );
     handler.next(err);
