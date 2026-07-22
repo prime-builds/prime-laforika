@@ -14,7 +14,8 @@ NestJS + PostgreSQL custom authentication service for Laforika (M1).
 cd backend
 Copy-Item .env.example .env
 npm run keys:generate
-# Edit .env: DATABASE_URL, peppers, FIXTURE_INBOX_KEY, key paths
+# Edit .env: DATABASE_URL, peppers (including RATE_LIMIT_PEPPER),
+# FIXTURE_INBOX_KEY, DELIVERY_MODE=fixture, TRUST_FORWARDED_ORIGIN=false, key paths
 npm ci
 npx prisma migrate deploy
 npm run start:dev
@@ -37,5 +38,7 @@ npm run openapi:export
 
 ## Notes
 
-- Fixture inbox (`/v1/dev/fixtures/...`) is registered only when `APP_ENVIRONMENT` is `dev` or `test` and `FIXTURE_DELIVERY_ENABLED=true`.
+- Fixture inbox (`/v1/dev/fixtures/...`) is registered only when `APP_ENVIRONMENT` is `dev` or `test`, `FIXTURE_DELIVERY_ENABLED=true`, and `DELIVERY_MODE=fixture`. Codes are kept in a process-local inbox — never PostgreSQL.
+- Staging/prod require `DELIVERY_MODE=unavailable` (fail closed until a real SMS/email adapter exists).
+- E2E tests require `APP_ENVIRONMENT=test`, `TEST_DATABASE_NAME` ending in `_test`, and a matching `DATABASE_URL` database name (no silent rewrite).
 - Never commit `.env`, `secrets/`, PEM files, or database dumps.
