@@ -78,6 +78,9 @@ jobs:
           npx prisma migrate deploy
           npx prisma generate
 
+      - name: Prisma format check
+        run: npm run prisma:format:check --prefix backend
+
       - name: Format check
         run: npm run format:check --prefix backend
 
@@ -94,9 +97,9 @@ jobs:
         working-directory: backend
         run: npm run test:e2e
 
-      - name: OpenAPI export
+      - name: OpenAPI contract check
         working-directory: backend
-        run: npm run openapi:export
+        run: npm run openapi:check
 
   quality:
     name: quality
@@ -273,6 +276,10 @@ jobs:
           npx prisma generate
           echo "FIXTURE_INBOX_KEY=$FIXTURE" >> "$GITHUB_ENV"
 
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
       - name: Start backend
         working-directory: backend
         run: |
@@ -286,8 +293,6 @@ jobs:
           done
           echo "backend failed to become ready"
           exit 1
-        env:
-          NODE_ENV: production
 
       - name: Enable KVM
         run: |
@@ -305,4 +310,5 @@ jobs:
             flutter pub get
             flutter test integration_test/auth_flow_test.dart --flavor dev \
               --dart-define=APP_FLAVOR=dev \
-              --dart-define-from-file=config/dev.json
+              --dart-define-from-file=config/dev.json \
+              --dart-define=FIXTURE_INBOX_KEY=$FIXTURE_INBOX_KEY

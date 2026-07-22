@@ -131,6 +131,18 @@ class AppLocalizationsFa extends AppLocalizations {
   String get accountEmailMissing => 'ایمیل متصل نیست';
 
   @override
+  String get accountAttachEmailTitle => 'اتصال ایمیل و رمز عبور';
+
+  @override
+  String get accountAttachPhoneTitle => 'اتصال شماره موبایل';
+
+  @override
+  String get accountRemoveEmail => 'حذف ایمیل';
+
+  @override
+  String get accountRemovePhone => 'حذف موبایل';
+
+  @override
   String get accountSessionsTitle => 'نشست‌های فعال';
 
   @override

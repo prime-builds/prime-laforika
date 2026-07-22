@@ -28,11 +28,13 @@ class AuthMethodScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppTokens.spaceXl),
               FilledButton(
+                key: const Key('auth_continue_phone'),
                 onPressed: () => context.push(authPhoneRoutePath),
                 child: Text(l10n.authContinueWithPhone),
               ),
               const SizedBox(height: AppTokens.spaceMd),
               OutlinedButton(
+                key: const Key('auth_continue_email'),
                 onPressed: () => context.push(authEmailRoutePath),
                 child: Text(l10n.authContinueWithEmail),
               ),

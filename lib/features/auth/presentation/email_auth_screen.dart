@@ -161,6 +161,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
               const SizedBox(height: AppTokens.spaceMd),
               if (_challengeId == null) ...[
                 TextField(
+                  key: const Key('auth_email_field'),
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
@@ -168,6 +169,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
                 ),
                 const SizedBox(height: AppTokens.spaceMd),
                 TextField(
+                  key: const Key('auth_password_field'),
                   controller: _passwordController,
                   obscureText: true,
                   autofillHints: _signUpMode
@@ -179,6 +181,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
                 ),
                 const SizedBox(height: AppTokens.spaceMd),
                 FilledButton(
+                  key: const Key('auth_email_submit'),
                   onPressed: _loading ? null : _submitCredentials,
                   child: Text(
                     _loading
@@ -195,12 +198,14 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
                 Text(l10n.authCodeSentTo(_masked ?? '')),
                 const SizedBox(height: AppTokens.spaceMd),
                 TextField(
+                  key: const Key('auth_email_otp_field'),
                   controller: _codeController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(labelText: l10n.authOtpLabel),
                 ),
                 const SizedBox(height: AppTokens.spaceMd),
                 FilledButton(
+                  key: const Key('auth_email_otp_verify'),
                   onPressed: _loading ? null : _verifyEmail,
                   child: Text(
                     _loading ? l10n.authPleaseWait : l10n.authVerifyCode,

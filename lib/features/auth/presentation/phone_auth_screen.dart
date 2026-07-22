@@ -112,6 +112,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
+                key: const Key('auth_phone_field'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 autofillHints: const [AutofillHints.telephoneNumber],
@@ -121,6 +122,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
               if (_challengeId == null) ...[
                 const SizedBox(height: AppTokens.spaceMd),
                 FilledButton(
+                  key: const Key('auth_phone_send'),
                   onPressed: _loading ? null : _requestCode,
                   child: Text(
                     _loading ? l10n.authPleaseWait : l10n.authSendCode,
@@ -131,6 +133,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
                 Text(l10n.authCodeSentTo(_masked ?? '')),
                 const SizedBox(height: AppTokens.spaceMd),
                 TextField(
+                  key: const Key('auth_otp_field'),
                   controller: _codeController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -139,6 +142,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
                 ),
                 const SizedBox(height: AppTokens.spaceMd),
                 FilledButton(
+                  key: const Key('auth_otp_verify'),
                   onPressed: _loading ? null : _verify,
                   child: Text(
                     _loading ? l10n.authPleaseWait : l10n.authVerifyCode,

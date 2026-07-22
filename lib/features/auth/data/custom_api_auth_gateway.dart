@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:laforika/core/auth/auth_session_gateway.dart';
 import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/error/failure.dart';
@@ -124,5 +126,11 @@ class CustomApiAuthGateway implements AuthSessionGateway {
     _accessToken = null;
     _principal = null;
     await _secureStore.delete(_refreshTokenKey);
+  }
+
+  /// Integration-test hook: force the next protected call through refresh.
+  @visibleForTesting
+  void expireAccessTokenInMemory() {
+    _accessToken = 'expired.integration.test.token';
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:laforika/core/auth/auth_controller.dart';
@@ -18,14 +19,32 @@ class AccountSecurityScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
+  final _attachEmailController = TextEditingController();
+  final _attachPasswordController = TextEditingController();
+  final _attachEmailCodeController = TextEditingController();
+  final _attachPhoneController = TextEditingController();
+  final _attachPhoneCodeController = TextEditingController();
+
   List<SessionDto> _sessions = const [];
   String? _error;
   bool _loading = false;
+  String? _emailChallengeId;
+  String? _phoneChallengeId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _attachEmailController.dispose();
+    _attachPasswordController.dispose();
+    _attachEmailCodeController.dispose();
+    _attachPhoneController.dispose();
+    _attachPhoneCodeController.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -64,6 +83,153 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     setState(() => _loading = false);
   }
 
+  Future<void> _startAttachEmail() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .attachEmailChallenge(
+          email: _attachEmailController.text,
+          password: _attachPasswordController.text,
+        );
+    if (!mounted) return;
+    setState(() => _loading = false);
+    result.when(
+      success: (value) => setState(() => _emailChallengeId = value.challengeId),
+      failure: (failure) {
+        setState(() => _error = mapAuthFailure(l10n, failure));
+      },
+    );
+  }
+
+  Future<void> _verifyAttachEmail() async {
+    final challengeId = _emailChallengeId;
+    if (_loading || challengeId == null) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyAttachEmail(
+          challengeId: challengeId,
+          code: _attachEmailCodeController.text,
+        );
+    if (!mounted) return;
+    await result.when(
+      success: (account) async {
+        setState(() => _emailChallengeId = null);
+        ref
+            .read(authControllerProvider.notifier)
+            .updatePrincipal(
+              AuthPrincipal(
+                accountId: account.accountId,
+                hasPhone: account.hasPhone,
+                hasEmail: account.hasEmail,
+                maskedPhone: account.maskedPhone,
+                maskedEmail: account.maskedEmail,
+              ),
+            );
+        await _refresh();
+      },
+      failure: (failure) async {
+        setState(() {
+          _loading = false;
+          _error = mapAuthFailure(l10n, failure);
+        });
+      },
+    );
+  }
+
+  Future<void> _startAttachPhone() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .attachPhoneChallenge(phone: _attachPhoneController.text);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    result.when(
+      success: (value) => setState(() => _phoneChallengeId = value.challengeId),
+      failure: (failure) {
+        setState(() => _error = mapAuthFailure(l10n, failure));
+      },
+    );
+  }
+
+  Future<void> _verifyAttachPhone() async {
+    final challengeId = _phoneChallengeId;
+    if (_loading || challengeId == null) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyAttachPhone(
+          challengeId: challengeId,
+          code: _attachPhoneCodeController.text,
+        );
+    if (!mounted) return;
+    await result.when(
+      success: (account) async {
+        setState(() => _phoneChallengeId = null);
+        ref
+            .read(authControllerProvider.notifier)
+            .updatePrincipal(
+              AuthPrincipal(
+                accountId: account.accountId,
+                hasPhone: account.hasPhone,
+                hasEmail: account.hasEmail,
+                maskedPhone: account.maskedPhone,
+                maskedEmail: account.maskedEmail,
+              ),
+            );
+        await _refresh();
+      },
+      failure: (failure) async {
+        setState(() {
+          _loading = false;
+          _error = mapAuthFailure(l10n, failure);
+        });
+      },
+    );
+  }
+
+  Future<void> _removePhone() async {
+    final l10n = AppLocalizations.of(context);
+    final result = await ref.read(authRepositoryProvider).removePhone();
+    if (!mounted) return;
+    await result.when(
+      success: (_) => _refresh(),
+      failure: (failure) async {
+        setState(() => _error = mapAuthFailure(l10n, failure));
+      },
+    );
+  }
+
+  Future<void> _removeEmail() async {
+    final l10n = AppLocalizations.of(context);
+    final result = await ref.read(authRepositoryProvider).removeEmail();
+    if (!mounted) return;
+    await result.when(
+      success: (_) => _refresh(),
+      failure: (failure) async {
+        setState(() => _error = mapAuthFailure(l10n, failure));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -73,12 +239,15 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.accountSecurityTitle)),
       body: SafeArea(
-        child: _loading
+        child: _loading && _sessions.isEmpty && principal == null
             ? const Center(child: CircularProgressIndicator())
             : ListView(
                 padding: const EdgeInsetsDirectional.all(AppTokens.spaceLg),
                 children: [
-                  Text(l10n.accountIdLabel(principal?.accountId ?? '')),
+                  Text(
+                    key: const Key('account_id_label'),
+                    l10n.accountIdLabel(principal?.accountId ?? ''),
+                  ),
                   const SizedBox(height: AppTokens.spaceMd),
                   Text(
                     principal?.hasPhone == true
@@ -87,6 +256,12 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                           )
                         : l10n.accountPhoneMissing,
                   ),
+                  if (principal?.hasPhone == true)
+                    TextButton(
+                      key: const Key('account_remove_phone'),
+                      onPressed: _loading ? null : _removePhone,
+                      child: Text(l10n.accountRemovePhone),
+                    ),
                   Text(
                     principal?.hasEmail == true
                         ? l10n.accountEmailAttached(
@@ -94,6 +269,109 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                           )
                         : l10n.accountEmailMissing,
                   ),
+                  if (principal?.hasEmail == true)
+                    TextButton(
+                      key: const Key('account_remove_email'),
+                      onPressed: _loading ? null : _removeEmail,
+                      child: Text(l10n.accountRemoveEmail),
+                    ),
+                  if (principal?.hasEmail != true) ...[
+                    const SizedBox(height: AppTokens.spaceLg),
+                    Text(
+                      l10n.accountAttachEmailTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextField(
+                      key: const Key('account_attach_email'),
+                      controller: _attachEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: l10n.authEmailLabel,
+                      ),
+                      enabled: _emailChallengeId == null && !_loading,
+                    ),
+                    TextField(
+                      key: const Key('account_attach_password'),
+                      controller: _attachPasswordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.authPasswordLabel,
+                      ),
+                      enabled: _emailChallengeId == null && !_loading,
+                    ),
+                    if (_emailChallengeId == null)
+                      FilledButton(
+                        key: const Key('account_attach_email_send'),
+                        onPressed: _loading ? null : _startAttachEmail,
+                        child: Text(
+                          _loading ? l10n.authPleaseWait : l10n.authSendCode,
+                        ),
+                      )
+                    else ...[
+                      TextField(
+                        key: const Key('account_attach_email_code'),
+                        controller: _attachEmailCodeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: l10n.authOtpLabel,
+                        ),
+                      ),
+                      FilledButton(
+                        key: const Key('account_attach_email_verify'),
+                        onPressed: _loading ? null : _verifyAttachEmail,
+                        child: Text(
+                          _loading ? l10n.authPleaseWait : l10n.authVerifyCode,
+                        ),
+                      ),
+                    ],
+                  ],
+                  if (principal?.hasPhone != true) ...[
+                    const SizedBox(height: AppTokens.spaceLg),
+                    Text(
+                      l10n.accountAttachPhoneTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    TextField(
+                      key: const Key('account_attach_phone'),
+                      controller: _attachPhoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: l10n.authPhoneLabel,
+                      ),
+                      enabled: _phoneChallengeId == null && !_loading,
+                    ),
+                    if (_phoneChallengeId == null)
+                      FilledButton(
+                        key: const Key('account_attach_phone_send'),
+                        onPressed: _loading ? null : _startAttachPhone,
+                        child: Text(
+                          _loading ? l10n.authPleaseWait : l10n.authSendCode,
+                        ),
+                      )
+                    else ...[
+                      TextField(
+                        key: const Key('account_attach_phone_code'),
+                        controller: _attachPhoneCodeController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: l10n.authOtpLabel,
+                        ),
+                      ),
+                      FilledButton(
+                        key: const Key('account_attach_phone_verify'),
+                        onPressed: _loading ? null : _verifyAttachPhone,
+                        child: Text(
+                          _loading ? l10n.authPleaseWait : l10n.authVerifyCode,
+                        ),
+                      ),
+                    ],
+                  ],
                   const SizedBox(height: AppTokens.spaceLg),
                   Text(
                     l10n.accountSessionsTitle,
@@ -109,6 +387,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       trailing: session.isCurrent
                           ? Text(l10n.accountSessionCurrent)
                           : IconButton(
+                              key: Key('account_revoke_${session.sessionId}'),
                               tooltip: l10n.accountRevokeSession,
                               onPressed: () async {
                                 await ref
@@ -122,6 +401,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   ),
                   const SizedBox(height: AppTokens.spaceMd),
                   OutlinedButton(
+                    key: const Key('account_logout_all'),
                     onPressed: () async {
                       await ref
                           .read(authControllerProvider.notifier)
@@ -131,6 +411,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   ),
                   const SizedBox(height: AppTokens.spaceSm),
                   FilledButton(
+                    key: const Key('account_logout'),
                     onPressed: () async {
                       await ref.read(authControllerProvider.notifier).logout();
                     },
@@ -139,6 +420,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   if (_error != null) ...[
                     const SizedBox(height: AppTokens.spaceMd),
                     Text(
+                      key: const Key('account_security_error'),
                       _error!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,

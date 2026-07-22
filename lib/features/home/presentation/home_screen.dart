@@ -24,11 +24,13 @@ class HomeScreen extends ConsumerWidget {
         title: Text(l10n.appTitle),
         actions: [
           IconButton(
+            key: const Key('home_account_security'),
             tooltip: l10n.accountSecurityAction,
             onPressed: () => context.push(accountSecurityRoutePath),
             icon: const Icon(Icons.security),
           ),
           IconButton(
+            key: const Key('home_logout'),
             tooltip: l10n.authLogout,
             onPressed: () {
               ref.read(authControllerProvider.notifier).logout();
@@ -53,6 +55,7 @@ class HomeScreen extends ConsumerWidget {
                 if (principal != null) ...[
                   const SizedBox(height: AppTokens.spaceMd),
                   Text(
+                    key: const Key('home_account_id'),
                     l10n.accountIdLabel(principal.accountId),
                     textAlign: TextAlign.center,
                   ),

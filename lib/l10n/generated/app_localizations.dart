@@ -316,6 +316,30 @@ abstract class AppLocalizations {
   /// **'ایمیل متصل نیست'**
   String get accountEmailMissing;
 
+  /// No description provided for @accountAttachEmailTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'اتصال ایمیل و رمز عبور'**
+  String get accountAttachEmailTitle;
+
+  /// No description provided for @accountAttachPhoneTitle.
+  ///
+  /// In fa, this message translates to:
+  /// **'اتصال شماره موبایل'**
+  String get accountAttachPhoneTitle;
+
+  /// No description provided for @accountRemoveEmail.
+  ///
+  /// In fa, this message translates to:
+  /// **'حذف ایمیل'**
+  String get accountRemoveEmail;
+
+  /// No description provided for @accountRemovePhone.
+  ///
+  /// In fa, this message translates to:
+  /// **'حذف موبایل'**
+  String get accountRemovePhone;
+
   /// No description provided for @accountSessionsTitle.
   ///
   /// In fa, this message translates to:

@@ -77,6 +77,10 @@
     }
   },
   "accountEmailMissing": "ایمیل متصل نیست",
+  "accountAttachEmailTitle": "اتصال ایمیل و رمز عبور",
+  "accountAttachPhoneTitle": "اتصال شماره موبایل",
+  "accountRemoveEmail": "حذف ایمیل",
+  "accountRemovePhone": "حذف موبایل",
   "accountSessionsTitle": "نشست‌های فعال",
   "accountSessionDevice": "دستگاه",
   "accountSessionCurrent": "نشست فعلی",
