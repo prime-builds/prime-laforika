@@ -206,7 +206,9 @@ jobs:
   android-auth-integration:
     name: android-auth-integration
     needs: [quality, backend]
-    runs-on: ubuntu-latest
+    # ubuntu-latest (24.04) currently fails to keep the emulator attached
+    # ("adb: device emulator-5554 not found" until boot timeout).
+    runs-on: ubuntu-22.04
     services:
       postgres:
         image: postgres:16
@@ -310,10 +312,17 @@ jobs:
 
       - name: Run Android emulator auth integration
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_USER_HOME: /home/runner/.android
+          ANDROID_EMULATOR_HOME: /home/runner/.android
+          ANDROID_AVD_HOME: /home/runner/.android/avd
         with:
-          api-level: 29
+          api-level: 30
+          target: google_apis
           arch: x86_64
-          profile: pixel_4
+          force-avd-creation: true
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: |
             flutter pub get
             flutter test integration_test/auth_flow_test.dart --flavor dev \
