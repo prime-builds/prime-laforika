@@ -20,20 +20,16 @@ enum DestinationType {
   EMAIL
 }
 
-enum FixtureChannel {
-  SMS
-  EMAIL
-}
-
 model User {
-  id              String    @id @default(uuid()) @db.Uuid
-  phoneE164       String?   @unique @map("phone_e164")
-  emailNormalized String?   @unique @map("email_normalized")
-  emailDisplay    String?   @map("email_display")
-  passwordHash    String?   @map("password_hash")
-  disabledAt      DateTime? @map("disabled_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id               String    @id @default(uuid()) @db.Uuid
+  phoneE164        String?   @unique @map("phone_e164")
+  emailNormalized  String?   @unique @map("email_normalized")
+  emailDisplay     String?   @map("email_display")
+  passwordHash     String?   @map("password_hash")
+  emailVerifiedAt  DateTime? @map("email_verified_at")
+  disabledAt       DateTime? @map("disabled_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   challenges AuthChallenge[]
   sessions   AuthSession[]
@@ -53,6 +49,9 @@ model AuthChallenge {
   expiresAt             DateTime         @map("expires_at")
   consumedAt            DateTime?        @map("consumed_at")
   userId                String?          @map("user_id") @db.Uuid
+  /// Argon2id hash of a pending email password; never plaintext.
+  pendingPasswordHash   String?          @map("pending_password_hash")
+  pendingEmailDisplay   String?          @map("pending_email_display")
   createdAt             DateTime         @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -122,18 +121,4 @@ model SecurityEvent {
 
   @@index([type, createdAt])
   @@map("security_events")
-}
-
-model FixtureInboxMessage {
-  id                    String         @id @default(uuid()) @db.Uuid
-  channel               FixtureChannel
-  destinationNormalized String         @map("destination_normalized")
-  purpose               String
-  code                  String
-  payloadJson           Json           @default("{}") @map("payload_json")
-  consumedAt            DateTime?      @map("consumed_at")
-  createdAt             DateTime       @default(now()) @map("created_at")
-
-  @@index([destinationNormalized, purpose, createdAt])
-  @@map("fixture_inbox_messages")
 }

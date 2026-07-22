@@ -22,12 +22,13 @@ export class AuthService {
     private readonly sessions: SessionService,
   ) {}
 
-  async requestPhoneChallenge(phoneRaw: string) {
+  async requestPhoneChallenge(phoneRaw: string, originFingerprint?: string) {
     const phone = normalizePhone(phoneRaw);
     return this.challenges.createChallenge({
       purpose: ChallengePurpose.PHONE_SIGN_IN,
       destinationType: 'PHONE',
       destinationNormalized: phone,
+      originFingerprint,
     });
   }
 
@@ -50,43 +51,38 @@ export class AuthService {
     return { ...tokens, ...this.sessions.accountView(user) };
   }
 
-  async emailSignUp(emailRaw: string, password: string) {
+  async emailSignUp(
+    emailRaw: string,
+    password: string,
+    originFingerprint?: string,
+  ) {
     const email = normalizeEmail(emailRaw);
     assertPasswordPolicy(password);
-    const existing = await this.prisma.user.findUnique({
-      where: { emailNormalized: email },
+
+    const verifiedOwner = await this.prisma.user.findFirst({
+      where: {
+        emailNormalized: email,
+        emailVerifiedAt: { not: null },
+        passwordHash: { not: null },
+      },
     });
-    if (existing?.passwordHash) {
-      // enumeration-resistant: still create a challenge-looking response path
+    if (verifiedOwner) {
       throw new AppError('AUTH_CONFLICT', 409);
     }
+
     const passwordHash = await hashPassword(
       password,
       this.config.getOrThrow('PASSWORD_PEPPER'),
     );
-    const user =
-      existing ??
-      (await this.prisma.user.create({
-        data: {
-          emailNormalized: email,
-          emailDisplay: emailRaw.trim(),
-          passwordHash,
-        },
-      }));
-    if (existing && !existing.passwordHash) {
-      await this.prisma.user.update({
-        where: { id: existing.id },
-        data: {
-          passwordHash,
-          emailDisplay: emailRaw.trim(),
-        },
-      });
-    }
+
+    // Pending credentials live on the challenge only — not on User.
     return this.challenges.createChallenge({
       purpose: ChallengePurpose.EMAIL_VERIFY,
       destinationType: 'EMAIL',
       destinationNormalized: email,
-      userId: user.id,
+      pendingPasswordHash: passwordHash,
+      pendingEmailDisplay: emailRaw.trim(),
+      originFingerprint,
     });
   }
 
@@ -97,14 +93,33 @@ export class AuthService {
     );
     if (
       challenge.purpose !== ChallengePurpose.EMAIL_VERIFY ||
-      !challenge.userId
+      !challenge.pendingPasswordHash
     ) {
       throw new AppError('AUTH_CHALLENGE_INVALID', 400);
     }
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: challenge.userId },
+
+    const email = challenge.destinationNormalized;
+    const existing = await this.prisma.user.findUnique({
+      where: { emailNormalized: email },
     });
-    if (user.disabledAt) throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
+    if (existing?.emailVerifiedAt) {
+      throw new AppError('AUTH_CONFLICT', 409);
+    }
+
+    let user;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          emailNormalized: email,
+          emailDisplay: challenge.pendingEmailDisplay ?? email,
+          passwordHash: challenge.pendingPasswordHash,
+          emailVerifiedAt: new Date(),
+        },
+      });
+    } catch {
+      throw new AppError('AUTH_CONFLICT', 409);
+    }
+
     const tokens = await this.sessions.createSession(user.id);
     return { ...tokens, ...this.sessions.accountView(user) };
   }
@@ -114,7 +129,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { emailNormalized: email },
     });
-    if (!user?.passwordHash || user.disabledAt) {
+    if (!user?.passwordHash || !user.emailVerifiedAt || user.disabledAt) {
       throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
     }
     const verified = await verifyPassword(
@@ -139,12 +154,16 @@ export class AuthService {
     return { ...tokens, ...this.sessions.accountView(user) };
   }
 
-  async requestPasswordReset(emailRaw: string) {
+  async requestPasswordReset(emailRaw: string, originFingerprint?: string) {
     const email = normalizeEmail(emailRaw);
-    const user = await this.prisma.user.findUnique({
-      where: { emailNormalized: email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailNormalized: email,
+        emailVerifiedAt: { not: null },
+        passwordHash: { not: null },
+      },
     });
-    // Always behave similarly; only create challenge when account exists with email.
+    // Enumeration-resistant: always-looking response when absent.
     if (!user) {
       return {
         challengeId: '00000000-0000-0000-0000-000000000000',
@@ -158,6 +177,7 @@ export class AuthService {
       destinationType: 'EMAIL',
       destinationNormalized: email,
       userId: user.id,
+      originFingerprint,
     });
   }
 
@@ -205,7 +225,11 @@ export class AuthService {
     return this.sessions.accountView(user);
   }
 
-  async attachPhoneChallenge(accountId: string, phoneRaw: string) {
+  async attachPhoneChallenge(
+    accountId: string,
+    phoneRaw: string,
+    originFingerprint?: string,
+  ) {
     const phone = normalizePhone(phoneRaw);
     const conflict = await this.prisma.user.findUnique({
       where: { phoneE164: phone },
@@ -218,6 +242,7 @@ export class AuthService {
       destinationType: 'PHONE',
       destinationNormalized: phone,
       userId: accountId,
+      originFingerprint,
     });
   }
 
@@ -251,7 +276,10 @@ export class AuthService {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: accountId },
     });
-    if (!user.emailNormalized) throw new AppError('AUTH_LAST_CREDENTIAL', 400);
+    const hasVerifiedEmail = Boolean(
+      user.emailNormalized && user.emailVerifiedAt,
+    );
+    if (!hasVerifiedEmail) throw new AppError('AUTH_LAST_CREDENTIAL', 400);
     return this.sessions.accountView(
       await this.prisma.user.update({
         where: { id: accountId },
@@ -264,32 +292,33 @@ export class AuthService {
     accountId: string,
     emailRaw: string,
     password: string,
+    originFingerprint?: string,
   ) {
     const email = normalizeEmail(emailRaw);
     assertPasswordPolicy(password);
-    const conflict = await this.prisma.user.findUnique({
-      where: { emailNormalized: email },
+    const conflict = await this.prisma.user.findFirst({
+      where: {
+        emailNormalized: email,
+        emailVerifiedAt: { not: null },
+        NOT: { id: accountId },
+      },
     });
-    if (conflict && conflict.id !== accountId) {
+    if (conflict) {
       throw new AppError('AUTH_CONFLICT', 409);
     }
     const passwordHash = await hashPassword(
       password,
       this.config.getOrThrow('PASSWORD_PEPPER'),
     );
-    await this.prisma.user.update({
-      where: { id: accountId },
-      data: {
-        emailNormalized: email,
-        emailDisplay: emailRaw.trim(),
-        passwordHash,
-      },
-    });
+    // Do not mutate the active verified credential until verification succeeds.
     return this.challenges.createChallenge({
       purpose: ChallengePurpose.EMAIL_ATTACH,
       destinationType: 'EMAIL',
       destinationNormalized: email,
       userId: accountId,
+      pendingPasswordHash: passwordHash,
+      pendingEmailDisplay: emailRaw.trim(),
+      originFingerprint,
     });
   }
 
@@ -304,14 +333,38 @@ export class AuthService {
     );
     if (
       challenge.purpose !== ChallengePurpose.EMAIL_ATTACH ||
-      challenge.userId !== accountId
+      challenge.userId !== accountId ||
+      !challenge.pendingPasswordHash
     ) {
       throw new AppError('AUTH_CHALLENGE_INVALID', 400);
     }
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: accountId },
+
+    const conflict = await this.prisma.user.findFirst({
+      where: {
+        emailNormalized: challenge.destinationNormalized,
+        emailVerifiedAt: { not: null },
+        NOT: { id: accountId },
+      },
     });
-    return this.sessions.accountView(user);
+    if (conflict) {
+      throw new AppError('AUTH_CONFLICT', 409);
+    }
+
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: accountId },
+        data: {
+          emailNormalized: challenge.destinationNormalized,
+          emailDisplay:
+            challenge.pendingEmailDisplay ?? challenge.destinationNormalized,
+          passwordHash: challenge.pendingPasswordHash,
+          emailVerifiedAt: new Date(),
+        },
+      });
+      return this.sessions.accountView(user);
+    } catch {
+      throw new AppError('AUTH_CONFLICT', 409);
+    }
   }
 
   async removeEmail(accountId: string) {
@@ -326,6 +379,7 @@ export class AuthService {
           emailNormalized: null,
           emailDisplay: null,
           passwordHash: null,
+          emailVerifiedAt: null,
         },
       }),
     );
@@ -340,7 +394,9 @@ export class AuthService {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: accountId },
     });
-    if (!user.passwordHash) throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
+    if (!user.passwordHash || !user.emailVerifiedAt) {
+      throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
+    }
     const verified = await verifyPassword(
       user.passwordHash,
       currentPassword,
