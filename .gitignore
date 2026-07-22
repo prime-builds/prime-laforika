@@ -62,5 +62,5 @@ app.*.map.json
 **/GoogleService-Info.plist
 **/firebase_options.dart
 
-# Task prompts are local working packages; do not commit by default
-docs/prompts/
+# Milestone / task package prompts are versioned under docs/prompts/
+# (do not ignore this directory)
