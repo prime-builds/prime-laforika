@@ -85,4 +85,6 @@ config/local*.json
 
 backend/node_modules/
 backend/dist/
+backend/*.tsbuildinfo
+backend/tsconfig.build.tsbuildinfo
 
