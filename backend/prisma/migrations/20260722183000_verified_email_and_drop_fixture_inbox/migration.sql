@@ -1,10 +1,9 @@
 -- AlterTable
 ALTER TABLE "users" ADD COLUMN "email_verified_at" TIMESTAMP(3);
 
--- Backfill: existing rows with email+password are treated as verified.
-UPDATE "users"
-SET "email_verified_at" = "created_at"
-WHERE "email_normalized" IS NOT NULL AND "password_hash" IS NOT NULL;
+-- Intentionally no backfill: pre-remediation rows could have email/password
+-- without completed verification. Leave email_verified_at NULL until the
+-- real verification flow sets it.
 
 -- AlterTable
 ALTER TABLE "auth_challenges" ADD COLUMN "pending_password_hash" TEXT;

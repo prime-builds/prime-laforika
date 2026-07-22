@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { SanitizedExceptionFilter } from '../src/common/errors/app-error';
 import { PrismaService } from '../src/database/prisma.service';
+import { hashPassword } from '../src/common/security/crypto.util';
 
 type ChallengeResponse = {
   challengeId: string;
@@ -604,5 +605,110 @@ describe('Auth e2e', () => {
       .expect(HttpStatus.OK);
     const login = loginRes.body as TokenResponse;
     expect(login.accountId).toBe(verified.accountId);
+  });
+
+  it('legacy unverified email/password row cannot authenticate', async () => {
+    const email = 'legacy-unverified@example.com';
+    const password = 'correct-horse-battery-legacy';
+    const passwordHash = await hashPassword(
+      password,
+      process.env.PASSWORD_PEPPER as string,
+    );
+    await prisma.user.create({
+      data: {
+        emailNormalized: email,
+        emailDisplay: email,
+        passwordHash,
+        emailVerifiedAt: null,
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-in')
+      .send({ email, password })
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const stored = await prisma.user.findUniqueOrThrow({
+      where: { emailNormalized: email },
+    });
+    expect(stored.emailVerifiedAt).toBeNull();
+  });
+
+  it('concurrent phone verification allows exactly one success', async () => {
+    const phone = '+989129999010';
+    const challengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    const challenge = challengeRes.body as ChallengeResponse;
+    const code = await readCode(phone, 'PHONE_SIGN_IN');
+
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        request(app.getHttpServer())
+          .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+          .send({ code }),
+      ),
+    );
+    const successes = results.filter((r) => r.status === 200);
+    const failures = results.filter((r) => r.status !== 200);
+    expect(successes.length).toBe(1);
+    expect(failures.length).toBe(5);
+
+    const stored = await prisma.authChallenge.findUniqueOrThrow({
+      where: { id: challenge.challengeId },
+    });
+    expect(stored.consumedAt).not.toBeNull();
+    const users = await prisma.user.findMany({ where: { phoneE164: phone } });
+    expect(users).toHaveLength(1);
+  });
+
+  it('wrong purpose does not consume a valid challenge', async () => {
+    const phone = '+989129999011';
+    const challengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    const challenge = challengeRes.body as ChallengeResponse;
+    const code = await readCode(phone, 'PHONE_SIGN_IN');
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/verify')
+      .send({ challengeId: challenge.challengeId, code })
+      .expect(HttpStatus.BAD_REQUEST);
+
+    const stored = await prisma.authChallenge.findUniqueOrThrow({
+      where: { id: challenge.challengeId },
+    });
+    expect(stored.consumedAt).toBeNull();
+
+    await request(app.getHttpServer())
+      .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+      .send({ code })
+      .expect(HttpStatus.OK);
+  });
+
+  it('rate-limit bucket keys never store raw email or phone', async () => {
+    const phone = '+989129999012';
+    const email = 'rate-limit-privacy@example.com';
+    await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-up')
+      .send({ email, password: 'correct-horse-battery-rl' })
+      .expect(HttpStatus.OK);
+
+    const buckets = await prisma.rateLimitBucket.findMany();
+    for (const bucket of buckets) {
+      expect(bucket.bucketKey).not.toContain(phone);
+      expect(bucket.bucketKey).not.toContain(email);
+      expect(bucket.bucketKey).not.toContain('example.com');
+      expect(bucket.bucketKey).not.toMatch(/\+989/);
+    }
+    expect(
+      buckets.some((b) => b.bucketKey.startsWith('challenge:dest:v1:')),
+    ).toBe(true);
   });
 });

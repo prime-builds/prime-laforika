@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ChallengePurpose, DestinationType } from '@prisma/client';
-import type { AuthChallenge, User } from '@prisma/client';
+import {
+  Prisma,
+  AuthChallenge,
+  ChallengePurpose,
+  DestinationType,
+  User,
+} from '@prisma/client';
 import {
   importPKCS8,
   importSPKI,
@@ -22,7 +27,10 @@ import {
   randomUuid,
   safeEqualHex,
 } from '../../common/security/crypto.util';
-import { fingerprintOrigin } from '../../common/security/origin.util';
+import {
+  destinationRateLimitBucketKey,
+  fingerprintOrigin,
+} from '../../common/security/origin.util';
 import {
   EMAIL_DELIVERY_PORT,
   SMS_DELIVERY_PORT,
@@ -96,11 +104,12 @@ export class TokenService {
   }
 }
 
-type ChallengeOutcome =
-  | { status: 'ok'; challenge: AuthChallenge }
+type AuthorizeChallengeOutcome<T> =
+  | { status: 'ok'; value: T }
   | {
       status: 'error';
-      code: 'AUTH_CHALLENGE_EXPIRED' | 'AUTH_CHALLENGE_INVALID';
+      code:
+        'AUTH_CHALLENGE_EXPIRED' | 'AUTH_CHALLENGE_INVALID' | 'AUTH_CONFLICT';
     };
 
 type RefreshOutcome =
@@ -116,6 +125,14 @@ function isRetryableTxError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = (error as { code?: string }).code;
   return code === 'P2034' || code === '40001';
+}
+
+function isUniqueConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: string }).code === 'P2002'
+  );
 }
 
 @Injectable()
@@ -137,7 +154,12 @@ export class ChallengeService {
     originFingerprint?: string;
   }) {
     await this.enforceRateLimit(
-      `challenge:dest:${input.destinationType}:${input.destinationNormalized}:${input.purpose}`,
+      destinationRateLimitBucketKey({
+        destinationType: input.destinationType,
+        destinationNormalized: input.destinationNormalized,
+        purpose: input.purpose,
+        pepper: this.config.getOrThrow('RATE_LIMIT_PEPPER'),
+      }),
       5,
       15 * 60 * 1000,
     );
@@ -219,70 +241,133 @@ export class ChallengeService {
   }
 
   /**
-   * Commit attempt increments / consumption inside the transaction, then map
-   * to a public AppError only after the transaction commits.
+   * Validate a challenge and run the authorized mutation in one transaction.
+   * Consumption commits only after `action` succeeds. Error outcomes map to
+   * AppError only after the transaction commits or rolls back.
    */
-  async consumeChallenge(challengeId: string, code: string) {
-    const outcome = await this.withTxRetry(() =>
-      this.prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`
-          SELECT id FROM auth_challenges WHERE id = ${challengeId}::uuid FOR UPDATE
-        `;
-        const challenge = await tx.authChallenge.findUnique({
-          where: { id: challengeId },
-        });
-        if (
-          !challenge ||
-          challenge.consumedAt ||
-          challenge.expiresAt <= new Date()
-        ) {
-          return {
-            status: 'error',
-            code: 'AUTH_CHALLENGE_EXPIRED',
-          } satisfies ChallengeOutcome;
-        }
-        if (challenge.attempts >= challenge.maxAttempts) {
-          return {
-            status: 'error',
-            code: 'AUTH_CHALLENGE_INVALID',
-          } satisfies ChallengeOutcome;
-        }
-        const actual = hashOpaqueSecret(
-          code,
-          this.config.getOrThrow('OTP_CODE_PEPPER'),
-        );
-        if (!safeEqualHex(challenge.codeHash, actual)) {
-          await tx.authChallenge.update({
-            where: { id: challengeId },
-            data: { attempts: { increment: 1 } },
+  async authorizeChallenge<T>(
+    input: {
+      challengeId: string;
+      code: string;
+      purpose: ChallengePurpose;
+      accountId?: string;
+      requirePendingPassword?: boolean;
+      requireBoundUser?: boolean;
+    },
+    action: (
+      tx: Prisma.TransactionClient,
+      challenge: AuthChallenge,
+    ) => Promise<T>,
+  ): Promise<T> {
+    let outcome: AuthorizeChallengeOutcome<T>;
+    try {
+      outcome = await this.withTxRetry(() =>
+        this.prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`
+            SELECT id FROM auth_challenges WHERE id = ${input.challengeId}::uuid FOR UPDATE
+          `;
+          const challenge = await tx.authChallenge.findUnique({
+            where: { id: input.challengeId },
           });
+          if (
+            !challenge ||
+            challenge.consumedAt ||
+            challenge.expiresAt <= new Date()
+          ) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_EXPIRED',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+          if (challenge.attempts >= challenge.maxAttempts) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+          // Purpose / ownership / pending checks before authorizing mutation.
+          if (challenge.purpose !== input.purpose) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+          if (
+            input.accountId !== undefined &&
+            challenge.userId !== input.accountId
+          ) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+          if (input.requireBoundUser && !challenge.userId) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+          if (input.requirePendingPassword && !challenge.pendingPasswordHash) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+
+          const actual = hashOpaqueSecret(
+            input.code,
+            this.config.getOrThrow('OTP_CODE_PEPPER'),
+          );
+          if (!safeEqualHex(challenge.codeHash, actual)) {
+            await tx.authChallenge.update({
+              where: { id: input.challengeId },
+              data: { attempts: { increment: 1 } },
+            });
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_INVALID',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
+
+          // On P2002, Prisma aborts the TX; outer catch maps to AUTH_CONFLICT.
+          const value = await action(tx, challenge);
+
+          const updated = await tx.authChallenge.updateMany({
+            where: {
+              id: input.challengeId,
+              consumedAt: null,
+              attempts: { lt: challenge.maxAttempts },
+            },
+            data: { consumedAt: new Date() },
+          });
+          if (updated.count !== 1) {
+            return {
+              status: 'error',
+              code: 'AUTH_CHALLENGE_EXPIRED',
+            } satisfies AuthorizeChallengeOutcome<T>;
+          }
           return {
-            status: 'error',
-            code: 'AUTH_CHALLENGE_INVALID',
-          } satisfies ChallengeOutcome;
-        }
-        const updated = await tx.authChallenge.updateMany({
-          where: {
-            id: challengeId,
-            consumedAt: null,
-            attempts: { lt: challenge.maxAttempts },
-          },
-          data: { consumedAt: new Date() },
-        });
-        if (updated.count !== 1) {
-          return {
-            status: 'error',
-            code: 'AUTH_CHALLENGE_EXPIRED',
-          } satisfies ChallengeOutcome;
-        }
-        return { status: 'ok', challenge } satisfies ChallengeOutcome;
-      }),
-    );
+            status: 'ok',
+            value,
+          } satisfies AuthorizeChallengeOutcome<T>;
+        }),
+      );
+    } catch (error) {
+      if (isUniqueConflict(error)) {
+        outcome = {
+          status: 'error',
+          code: 'AUTH_CONFLICT',
+        };
+      } else {
+        throw error;
+      }
+    }
 
     if (outcome.status === 'error') {
-      throw new AppError(outcome.code, 400);
+      const httpStatus = outcome.code === 'AUTH_CONFLICT' ? 409 : 400;
+      throw new AppError(outcome.code, httpStatus);
     }
-    return outcome.challenge;
+    return outcome.value;
   }
 
   async enforceRateLimit(bucketKey: string, limit: number, windowMs: number) {
@@ -346,7 +431,11 @@ export class SessionService {
     private readonly tokens: TokenService,
   ) {}
 
-  async createSession(userId: string, deviceLabel?: string) {
+  async createSessionRecords(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    deviceLabel?: string,
+  ): Promise<{ sessionId: string; refreshToken: string; userId: string }> {
     const familyId = randomUuid();
     const refresh = generateRefreshToken();
     const tokenHash = hashOpaqueSecret(
@@ -354,7 +443,7 @@ export class SessionService {
       this.config.getOrThrow('REFRESH_TOKEN_PEPPER'),
     );
     const absoluteExpiresAt = new Date(Date.now() + REFRESH_TTL_MS);
-    const session = await this.prisma.authSession.create({
+    const session = await tx.authSession.create({
       data: {
         userId,
         familyId,
@@ -369,11 +458,35 @@ export class SessionService {
         },
       },
     });
-    const accessToken = await this.tokens.issueAccessToken({
-      accountId: userId,
+    return {
       sessionId: session.id,
+      refreshToken: refresh,
+      userId,
+    };
+  }
+
+  async issueSessionTokens(records: {
+    sessionId: string;
+    refreshToken: string;
+    userId: string;
+  }) {
+    const accessToken = await this.tokens.issueAccessToken({
+      accountId: records.userId,
+      sessionId: records.sessionId,
     });
-    return { accessToken, refreshToken: refresh, sessionId: session.id };
+    return {
+      accessToken,
+      refreshToken: records.refreshToken,
+      sessionId: records.sessionId,
+    };
+  }
+
+  /** Convenience for non-challenge flows (email sign-in, etc.). */
+  async createSession(userId: string, deviceLabel?: string) {
+    const records = await this.prisma.$transaction((tx) =>
+      this.createSessionRecords(tx, userId, deviceLabel),
+    );
+    return this.issueSessionTokens(records);
   }
 
   async refresh(refreshToken: string) {

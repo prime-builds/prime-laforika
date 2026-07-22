@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ChallengePurpose } from '@prisma/client';
+import { ChallengePurpose, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import {
@@ -34,21 +34,35 @@ export class AuthService {
 
   async verifyPhoneChallenge(challengeId: string, codeRaw: string) {
     const code = toLatinDigits(codeRaw).trim();
-    const challenge = await this.challenges.consumeChallenge(challengeId, code);
-    if (challenge.purpose !== ChallengePurpose.PHONE_SIGN_IN) {
-      throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-    }
-    let user = await this.prisma.user.findUnique({
-      where: { phoneE164: challenge.destinationNormalized },
-    });
-    if (!user) {
-      user = await this.prisma.user.create({
-        data: { phoneE164: challenge.destinationNormalized },
-      });
-    }
-    if (user.disabledAt) throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
-    const tokens = await this.sessions.createSession(user.id);
-    return { ...tokens, ...this.sessions.accountView(user) };
+    const result = await this.challenges.authorizeChallenge(
+      {
+        challengeId,
+        code,
+        purpose: ChallengePurpose.PHONE_SIGN_IN,
+      },
+      async (tx, challenge) => {
+        let user = await tx.user.findUnique({
+          where: { phoneE164: challenge.destinationNormalized },
+        });
+        if (!user) {
+          user = await tx.user.create({
+            data: { phoneE164: challenge.destinationNormalized },
+          });
+        }
+        if (user.disabledAt) {
+          throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
+        }
+        const sessionRecords = await this.sessions.createSessionRecords(
+          tx,
+          user.id,
+        );
+        return { user, sessionRecords };
+      },
+    );
+    const tokens = await this.sessions.issueSessionTokens(
+      result.sessionRecords,
+    );
+    return { ...tokens, ...this.sessions.accountView(result.user) };
   }
 
   async emailSignUp(
@@ -87,41 +101,41 @@ export class AuthService {
   }
 
   async emailVerify(challengeId: string, codeRaw: string) {
-    const challenge = await this.challenges.consumeChallenge(
-      challengeId,
-      toLatinDigits(codeRaw).trim(),
+    const result = await this.challenges.authorizeChallenge(
+      {
+        challengeId,
+        code: toLatinDigits(codeRaw).trim(),
+        purpose: ChallengePurpose.EMAIL_VERIFY,
+        requirePendingPassword: true,
+      },
+      async (tx, challenge) => {
+        const email = challenge.destinationNormalized;
+        const existing = await tx.user.findUnique({
+          where: { emailNormalized: email },
+        });
+        if (existing?.emailVerifiedAt) {
+          throw new AppError('AUTH_CONFLICT', 409);
+        }
+
+        const user = await tx.user.create({
+          data: {
+            emailNormalized: email,
+            emailDisplay: challenge.pendingEmailDisplay ?? email,
+            passwordHash: challenge.pendingPasswordHash!,
+            emailVerifiedAt: new Date(),
+          },
+        });
+        const sessionRecords = await this.sessions.createSessionRecords(
+          tx,
+          user.id,
+        );
+        return { user, sessionRecords };
+      },
     );
-    if (
-      challenge.purpose !== ChallengePurpose.EMAIL_VERIFY ||
-      !challenge.pendingPasswordHash
-    ) {
-      throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-    }
-
-    const email = challenge.destinationNormalized;
-    const existing = await this.prisma.user.findUnique({
-      where: { emailNormalized: email },
-    });
-    if (existing?.emailVerifiedAt) {
-      throw new AppError('AUTH_CONFLICT', 409);
-    }
-
-    let user;
-    try {
-      user = await this.prisma.user.create({
-        data: {
-          emailNormalized: email,
-          emailDisplay: challenge.pendingEmailDisplay ?? email,
-          passwordHash: challenge.pendingPasswordHash,
-          emailVerifiedAt: new Date(),
-        },
-      });
-    } catch {
-      throw new AppError('AUTH_CONFLICT', 409);
-    }
-
-    const tokens = await this.sessions.createSession(user.id);
-    return { ...tokens, ...this.sessions.accountView(user) };
+    const tokens = await this.sessions.issueSessionTokens(
+      result.sessionRecords,
+    );
+    return { ...tokens, ...this.sessions.accountView(result.user) };
   }
 
   async emailSignIn(emailRaw: string, password: string) {
@@ -187,25 +201,27 @@ export class AuthService {
     newPassword: string,
   ) {
     assertPasswordPolicy(newPassword);
-    const challenge = await this.challenges.consumeChallenge(
-      challengeId,
-      toLatinDigits(codeRaw).trim(),
-    );
-    if (
-      challenge.purpose !== ChallengePurpose.PASSWORD_RESET ||
-      !challenge.userId
-    ) {
-      throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-    }
     const passwordHash = await hashPassword(
       newPassword,
       this.config.getOrThrow('PASSWORD_PEPPER'),
     );
-    await this.prisma.user.update({
-      where: { id: challenge.userId },
-      data: { passwordHash },
-    });
-    await this.sessions.revokeAll(challenge.userId);
+    await this.challenges.authorizeChallenge(
+      {
+        challengeId,
+        code: toLatinDigits(codeRaw).trim(),
+        purpose: ChallengePurpose.PASSWORD_RESET,
+        requireBoundUser: true,
+      },
+      async (tx, challenge) => {
+        const userId = challenge.userId!;
+        await tx.user.update({
+          where: { id: userId },
+          data: { passwordHash },
+        });
+        await this.revokeAllInTx(tx, userId);
+        return { ok: true as const };
+      },
+    );
     return { ok: true };
   }
 
@@ -251,25 +267,21 @@ export class AuthService {
     challengeId: string,
     codeRaw: string,
   ) {
-    const challenge = await this.challenges.consumeChallenge(
-      challengeId,
-      toLatinDigits(codeRaw).trim(),
+    const user = await this.challenges.authorizeChallenge(
+      {
+        challengeId,
+        code: toLatinDigits(codeRaw).trim(),
+        purpose: ChallengePurpose.PHONE_ATTACH,
+        accountId,
+      },
+      async (tx, challenge) => {
+        return tx.user.update({
+          where: { id: accountId },
+          data: { phoneE164: challenge.destinationNormalized },
+        });
+      },
     );
-    if (
-      challenge.purpose !== ChallengePurpose.PHONE_ATTACH ||
-      challenge.userId !== accountId
-    ) {
-      throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-    }
-    try {
-      const user = await this.prisma.user.update({
-        where: { id: accountId },
-        data: { phoneE164: challenge.destinationNormalized },
-      });
-      return this.sessions.accountView(user);
-    } catch {
-      throw new AppError('AUTH_CONFLICT', 409);
-    }
+    return this.sessions.accountView(user);
   }
 
   async removePhone(accountId: string) {
@@ -327,44 +339,39 @@ export class AuthService {
     challengeId: string,
     codeRaw: string,
   ) {
-    const challenge = await this.challenges.consumeChallenge(
-      challengeId,
-      toLatinDigits(codeRaw).trim(),
-    );
-    if (
-      challenge.purpose !== ChallengePurpose.EMAIL_ATTACH ||
-      challenge.userId !== accountId ||
-      !challenge.pendingPasswordHash
-    ) {
-      throw new AppError('AUTH_CHALLENGE_INVALID', 400);
-    }
-
-    const conflict = await this.prisma.user.findFirst({
-      where: {
-        emailNormalized: challenge.destinationNormalized,
-        emailVerifiedAt: { not: null },
-        NOT: { id: accountId },
+    const user = await this.challenges.authorizeChallenge(
+      {
+        challengeId,
+        code: toLatinDigits(codeRaw).trim(),
+        purpose: ChallengePurpose.EMAIL_ATTACH,
+        accountId,
+        requirePendingPassword: true,
       },
-    });
-    if (conflict) {
-      throw new AppError('AUTH_CONFLICT', 409);
-    }
+      async (tx, challenge) => {
+        const conflict = await tx.user.findFirst({
+          where: {
+            emailNormalized: challenge.destinationNormalized,
+            emailVerifiedAt: { not: null },
+            NOT: { id: accountId },
+          },
+        });
+        if (conflict) {
+          throw new AppError('AUTH_CONFLICT', 409);
+        }
 
-    try {
-      const user = await this.prisma.user.update({
-        where: { id: accountId },
-        data: {
-          emailNormalized: challenge.destinationNormalized,
-          emailDisplay:
-            challenge.pendingEmailDisplay ?? challenge.destinationNormalized,
-          passwordHash: challenge.pendingPasswordHash,
-          emailVerifiedAt: new Date(),
-        },
-      });
-      return this.sessions.accountView(user);
-    } catch {
-      throw new AppError('AUTH_CONFLICT', 409);
-    }
+        return tx.user.update({
+          where: { id: accountId },
+          data: {
+            emailNormalized: challenge.destinationNormalized,
+            emailDisplay:
+              challenge.pendingEmailDisplay ?? challenge.destinationNormalized,
+            passwordHash: challenge.pendingPasswordHash!,
+            emailVerifiedAt: new Date(),
+          },
+        });
+      },
+    );
+    return this.sessions.accountView(user);
   }
 
   async removeEmail(accountId: string) {
@@ -413,5 +420,24 @@ export class AuthService {
     });
     await this.sessions.revokeAll(accountId);
     return { ok: true };
+  }
+
+  /** Inline revoke inside an existing transaction (no nested TX). */
+  private async revokeAllInTx(
+    tx: Prisma.TransactionClient,
+    accountId: string,
+  ): Promise<void> {
+    const sessions = await tx.authSession.findMany({
+      where: { userId: accountId, revokedAt: null },
+    });
+    const ids = sessions.map((s) => s.id);
+    await tx.authSession.updateMany({
+      where: { userId: accountId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await tx.refreshToken.updateMany({
+      where: { sessionId: { in: ids } },
+      data: { revokedAt: new Date() },
+    });
   }
 }
