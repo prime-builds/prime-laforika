@@ -41,8 +41,8 @@ void main() {
       'retries GET on shared Dio adapter without constructing bare Dio',
       () async {
         var attempts = 0;
-final adapter = _CountingAdapter((options, _, _) async {
-        attempts += 1;
+        final adapter = _CountingAdapter((options, _, _) async {
+          attempts += 1;
           if (attempts == 1) {
             throw DioException(
               requestOptions: options,
