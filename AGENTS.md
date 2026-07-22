@@ -389,19 +389,19 @@ This sequence is mandatory for every milestone or substantial task. Treat this f
 6. Stop for owner/external review. Do **not** merge.
 7. Apply review fixes on the same branch.
 8. Push and obtain a final green CI result after implementation review.
-9. Update [`docs/project_inventory.md`](docs/project_inventory.md) exactly once on the same task branch.
+9. Update [`docs/project_inventory.md`](docs/project_inventory.md) **exactly once** on the same task branch, using only facts available **before** that inventory update.
 10. Commit the inventory update, push, and rerun applicable CI.
 11. Merge the pull request only after that CI result is green **and** explicit approval is given.
 
-#### Inventory recording rules
+#### Inventory recording rules (terminating)
 
-[`docs/project_inventory.md`](docs/project_inventory.md) records the **completed work package**, not the inventory-update commit or the merge commit.
+[`docs/project_inventory.md`](docs/project_inventory.md) records the **completed work package**, not its own inventory commit and not the merge commit.
 
 Each completed-check-in entry records only:
 
 - Work package and completed scope
 - PR number
-- Final reviewed **implementation** commit SHA
+- Final reviewed **implementation** commit SHA (the last reviewed implementation commit before the inventory update)
 - Verification results
 - Remaining owner decisions or limitations
 - Exact next work package
@@ -413,9 +413,11 @@ Do **not** record:
 - Temporary branch status
 - “Pending merge” or similar transient wording
 
+After archive review and final green CI: update the inventory once → commit it → push and rerun applicable CI → merge when CI is green and approval is given.
+
 The inventory entry appearing on `main` is sufficient proof that the work package was merged. No post-merge inventory update is required.
 
-A workflow or documentation PR must **not** create an inventory entry about itself unless it delivers an independently meaningful project capability.
+Do **not** invent a follow-up inventory revision to point at the inventory commit, the merge commit, or any later SHA. That creates a self-referential loop.
 
 ## 20. Definition of done
 
