@@ -12,7 +12,10 @@ async function main() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   mkdirSync('openapi', { recursive: true });
-  writeFileSync('openapi/openapi.json', `${JSON.stringify(document, null, 2)}\n`);
+  writeFileSync(
+    'openapi/openapi.json',
+    `${JSON.stringify(document, null, 2)}\n`,
+  );
   await app.close();
 }
 

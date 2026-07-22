@@ -126,7 +126,10 @@ export class AuthController {
 
   @Post('auth/phone/challenges/:challengeId/verify')
   @HttpCode(HttpStatus.OK)
-  verifyPhone(@Param('challengeId') challengeId: string, @Body() body: CodeDto) {
+  verifyPhone(
+    @Param('challengeId') challengeId: string,
+    @Body() body: CodeDto,
+  ) {
     return this.auth.verifyPhoneChallenge(challengeId, body.code);
   }
 
@@ -157,7 +160,11 @@ export class AuthController {
   @Post('auth/password/reset')
   @HttpCode(HttpStatus.OK)
   resetPassword(@Body() body: ResetPasswordDto) {
-    return this.auth.resetPassword(body.challengeId, body.code, body.newPassword);
+    return this.auth.resetPassword(
+      body.challengeId,
+      body.code,
+      body.newPassword,
+    );
   }
 
   @Post('auth/refresh')
@@ -174,6 +181,7 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('account/phone/challenges')
+  @HttpCode(HttpStatus.OK)
   attachPhone(
     @Req() req: { auth: { accountId: string } },
     @Body() body: PhoneDto,
@@ -183,12 +191,17 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('account/phone/challenges/:challengeId/verify')
+  @HttpCode(HttpStatus.OK)
   verifyAttachPhone(
     @Req() req: { auth: { accountId: string } },
     @Param('challengeId') challengeId: string,
     @Body() body: CodeDto,
   ) {
-    return this.auth.verifyAttachPhone(req.auth.accountId, challengeId, body.code);
+    return this.auth.verifyAttachPhone(
+      req.auth.accountId,
+      challengeId,
+      body.code,
+    );
   }
 
   @UseGuards(AccessTokenGuard)
@@ -199,6 +212,7 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('account/email/challenges')
+  @HttpCode(HttpStatus.OK)
   attachEmail(
     @Req() req: { auth: { accountId: string } },
     @Body() body: AttachEmailDto,
@@ -212,6 +226,7 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('account/email/verify')
+  @HttpCode(HttpStatus.OK)
   verifyAttachEmail(
     @Req() req: { auth: { accountId: string } },
     @Body() body: EmailVerifyDto,
@@ -244,7 +259,9 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Get('auth/sessions')
-  async listSessions(@Req() req: { auth: { accountId: string; sessionId: string } }) {
+  async listSessions(
+    @Req() req: { auth: { accountId: string; sessionId: string } },
+  ) {
     const sessions = await this.prisma.authSession.findMany({
       where: { userId: req.auth.accountId },
       orderBy: { createdAt: 'desc' },
@@ -270,6 +287,7 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('auth/logout')
+  @HttpCode(HttpStatus.OK)
   async logout(@Req() req: { auth: { accountId: string; sessionId: string } }) {
     await this.sessions.revokeSession(req.auth.sessionId, req.auth.accountId);
     return { ok: true };
@@ -277,6 +295,7 @@ export class AuthController {
 
   @UseGuards(AccessTokenGuard)
   @Post('auth/logout-all')
+  @HttpCode(HttpStatus.OK)
   async logoutAll(@Req() req: { auth: { accountId: string } }) {
     await this.sessions.revokeAll(req.auth.accountId);
     return { ok: true };

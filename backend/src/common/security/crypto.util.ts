@@ -1,4 +1,10 @@
-import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'crypto';
 import { readFileSync } from 'fs';
 import * as argon2 from 'argon2';
 import {
@@ -22,7 +28,10 @@ export function toLatinDigits(input: string): string {
     .join('');
 }
 
-export function normalizePhone(input: string, defaultCountry: CountryCode = 'IR'): string {
+export function normalizePhone(
+  input: string,
+  defaultCountry: CountryCode = 'IR',
+): string {
   const latin = toLatinDigits(input).trim();
   const parsed = parsePhoneNumberFromString(latin, defaultCountry);
   if (!parsed || !parsed.isValid()) {

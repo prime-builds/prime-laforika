@@ -11,10 +11,7 @@ import {
   toLatinDigits,
   verifyPassword,
 } from '../../common/security/crypto.util';
-import {
-  ChallengeService,
-  SessionService,
-} from './session.service';
+import { ChallengeService, SessionService } from './session.service';
 
 @Injectable()
 export class AuthService {
@@ -98,7 +95,10 @@ export class AuthService {
       challengeId,
       toLatinDigits(codeRaw).trim(),
     );
-    if (challenge.purpose !== ChallengePurpose.EMAIL_VERIFY || !challenge.userId) {
+    if (
+      challenge.purpose !== ChallengePurpose.EMAIL_VERIFY ||
+      !challenge.userId
+    ) {
       throw new AppError('AUTH_CHALLENGE_INVALID', 400);
     }
     const user = await this.prisma.user.findUniqueOrThrow({
@@ -161,13 +161,20 @@ export class AuthService {
     });
   }
 
-  async resetPassword(challengeId: string, codeRaw: string, newPassword: string) {
+  async resetPassword(
+    challengeId: string,
+    codeRaw: string,
+    newPassword: string,
+  ) {
     assertPasswordPolicy(newPassword);
     const challenge = await this.challenges.consumeChallenge(
       challengeId,
       toLatinDigits(codeRaw).trim(),
     );
-    if (challenge.purpose !== ChallengePurpose.PASSWORD_RESET || !challenge.userId) {
+    if (
+      challenge.purpose !== ChallengePurpose.PASSWORD_RESET ||
+      !challenge.userId
+    ) {
       throw new AppError('AUTH_CHALLENGE_INVALID', 400);
     }
     const passwordHash = await hashPassword(
@@ -192,13 +199,17 @@ export class AuthService {
   }
 
   async me(accountId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: accountId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: accountId },
+    });
     return this.sessions.accountView(user);
   }
 
   async attachPhoneChallenge(accountId: string, phoneRaw: string) {
     const phone = normalizePhone(phoneRaw);
-    const conflict = await this.prisma.user.findUnique({ where: { phoneE164: phone } });
+    const conflict = await this.prisma.user.findUnique({
+      where: { phoneE164: phone },
+    });
     if (conflict && conflict.id !== accountId) {
       throw new AppError('AUTH_CONFLICT', 409);
     }
@@ -210,7 +221,11 @@ export class AuthService {
     });
   }
 
-  async verifyAttachPhone(accountId: string, challengeId: string, codeRaw: string) {
+  async verifyAttachPhone(
+    accountId: string,
+    challengeId: string,
+    codeRaw: string,
+  ) {
     const challenge = await this.challenges.consumeChallenge(
       challengeId,
       toLatinDigits(codeRaw).trim(),
@@ -233,7 +248,9 @@ export class AuthService {
   }
 
   async removePhone(accountId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: accountId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: accountId },
+    });
     if (!user.emailNormalized) throw new AppError('AUTH_LAST_CREDENTIAL', 400);
     return this.sessions.accountView(
       await this.prisma.user.update({
@@ -243,7 +260,11 @@ export class AuthService {
     );
   }
 
-  async attachEmailChallenge(accountId: string, emailRaw: string, password: string) {
+  async attachEmailChallenge(
+    accountId: string,
+    emailRaw: string,
+    password: string,
+  ) {
     const email = normalizeEmail(emailRaw);
     assertPasswordPolicy(password);
     const conflict = await this.prisma.user.findUnique({
@@ -272,7 +293,11 @@ export class AuthService {
     });
   }
 
-  async verifyAttachEmail(accountId: string, challengeId: string, codeRaw: string) {
+  async verifyAttachEmail(
+    accountId: string,
+    challengeId: string,
+    codeRaw: string,
+  ) {
     const challenge = await this.challenges.consumeChallenge(
       challengeId,
       toLatinDigits(codeRaw).trim(),
@@ -283,12 +308,16 @@ export class AuthService {
     ) {
       throw new AppError('AUTH_CHALLENGE_INVALID', 400);
     }
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: accountId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: accountId },
+    });
     return this.sessions.accountView(user);
   }
 
   async removeEmail(accountId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: accountId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: accountId },
+    });
     if (!user.phoneE164) throw new AppError('AUTH_LAST_CREDENTIAL', 400);
     return this.sessions.accountView(
       await this.prisma.user.update({
@@ -308,7 +337,9 @@ export class AuthService {
     newPassword: string,
   ) {
     assertPasswordPolicy(newPassword);
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: accountId } });
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: accountId },
+    });
     if (!user.passwordHash) throw new AppError('AUTH_INVALID_CREDENTIALS', 401);
     const verified = await verifyPassword(
       user.passwordHash,

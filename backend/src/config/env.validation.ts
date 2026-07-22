@@ -80,11 +80,7 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error('Unsupported APP_ENVIRONMENT');
   }
 
-  if (
-    validated.FIXTURE_DELIVERY_ENABLED &&
-    env !== 'dev' &&
-    env !== 'test'
-  ) {
+  if (validated.FIXTURE_DELIVERY_ENABLED && env !== 'dev' && env !== 'test') {
     throw new Error('Fixture delivery is not allowed outside dev/test');
   }
 

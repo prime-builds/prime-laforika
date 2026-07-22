@@ -4,7 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { SessionService, TokenService } from '../../auth/application/session.service';
+import {
+  SessionService,
+  TokenService,
+} from '../../auth/application/session.service';
 
 @Injectable()
 export class AccessTokenGuard implements CanActivate {

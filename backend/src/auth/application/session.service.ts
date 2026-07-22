@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ChallengePurpose, DestinationType, Prisma } from '@prisma/client';
-import { importPKCS8, importSPKI, exportJWK, SignJWT, jwtVerify, JWK } from 'jose';
+import { ChallengePurpose, DestinationType } from '@prisma/client';
+import {
+  importPKCS8,
+  importSPKI,
+  exportJWK,
+  SignJWT,
+  jwtVerify,
+  JWK,
+} from 'jose';
 import { PrismaService } from '../../database/prisma.service';
 import { AppError } from '../../common/errors/app-error';
 import {
@@ -62,11 +69,15 @@ export class TokenService {
   }
 
   async verifyAccessToken(token: string) {
-    const { payload, protectedHeader } = await jwtVerify(token, this.publicKey, {
-      issuer: this.config.getOrThrow('JWT_ISSUER'),
-      audience: this.config.getOrThrow('JWT_AUDIENCE'),
-      algorithms: ['RS256'],
-    });
+    const { payload, protectedHeader } = await jwtVerify(
+      token,
+      this.publicKey,
+      {
+        issuer: this.config.getOrThrow('JWT_ISSUER'),
+        audience: this.config.getOrThrow('JWT_AUDIENCE'),
+        algorithms: ['RS256'],
+      },
+    );
     if (!protectedHeader.kid) {
       throw new AppError('AUTH_INVALID_TOKEN', 401);
     }
@@ -162,7 +173,11 @@ export class ChallengeService {
       const challenge = await tx.authChallenge.findUnique({
         where: { id: challengeId },
       });
-      if (!challenge || challenge.consumedAt || challenge.expiresAt <= new Date()) {
+      if (
+        !challenge ||
+        challenge.consumedAt ||
+        challenge.expiresAt <= new Date()
+      ) {
         throw new AppError('AUTH_CHALLENGE_EXPIRED', 400);
       }
       if (challenge.attempts >= challenge.maxAttempts) {
@@ -388,7 +403,9 @@ export class SessionService {
       hasPhone: Boolean(user.phoneE164),
       hasEmail: Boolean(user.emailNormalized),
       maskedPhone: user.phoneE164 ? maskPhone(user.phoneE164) : null,
-      maskedEmail: user.emailNormalized ? maskEmail(user.emailNormalized) : null,
+      maskedEmail: user.emailNormalized
+        ? maskEmail(user.emailNormalized)
+        : null,
     };
   }
 }

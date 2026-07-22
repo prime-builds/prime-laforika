@@ -38,17 +38,17 @@ export class SanitizedExceptionFilter implements ExceptionFilter {
       status = exception.getStatus();
       const body = exception.getResponse();
       if (typeof body === 'object' && body && 'message' in body) {
-        code = status === 400 ? 'VALIDATION_ERROR' : 'HTTP_ERROR';
+        code =
+          status === HttpStatus.BAD_REQUEST ? 'VALIDATION_ERROR' : 'HTTP_ERROR';
         details = (body as { message?: unknown }).message;
       } else {
         code = 'HTTP_ERROR';
       }
     } else if (exception instanceof Error) {
       // Keep diagnostics local and sanitized — never leak stacks to clients.
-      // eslint-disable-next-line no-console
+
       console.error(`[auth] ${exception.name}: ${exception.message}`);
     } else {
-      // eslint-disable-next-line no-console
       console.error('[auth] non-error exception');
     }
 

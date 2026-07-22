@@ -23,12 +23,18 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new SanitizedExceptionFilter());
-  app.use((req: Request & { correlationId?: string }, res: Response, next: NextFunction) => {
-    const correlationId = randomUUID();
-    req.correlationId = correlationId;
-    res.setHeader('x-correlation-id', correlationId);
-    next();
-  });
+  app.use(
+    (
+      req: Request & { correlationId?: string },
+      res: Response,
+      next: NextFunction,
+    ) => {
+      const correlationId = randomUUID();
+      req.correlationId = correlationId;
+      res.setHeader('x-correlation-id', correlationId);
+      next();
+    },
+  );
 
   const cors = config.get<string>('CORS_ORIGINS') ?? '';
   if (cors === '*') {
@@ -51,4 +57,4 @@ async function bootstrap() {
   await app.listen(port);
 }
 
-bootstrap();
+void bootstrap();
