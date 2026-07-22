@@ -48,7 +48,6 @@ describe('Auth e2e', () => {
     app.useGlobalFilters(new SanitizedExceptionFilter());
     await app.init();
     prisma = app.get(PrismaService);
-    await prisma.fixtureInboxMessage.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.authSession.deleteMany();
     await prisma.authChallenge.deleteMany();
@@ -176,6 +175,153 @@ describe('Auth e2e', () => {
       .post('/v1/auth/refresh')
       .send({ refreshToken: verified.refreshToken })
       .expect(HttpStatus.UNAUTHORIZED);
+
+    const events = await prisma.securityEvent.findMany({
+      where: { type: 'REFRESH_REPLAY', accountId: verified.accountId },
+    });
+    expect(events.length).toBeGreaterThanOrEqual(1);
+    const sessions = await prisma.authSession.findMany({
+      where: { userId: verified.accountId },
+    });
+    expect(sessions.every((s) => s.revokedAt !== null)).toBe(true);
+  });
+
+  it('email signup cannot login before verification', async () => {
+    const email = 'pending-before-verify@example.com';
+    const password = 'correct-horse-battery-pv';
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-up')
+      .send({ email, password })
+      .expect(HttpStatus.OK);
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-in')
+      .send({ email, password })
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const user = await prisma.user.findUnique({
+      where: { emailNormalized: email },
+    });
+    expect(user).toBeNull();
+  });
+
+  it('email attachment stays inactive until verification', async () => {
+    const phone = '+989129999001';
+    const verified = await signInPhone(phone);
+    const email = 'attach-pending@example.com';
+    const password = 'correct-horse-battery-ap';
+
+    await request(app.getHttpServer())
+      .post('/v1/account/email/challenges')
+      .set('Authorization', `Bearer ${verified.accessToken}`)
+      .send({ email, password })
+      .expect(HttpStatus.OK);
+
+    const meRes = await request(app.getHttpServer())
+      .get('/v1/account/me')
+      .set('Authorization', `Bearer ${verified.accessToken}`)
+      .expect(HttpStatus.OK);
+    expect(meRes.body).toMatchObject({ hasEmail: false });
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/email/sign-in')
+      .send({ email, password })
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: verified.accountId },
+    });
+    expect(user.emailNormalized).toBeNull();
+    expect(user.passwordHash).toBeNull();
+  });
+
+  it('five failed challenge attempts persist and block correct code', async () => {
+    const phone = '+989129999002';
+    const challengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    const challenge = challengeRes.body as ChallengeResponse;
+    const code = await readCode(phone, 'PHONE_SIGN_IN');
+
+    for (let i = 0; i < 5; i += 1) {
+      await request(app.getHttpServer())
+        .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+        .send({ code: '000000' })
+        .expect(HttpStatus.BAD_REQUEST);
+    }
+
+    const stored = await prisma.authChallenge.findUniqueOrThrow({
+      where: { id: challenge.challengeId },
+    });
+    expect(stored.attempts).toBe(5);
+
+    await request(app.getHttpServer())
+      .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+      .send({ code })
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('concurrent refresh yields at most one success and revokes losers', async () => {
+    const phone = '+989129999003';
+    const verified = await signInPhone(phone);
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        request(app.getHttpServer())
+          .post('/v1/auth/refresh')
+          .send({ refreshToken: verified.refreshToken }),
+      ),
+    );
+    const successes = results.filter((r) => r.status === 200);
+    const failures = results.filter((r) => r.status === 401);
+    expect(successes.length).toBe(1);
+    expect(failures.length).toBe(7);
+
+    // Losing concurrent requests revoke the family after the winner claims.
+    const winner = successes[0]?.body as TokenResponse;
+    await request(app.getHttpServer())
+      .post('/v1/auth/refresh')
+      .send({ refreshToken: verified.refreshToken })
+      .expect(HttpStatus.UNAUTHORIZED);
+    await request(app.getHttpServer())
+      .post('/v1/auth/refresh')
+      .send({ refreshToken: winner.refreshToken })
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const events = await prisma.securityEvent.findMany({
+      where: { type: 'REFRESH_REPLAY', accountId: verified.accountId },
+    });
+    expect(events.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('fixture inbox is one-time and rejects wrong key; no DB plaintext codes', async () => {
+    const phone = '+989129999004';
+    await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+
+    await request(app.getHttpServer())
+      .get('/v1/dev/fixtures/inbox')
+      .query({ destination: phone, purpose: 'PHONE_SIGN_IN' })
+      .set('X-Fixture-Key', 'wrong-key')
+      .expect(HttpStatus.FORBIDDEN);
+
+    const first = await readCode(phone, 'PHONE_SIGN_IN');
+    expect(first).toMatch(/^\d{6}$/);
+
+    const second = await request(app.getHttpServer())
+      .get('/v1/dev/fixtures/inbox')
+      .query({ destination: phone, purpose: 'PHONE_SIGN_IN' })
+      .set('X-Fixture-Key', fixtureKey)
+      .expect(HttpStatus.OK);
+    expect(second.body).toEqual({});
+
+    const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public' AND tablename = 'fixture_inbox_messages'
+    `;
+    expect(tables).toHaveLength(0);
   });
 
   it('email signup, verify, then email login', async () => {
