@@ -62,5 +62,27 @@ app.*.map.json
 **/GoogleService-Info.plist
 **/firebase_options.dart
 
+# Backend secrets, keys, local DBs, and build outputs
+backend/secrets/
+backend/**/*.pem
+backend/**/*.key
+backend/dist/
+backend/coverage/
+backend/.env
+backend/.env.*
+!backend/.env.example
+*.sql.gz
+*.dump
+
+# Local Flutter config overrides (device-specific API hosts)
+config/local*.json
+!config/dev.json
+!config/staging.json
+!config/prod.json
+
 # Milestone / task package prompts are versioned under docs/prompts/
 # (do not ignore this directory)
+
+backend/node_modules/
+backend/dist/
+
