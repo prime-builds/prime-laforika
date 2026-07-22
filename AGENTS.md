@@ -337,7 +337,7 @@ npm run test:e2e --prefix backend
 npm run openapi:check --prefix backend
 ```
 
-Before any PR, run the required `dev`, `staging`, and `prod` debug-build matrix:
+Before any PR, run the required `dev`, `staging`, and `prod` debug-build matrix **locally** (not uploaded as CI artifacts on the free Actions plan):
 
 ```bash
 for FLAVOR in dev staging prod; do
@@ -347,12 +347,13 @@ for FLAVOR in dev staging prod; do
 done
 ```
 
-From M1, run the applicable Android-emulator integration flow:
+From M1, run the Android-emulator auth integration **locally** against a started Nest backend (CI does not boot emulators):
 
 ```bash
-flutter test integration_test --flavor dev \
+flutter test integration_test/auth_flow_test.dart --flavor dev \
   --dart-define=APP_FLAVOR=dev \
   --dart-define-from-file=config/dev.json \
+  --dart-define=FIXTURE_INBOX_KEY=<from-backend-env> \
   -d <emulator-id>
 ```
 

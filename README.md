@@ -13,7 +13,8 @@ Current work package in progress: **M1 — Authentication decision and real vert
 - Persian (`fa-IR`) and RTL from day one
 - Native flavors: `dev`, `staging`, `prod`
 - Backend: NestJS on Node.js 24 LTS + PostgreSQL (Prisma)
-- GitHub Actions quality gates (Flutter + backend + Android-emulator auth integration)
+- GitHub Actions quality gates (Flutter unit/analyze + backend Postgres gates)
+- Android-emulator auth integration is **local-only** (saves Actions minutes/storage on free plans)
 
 The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) (v1.3). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
 
@@ -139,16 +140,19 @@ foreach ($FLAVOR in @("dev","staging","prod")) {
 }
 ```
 
-### Android-emulator auth integration
+### Android-emulator auth integration (local only)
 
-With PostgreSQL migrated and the backend running in `dev` fixture mode:
+Not run in GitHub Actions. With PostgreSQL migrated and the backend running in `dev` fixture mode, pass the same `FIXTURE_INBOX_KEY` from `backend/.env`:
 
 ```powershell
 flutter test integration_test/auth_flow_test.dart --flavor dev `
   --dart-define=APP_FLAVOR=dev `
   --dart-define-from-file=config/dev.json `
-  -d <emulator-id>
+  --dart-define=FIXTURE_INBOX_KEY=<from-backend-env> `
+  -d emulator-5554
 ```
+
+Flavor debug APKs are also verified locally (see above), not uploaded as CI artifacts.
 
 ## Repository structure
 
