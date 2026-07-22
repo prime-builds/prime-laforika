@@ -22,3 +22,4 @@ built. When they disagree, `ARCHITECTURE.md` wins and the ADR should be supersed
 | [0004](./0004-networking-and-error-model.md) | Dio + sealed Failure/Result error model | Accepted |
 | [0005](./0005-local-persistence-and-offline.md) | Local persistence and deferred offline strategy | Accepted |
 | [0006](./0006-authentication-and-session.md) | Authentication and session model | Accepted |
+| [0007](./0007-custom-authentication-backend-and-session-security.md) | Custom authentication backend and session security | Accepted |
