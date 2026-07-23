@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/features/auth/auth.dart';
-import 'package:laforika/features/home/presentation/home_screen.dart';
+import 'package:laforika/features/home/home.dart';
+import 'package:laforika/l10n/generated/app_localizations.dart';
 import 'package:laforika/main.dart' as app;
 
 /// Real-backend Android auth vertical slice against Nest + PostgreSQL.
@@ -31,7 +33,7 @@ void main() {
     final suffix = DateTime.now().millisecondsSinceEpoch.toString();
     final phone = '0912${suffix.substring(suffix.length - 7)}';
     final normalizedPhone = '+98${phone.substring(1)}';
-    final email = 'm1_$suffix@example.com';
+    final email = 'm2_$suffix@example.com';
     const password = 'correct-horse-battery-1';
 
     await app.main();
@@ -56,13 +58,20 @@ void main() {
     await tester.tap(find.byKey(const Key('auth_otp_verify')));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
+    final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byKey(const Key('home_account_id')), findsOneWidget);
-    final homeAccountText = tester
-        .widget<Text>(find.byKey(const Key('home_account_id')))
-        .data!;
-    final accountId = homeAccountText.split(':').last.trim();
+    expect(find.byKey(const Key('home_discovery_shell')), findsOneWidget);
+    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+    expect(find.text(l10n.homeAccountStatusTitle), findsOneWidget);
+    expect(find.text(l10n.homePhoneReady), findsOneWidget);
+
+    final homeElement = tester.element(find.byType(HomeScreen));
+    final homeContainer = ProviderScope.containerOf(homeElement);
+    final authState = homeContainer.read(authControllerProvider);
+    expect(authState, isA<AuthAuthenticated>());
+    final accountId = (authState as AuthAuthenticated).principal.accountId;
     expect(accountId, isNotEmpty);
+    expect(find.textContaining(accountId), findsNothing);
 
     await tester.tap(find.byKey(const Key('home_account_security')));
     await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -96,6 +105,18 @@ void main() {
         .data!;
     expect(securityAccountText, contains(accountId));
 
+    // Return to Home through normal router navigation.
+    final securityContext = tester.element(
+      find.byKey(const Key('account_id_label')),
+    );
+    GoRouter.of(securityContext).go(homeRoutePath);
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+
+    // Re-open account security from Home, then logout current session.
+    await tester.tap(find.byKey(const Key('home_account_security')));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
     await tester.tap(find.byKey(const Key('account_logout')));
     await tester.pumpAndSettle(const Duration(seconds: 3));
     expect(find.byKey(const Key('auth_continue_email')), findsOneWidget);
@@ -114,6 +135,7 @@ void main() {
     await tester.tap(find.byKey(const Key('auth_email_submit')));
     await tester.pumpAndSettle(const Duration(seconds: 3));
     expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.text(l10n.homeEmailReady), findsOneWidget);
 
     // Forced access-token expiry → single-flight refresh without logout.
     final element = tester.element(find.byType(HomeScreen));
@@ -150,14 +172,17 @@ Future<String> _readFixtureCode({
   for (var attempt = 0; attempt < 20; attempt++) {
     final response = await dio.get<Map<String, dynamic>>(
       '/dev/fixtures/inbox',
-      queryParameters: {'destination': destination, 'purpose': purpose},
-      options: Options(headers: {'X-Fixture-Key': fixtureKey}),
+      queryParameters: <String, dynamic>{
+        'destination': destination,
+        'purpose': purpose,
+      },
+      options: Options(headers: <String, dynamic>{'x-fixture-key': fixtureKey}),
     );
     final code = response.data?['code'] as String?;
     if (code != null && code.isNotEmpty) {
       return code;
     }
-    await Future<void>.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 250));
   }
   fail('Fixture code not available for $purpose / $destination');
 }

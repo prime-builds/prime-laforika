@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:laforika/app/app.dart';
 import 'package:laforika/app/router/app_router.dart';
+import 'package:laforika/app/router/routes.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_session_gateway.dart';
 import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/config/app_config.dart';
 import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/error/failure.dart';
+import 'package:laforika/core/utils/auth_utils.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/auth/presentation/account_security_screen.dart';
+import 'package:laforika/features/home/home.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../support/fake_auth_repository.dart';
@@ -111,7 +115,7 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
     expect(find.text(l10n.authMethodTitle), findsOneWidget);
-    expect(find.text(l10n.homeWelcomeMessage), findsNothing);
+    expect(find.text(l10n.homeWelcomeTitle), findsNothing);
   });
 
   testWidgets('authenticated auth-route redirects to home', (tester) async {
@@ -130,7 +134,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
-    expect(find.text(l10n.homeWelcomeMessage), findsOneWidget);
+    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
     expect(find.text(l10n.authMethodTitle), findsNothing);
   });
 
@@ -246,5 +250,162 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.path, accountSecurityRoutePath);
+  });
+
+  test('appRoutes and appRegisteredPaths aggregate auth and home', () {
+    final routes = appRoutes();
+    expect(routes, isNotEmpty);
+    expect(appRegisteredPaths, contains(homeRoutePath));
+    expect(appRegisteredPaths, contains(authMethodRoutePath));
+    expect(appRegisteredPaths, contains(accountSecurityRoutePath));
+    expect(appRegisteredPaths, containsAll(authRegisteredPaths));
+    expect(appRegisteredPaths, containsAll(homeRegisteredPaths));
+
+    final names = <String>[];
+    final paths = <String>[];
+    void walk(List<RouteBase> bases) {
+      for (final route in bases) {
+        if (route is GoRoute) {
+          if (route.name != null) {
+            names.add(route.name!);
+          }
+          paths.add(route.path);
+          walk(route.routes);
+        } else if (route is ShellRoute) {
+          walk(route.routes);
+        }
+      }
+    }
+
+    walk(routes);
+    expect(names.toSet().length, names.length);
+    expect(paths.toSet().length, paths.length);
+    expect(names, contains(homeRouteName));
+    expect(paths, contains(homeRoutePath));
+  });
+
+  test('appRegisteredPaths validates home and rejects auth-only/startup', () {
+    expect(
+      isValidReturnDestination(
+        homeRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isTrue,
+    );
+    expect(
+      isValidReturnDestination(
+        accountSecurityRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isTrue,
+    );
+    expect(
+      isValidReturnDestination(
+        authMethodRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        authStartupRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        'https://evil.example/path',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        '//evil.example/path',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        Uri.encodeFull('https://evil.example'),
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        '/unknown/module',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+    expect(
+      isValidReturnDestination(
+        'not a path',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('home remains a valid authenticated return destination', (
+    tester,
+  ) async {
+    final gateway = _ControllableGateway(const AuthUnauthenticated());
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final router = container.read(goRouterProvider);
+    router.go(
+      '$authMethodRoutePath?from=${Uri.encodeComponent(homeRoutePath)}',
+    );
+    await tester.pumpAndSettle();
+
+    await container
+        .read(authControllerProvider.notifier)
+        .onCredentialsAccepted(
+          accessToken: 'a',
+          refreshToken: 'r',
+          principal: _principal,
+        );
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, homeRoutePath);
+    expect(find.byKey(const Key('home_discovery_shell')), findsOneWidget);
   });
 }
