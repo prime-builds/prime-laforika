@@ -2,7 +2,7 @@
 
 Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith, with a sibling NestJS authentication API under `backend/`.
 
-Current work package in progress: **M1 — Authentication decision and real vertical slice** (O1 resolved: custom NestJS + PostgreSQL).
+Current work package in progress: **M2 — Home / discovery shell**.
 
 ## Technical baseline
 
@@ -183,12 +183,26 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 ## Roadmap
 
 - **M0:** Bootstrap, flavors, RTL localization, theme, routing, CI, and boundary enforcement ✅
-- **M1:** Custom authentication vertical slice (in progress)
-- **M2:** Authenticated Home/discovery shell
+- **M1:** Custom authentication vertical slice ✅
+- **M2:** Authenticated Home/discovery shell (in progress)
 - **M3:** First production feature module
 - **M4:** First justified complex/offline module
 
 Do not create future modules or infrastructure before a concrete milestone need. Owner decisions **O2–O8** remain unresolved; **O1 is resolved**. Real-account builds remain controlled-test-only until **O8**.
+
+## Feature route integration
+
+When adding a module in its roadmap milestone:
+
+1. Create the feature under `lib/features/<feature>/` only when the milestone requires it.
+2. Expose route name/path constants, `List<RouteBase>`, and registered paths from the feature public barrel (`features/<feature>/<feature>.dart`).
+3. Aggregate only that public barrel in [`lib/app/router/routes.dart`](lib/app/router/routes.dart) (`appRoutes()` and `appRegisteredPaths`).
+4. Never import another feature’s `presentation/`, `data/`, or `domain/` internals.
+5. Ensure the new internal path is included in `appRegisteredPaths` so authenticated return destinations stay validated.
+6. Add route/redirect/boundary tests.
+7. Do not introduce future modules early.
+
+See architecture §3 (module boundaries) and §7 (navigation / route registry) in [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md).
 
 ## License
 
