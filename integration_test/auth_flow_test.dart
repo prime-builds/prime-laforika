@@ -73,8 +73,17 @@ void main() {
     expect(accountId, isNotEmpty);
     expect(find.textContaining(accountId), findsNothing);
 
+    // Ensure Account Security was not opened as a side-effect of login.
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byKey(const Key('account_attach_email')), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home_account_security')),
+      200,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('home_account_security')));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    await tester.pumpAndSettle(const Duration(seconds: 3));
 
     await tester.enterText(
       find.byKey(const Key('account_attach_email')),

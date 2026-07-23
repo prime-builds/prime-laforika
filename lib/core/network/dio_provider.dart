@@ -25,9 +25,11 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  final auth = AuthInterceptor(ref);
   final retry = IdempotentRetryInterceptor();
-  dio.interceptors.add(AuthInterceptor(ref));
+  dio.interceptors.add(auth);
   dio.interceptors.add(retry);
+  auth.attach(dio);
   retry.attach(dio);
   if (kDebugMode && config.logLevel == AppLogLevel.debug) {
     dio.interceptors.add(SanitizedLogInterceptor());
@@ -36,10 +38,18 @@ final dioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-class AuthInterceptor extends QueuedInterceptor {
+class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._ref);
 
   final Ref _ref;
+  Dio? _dio;
+
+  /// Binds retries to the shared [Dio] instance. Must be called after this
+  /// interceptor is added to that instance (avoids reading [dioProvider]
+  /// from inside itself during 401 retry).
+  void attach(Dio dio) {
+    _dio = dio;
+  }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -77,8 +87,11 @@ class AuthInterceptor extends QueuedInterceptor {
       case Success(:final value):
         request.headers['Authorization'] = 'Bearer $value';
         request.extra['authRetried'] = true;
+        final dio = _dio;
+        if (dio == null) {
+          return handler.next(err);
+        }
         try {
-          final dio = _ref.read(dioProvider);
           final response = await dio.fetch<dynamic>(request);
           return handler.resolve(response);
         } on DioException catch (retryError) {
@@ -141,8 +154,10 @@ class IdempotentRetryInterceptor extends Interceptor {
 class SanitizedLogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final hasAuth = options.headers.containsKey('Authorization');
     debugPrint(
       '[dio] → ${options.method} ${HttpRedactor.safeRequestPath(options)} '
+      'hasAuth=$hasAuth '
       'headers=${HttpRedactor.redactHeaders(Map<String, dynamic>.from(options.headers))} '
       'data=${HttpRedactor.redact(options.data)}',
     );

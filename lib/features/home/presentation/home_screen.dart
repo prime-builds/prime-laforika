@@ -54,7 +54,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             key: const Key('home_account_security_action'),
             tooltip: l10n.accountSecurityAction,
-            onPressed: () => context.push(accountSecurityRoutePath),
+            onPressed: _logoutPending
+                ? null
+                : () => context.push(accountSecurityRoutePath),
             icon: const Icon(Icons.security),
           ),
           IconButton(
@@ -291,7 +293,6 @@ class _HomeDestinationCard extends StatelessWidget {
             button: true,
             label: l10n.homeOpenAccountSecurity,
             excludeSemantics: true,
-            onTap: () => context.push(accountSecurityRoutePath),
             child: InkWell(
               onTap: () => context.push(accountSecurityRoutePath),
               child: ConstrainedBox(
