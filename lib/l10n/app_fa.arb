@@ -4,9 +4,53 @@
   "@appTitle": {
     "description": "Application display title"
   },
-  "homeWelcomeMessage": "لفوریکا آماده است",
-  "@homeWelcomeMessage": {
-    "description": "Minimal Home screen message for M0"
+  "homeWelcomeTitle": "به لفوریکا خوش آمدید",
+  "@homeWelcomeTitle": {
+    "description": "Home welcome title for authenticated discovery shell"
+  },
+  "homeWelcomeSubtitle": "از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.",
+  "@homeWelcomeSubtitle": {
+    "description": "Home welcome subtitle explaining available areas"
+  },
+  "homeAccountStatusTitle": "وضعیت حساب",
+  "@homeAccountStatusTitle": {
+    "description": "Home account-status section title"
+  },
+  "homePhoneReady": "شماره موبایل تأیید شده است",
+  "@homePhoneReady": {
+    "description": "Home status when phone credential is attached"
+  },
+  "homePhoneMissing": "شماره موبایل به حساب متصل نیست",
+  "@homePhoneMissing": {
+    "description": "Home status when phone credential is missing"
+  },
+  "homeEmailReady": "ایمیل تأیید شده است",
+  "@homeEmailReady": {
+    "description": "Home status when email credential is attached"
+  },
+  "homeEmailMissing": "ایمیل به حساب متصل نیست",
+  "@homeEmailMissing": {
+    "description": "Home status when email credential is missing"
+  },
+  "homeAvailableSectionsTitle": "دسترسی سریع",
+  "@homeAvailableSectionsTitle": {
+    "description": "Home quick-action section title"
+  },
+  "homeAccountSecurityTitle": "امنیت حساب",
+  "@homeAccountSecurityTitle": {
+    "description": "Home destination title for account security"
+  },
+  "homeAccountSecurityDescription": "روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.",
+  "@homeAccountSecurityDescription": {
+    "description": "Home destination description for account security"
+  },
+  "homeOpenAccountSecurity": "باز کردن امنیت حساب",
+  "@homeOpenAccountSecurity": {
+    "description": "Semantic label for opening account security from Home"
+  },
+  "homeLogoutTooltip": "خروج از حساب",
+  "@homeLogoutTooltip": {
+    "description": "Home logout icon tooltip and semantic label"
   },
   "fatalStartupTitle": "راه‌اندازی ناموفق",
   "@fatalStartupTitle": {

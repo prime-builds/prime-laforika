@@ -100,11 +100,77 @@ abstract class AppLocalizations {
   /// **'لفوریکا'**
   String get appTitle;
 
-  /// Minimal Home screen message for M0
+  /// Home welcome title for authenticated discovery shell
   ///
   /// In fa, this message translates to:
-  /// **'لفوریکا آماده است'**
-  String get homeWelcomeMessage;
+  /// **'به لفوریکا خوش آمدید'**
+  String get homeWelcomeTitle;
+
+  /// Home welcome subtitle explaining available areas
+  ///
+  /// In fa, this message translates to:
+  /// **'از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.'**
+  String get homeWelcomeSubtitle;
+
+  /// Home account-status section title
+  ///
+  /// In fa, this message translates to:
+  /// **'وضعیت حساب'**
+  String get homeAccountStatusTitle;
+
+  /// Home status when phone credential is attached
+  ///
+  /// In fa, this message translates to:
+  /// **'شماره موبایل تأیید شده است'**
+  String get homePhoneReady;
+
+  /// Home status when phone credential is missing
+  ///
+  /// In fa, this message translates to:
+  /// **'شماره موبایل به حساب متصل نیست'**
+  String get homePhoneMissing;
+
+  /// Home status when email credential is attached
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل تأیید شده است'**
+  String get homeEmailReady;
+
+  /// Home status when email credential is missing
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل به حساب متصل نیست'**
+  String get homeEmailMissing;
+
+  /// Home quick-action section title
+  ///
+  /// In fa, this message translates to:
+  /// **'دسترسی سریع'**
+  String get homeAvailableSectionsTitle;
+
+  /// Home destination title for account security
+  ///
+  /// In fa, this message translates to:
+  /// **'امنیت حساب'**
+  String get homeAccountSecurityTitle;
+
+  /// Home destination description for account security
+  ///
+  /// In fa, this message translates to:
+  /// **'روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.'**
+  String get homeAccountSecurityDescription;
+
+  /// Semantic label for opening account security from Home
+  ///
+  /// In fa, this message translates to:
+  /// **'باز کردن امنیت حساب'**
+  String get homeOpenAccountSecurity;
+
+  /// Home logout icon tooltip and semantic label
+  ///
+  /// In fa, this message translates to:
+  /// **'خروج از حساب'**
+  String get homeLogoutTooltip;
 
   /// Fatal startup failure title
   ///

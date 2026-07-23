@@ -5,3 +5,9 @@ import 'package:laforika/features/home/home.dart';
 
 /// Aggregates feature public route registries into one list.
 List<RouteBase> appRoutes() => <RouteBase>[...authRoutes(), ...homeRoutes()];
+
+/// Aggregated registered internal paths for return-destination validation.
+Set<String> get appRegisteredPaths => <String>{
+  ...authRegisteredPaths,
+  ...homeRegisteredPaths,
+};
