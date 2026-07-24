@@ -20,7 +20,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final returnTo = state.uri.queryParameters['from'];
 
-      final registered = <String>{homeRoutePath, ...authRegisteredPaths};
+      final registered = appRegisteredPaths;
 
       switch (auth) {
         case AuthUnknown():

@@ -49,9 +49,12 @@ Future<void> bootstrap() async {
           overrides: [
             appConfigProvider.overrideWithValue(config),
             authSessionGatewayProvider.overrideWith((ref) {
+              // Use read (not watch) so the gateway instance stays stable for the
+              // process lifetime. Watching dio/secureStore would recreate the
+              // gateway and drop the in-memory access token after login.
               return CustomApiAuthGateway(
-                repository: AuthRepository(ref.watch(dioProvider)),
-                secureStore: ref.watch(secureStoreProvider),
+                repository: AuthRepository(ref.read(dioProvider)),
+                secureStore: ref.read(secureStoreProvider),
               );
             }),
           ],

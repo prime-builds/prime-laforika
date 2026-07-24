@@ -12,7 +12,42 @@ class AppLocalizationsFa extends AppLocalizations {
   String get appTitle => 'لفوریکا';
 
   @override
-  String get homeWelcomeMessage => 'لفوریکا آماده است';
+  String get homeWelcomeTitle => 'به لفوریکا خوش آمدید';
+
+  @override
+  String get homeWelcomeSubtitle =>
+      'از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.';
+
+  @override
+  String get homeAccountStatusTitle => 'وضعیت حساب';
+
+  @override
+  String get homePhoneReady => 'شماره موبایل تأیید شده است';
+
+  @override
+  String get homePhoneMissing => 'شماره موبایل به حساب متصل نیست';
+
+  @override
+  String get homeEmailReady => 'ایمیل تأیید شده است';
+
+  @override
+  String get homeEmailMissing => 'ایمیل به حساب متصل نیست';
+
+  @override
+  String get homeAvailableSectionsTitle => 'دسترسی سریع';
+
+  @override
+  String get homeAccountSecurityTitle => 'امنیت حساب';
+
+  @override
+  String get homeAccountSecurityDescription =>
+      'روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.';
+
+  @override
+  String get homeOpenAccountSecurity => 'باز کردن امنیت حساب';
+
+  @override
+  String get homeLogoutTooltip => 'خروج از حساب';
 
   @override
   String get fatalStartupTitle => 'راه‌اندازی ناموفق';
