@@ -2,7 +2,7 @@
 
 Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith, with a sibling NestJS authentication API under `backend/`.
 
-Current work package in progress: **M2 — Home / discovery shell**.
+Next work package: **M3 — First specialized production module** (owner chooses which module; do not start until asked).
 
 ## Technical baseline
 
@@ -184,8 +184,8 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 
 - **M0:** Bootstrap, flavors, RTL localization, theme, routing, CI, and boundary enforcement ✅
 - **M1:** Custom authentication vertical slice ✅
-- **M2:** Authenticated Home/discovery shell (in progress)
-- **M3:** First production feature module
+- **M2:** Authenticated Home/discovery shell ✅
+- **M3:** First specialized production module (owner chooses)
 - **M4:** First justified complex/offline module
 
 Do not create future modules or infrastructure before a concrete milestone need. Owner decisions **O2–O8** remain unresolved; **O1 is resolved**. Real-account builds remain controlled-test-only until **O8**.

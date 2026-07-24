@@ -16,7 +16,7 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 
 ## Current merged baseline
 
-M1 custom authentication vertical slice on `main`, including ADR-0007 (O1), NestJS auth API, Flutter auth client, and versioned milestone prompts under `docs/prompts/`.
+M2 Home / discovery shell on `main`, on top of the M1 custom authentication vertical slice (ADR-0007 / O1), NestJS auth API, Flutter auth client, and versioned milestone prompts under `docs/prompts/`.
 
 ## Completed check-ins
 
@@ -68,9 +68,21 @@ M1 custom authentication vertical slice on `main`, including ADR-0007 (O1), Nest
 | Remaining decisions / limitations | O2–O8 unresolved; GitHub Actions Android emulator job and three-flavor debug APK matrix intentionally omitted (owner-approved CI quota deviation); local Android builds may require TUN + user Gradle mirror init script when Google Maven is unreachable |
 | Exact next work package | M2 — Home / discovery shell |
 
+### M2 — Home / discovery shell — PR [#7](https://github.com/prime-builds/prime-laforika/pull/7)
+
+| Field | Value |
+|---|---|
+| Work package | M2 — Home / discovery shell |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/7 |
+| Final reviewed implementation commit | `0bdcb625b37f6e6b41ce5a8d1310790a3612c0b5` |
+| Completed scope | Authenticated Persian RTL Home discovery shell from session principal (credential status + Account security only; no raw `accountId`); `homeRegisteredPaths` / `appRegisteredPaths` aggregation; README feature route-integration docs; M2 package prompt; session-gateway stability and Dio attach for 401 refresh retry; Home widget/router/integration coverage |
+| Verification | Local: Flutter format/analyze/tests/import boundaries; Android debug APKs `dev`/`staging`/`prod`; emulator `integration_test/auth_flow_test.dart` against real local Nest backend; CI green on PR #7 (`backend` + `quality`) |
+| Remaining decisions / limitations | O2–O8 unresolved; M3 module choice not assumed; GitHub Actions Android emulator job and three-flavor debug APK matrix intentionally omitted (owner-approved); local Android builds may require TUN + user Gradle mirror when Google Maven is unreachable |
+| Exact next work package | M3 — choose and implement one specialized production module |
+
 ## Current milestone
 
-**M1 — Custom authentication vertical slice** delivered in PR #6. Exact next work package: **M2 — Home / discovery shell**.
+**M2 — Home / discovery shell** delivered in PR #7. Exact next work package: **M3 — choose and implement one specialized production module**.
 
 ## Implemented capabilities
 
@@ -86,6 +98,7 @@ M1 custom authentication vertical slice on `main`, including ADR-0007 (O1), Nest
 - Persian `fa-IR` localization, RTL, Vazirmatn theme foundation
 - Import-boundary enforcement tool and CI quality gates
 - Custom authentication vertical slice (NestJS API + Flutter client)
+- Authenticated Home / discovery shell with aggregated feature route registries
 
 ## Deferred capabilities and owner decisions
 
@@ -99,13 +112,15 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 - PR [#3](https://github.com/prime-builds/prime-laforika/pull/3): final reviewed implementation commit `0981c8f99d276a392e07853afd14a8d455a3c4c5` (includes review corrections)
 - PR [#4](https://github.com/prime-builds/prime-laforika/pull/4): final reviewed implementation commit `34b6eee3f5152254b5d63897cdc7857f732c02e3`
 - PR [#6](https://github.com/prime-builds/prime-laforika/pull/6): final reviewed implementation commit `247c98f606d57455b596e7624aea2ccb23f31924`
+- PR [#7](https://github.com/prime-builds/prime-laforika/pull/7): final reviewed implementation commit `0bdcb625b37f6e6b41ce5a8d1310790a3612c0b5`
 
 ## Known limitations / risks
 
 - iOS flavor configuration is committed and list membership corrected; iOS build/run was not executed on the delivery host (non-macOS)
 - Owner decisions O2–O8 remain open and must not be assumed
 - CI no longer runs Android emulator integration or the three-flavor debug APK matrix (owner-approved quota deviation); local emulator verification was performed on the delivery host
+- M3 module selection is an owner decision; do not invent a specialized module early
 
 ## Exact next step
 
-Begin **M2 — Home / discovery shell** per architecture roadmap and `AGENTS.md`.
+Begin **M3 — choose and implement one specialized production module** after the owner selects the module; do not start M3 until asked.
