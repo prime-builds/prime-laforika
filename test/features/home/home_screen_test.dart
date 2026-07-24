@@ -89,11 +89,13 @@ Future<ProviderContainer> _pumpAuthenticatedHome(
   addTearDown(() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
   });
   if (physicalSize != null) {
     tester.view.physicalSize = physicalSize;
     tester.view.devicePixelRatio = 1.0;
   }
+  tester.platformDispatcher.textScaleFactorTestValue = textScale;
 
   late ProviderContainer container;
   await tester.pumpWidget(
@@ -102,14 +104,11 @@ Future<ProviderContainer> _pumpAuthenticatedHome(
         appConfigProvider.overrideWithValue(_config),
         authSessionGatewayProvider.overrideWithValue(boundGateway),
       ],
-      child: MediaQuery(
-        data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-        child: Consumer(
-          builder: (context, ref, _) {
-            container = ProviderScope.containerOf(context);
-            return const LaforikaApp();
-          },
-        ),
+      child: Consumer(
+        builder: (context, ref, _) {
+          container = ProviderScope.containerOf(context);
+          return const LaforikaApp();
+        },
       ),
     ),
   );
@@ -229,6 +228,12 @@ void main() {
 
     await tester.tap(find.byKey(const Key('home_logout')));
     await tester.pump();
+
+    final pendingDestination = tester.widget<Semantics>(
+      find.byKey(const Key('home_account_security')),
+    );
+    expect(pendingDestination.properties.enabled, isFalse);
+
     await tester.tap(find.byKey(const Key('home_logout')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));

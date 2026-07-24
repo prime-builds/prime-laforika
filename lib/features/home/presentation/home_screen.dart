@@ -46,6 +46,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authControllerProvider);
     final principal = auth is AuthAuthenticated ? auth.principal : null;
 
+    final iconStyle = IconButton.styleFrom(
+      minimumSize: const Size(
+        AppTokens.minTouchTarget,
+        AppTokens.minTouchTarget,
+      ),
+      tapTargetSize: MaterialTapTargetSize.padded,
+    );
+
     return Scaffold(
       key: const Key('home_discovery_shell'),
       appBar: AppBar(
@@ -54,6 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             key: const Key('home_account_security_action'),
             tooltip: l10n.accountSecurityAction,
+            style: iconStyle,
             onPressed: _logoutPending
                 ? null
                 : () => context.push(accountSecurityRoutePath),
@@ -62,6 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             key: const Key('home_logout'),
             tooltip: l10n.homeLogoutTooltip,
+            style: iconStyle,
             onPressed: _logoutPending ? null : _logout,
             icon: const Icon(Icons.logout),
           ),
@@ -101,6 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     child: _HomeDestinationCard(
                                       l10n: l10n,
                                       theme: theme,
+                                      enabled: !_logoutPending,
                                     ),
                                   ),
                                 ],
@@ -117,6 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   _HomeDestinationCard(
                                     l10n: l10n,
                                     theme: theme,
+                                    enabled: !_logoutPending,
                                   ),
                                 ],
                               ),
@@ -200,8 +212,8 @@ class _AccountStatusCard extends StatelessWidget {
               readyLabel: l10n.homeEmailReady,
               missingLabel: l10n.homeEmailMissing,
               maskedValue: principal.maskedEmail,
-              readyIcon: Icons.email_outlined,
-              missingIcon: Icons.mail_outline,
+              readyIcon: Icons.mark_email_read_outlined,
+              missingIcon: Icons.mark_email_unread_outlined,
             ),
           ],
         ),
@@ -263,10 +275,15 @@ class _CredentialStatusRow extends StatelessWidget {
 }
 
 class _HomeDestinationCard extends StatelessWidget {
-  const _HomeDestinationCard({required this.l10n, required this.theme});
+  const _HomeDestinationCard({
+    required this.l10n,
+    required this.theme,
+    required this.enabled,
+  });
 
   final AppLocalizations l10n;
   final ThemeData theme;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -291,10 +308,13 @@ class _HomeDestinationCard extends StatelessWidget {
           Semantics(
             key: const Key('home_account_security'),
             button: true,
+            enabled: enabled,
             label: l10n.homeOpenAccountSecurity,
             excludeSemantics: true,
             child: InkWell(
-              onTap: () => context.push(accountSecurityRoutePath),
+              onTap: enabled
+                  ? () => context.push(accountSecurityRoutePath)
+                  : null,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
                   minHeight: AppTokens.minTouchTarget,
@@ -303,7 +323,12 @@ class _HomeDestinationCard extends StatelessWidget {
                   padding: const EdgeInsetsDirectional.all(AppTokens.spaceMd),
                   child: Row(
                     children: [
-                      Icon(Icons.security, color: theme.colorScheme.primary),
+                      Icon(
+                        Icons.security,
+                        color: enabled
+                            ? theme.colorScheme.primary
+                            : theme.disabledColor,
+                      ),
                       const SizedBox(width: AppTokens.spaceMd),
                       Expanded(
                         child: Column(
@@ -325,6 +350,7 @@ class _HomeDestinationCard extends StatelessWidget {
                         Directionality.of(context) == TextDirection.rtl
                             ? Icons.chevron_left
                             : Icons.chevron_right,
+                        color: enabled ? null : theme.disabledColor,
                       ),
                     ],
                   ),

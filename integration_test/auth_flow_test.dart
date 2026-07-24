@@ -124,6 +124,11 @@ void main() {
     expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
 
     // Re-open account security from Home, then logout current session.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('home_account_security')),
+      200,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('home_account_security')));
     await tester.pumpAndSettle(const Duration(seconds: 2));
     await tester.tap(find.byKey(const Key('account_logout')));
