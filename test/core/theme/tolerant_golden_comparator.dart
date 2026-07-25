@@ -5,10 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Local golden comparator with a small pixel tolerance for cross-OS font
 /// rasterization (Windows baselines vs Linux CI).
 final class TolerantGoldenComparator extends LocalFileComparator {
-  TolerantGoldenComparator(
-    super.testFile, {
-    this.maxDiffPercent = 2.0,
-  });
+  TolerantGoldenComparator(super.testFile, {this.maxDiffPercent = 2.0});
 
   /// Maximum allowed differing pixels as a percent of the image.
   final double maxDiffPercent;
