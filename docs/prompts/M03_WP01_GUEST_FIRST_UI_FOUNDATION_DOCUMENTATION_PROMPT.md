@@ -479,7 +479,7 @@ Reconcile at least these areas:
 - roadmap:
   - preserve completed milestone history;
   - document M03_WP01–M03_WP07 as the approved dependency-ordered transition plan;
-  - keep M3/M4 future-module direction after this transition;
+  - keep M04/M05 future-module direction after this transition (M03 is this transition program);
 - owner decisions:
   - O1 remains resolved to custom NestJS/PostgreSQL, amended by ADR-0008 to phone OTP only;
   - O7 is partially resolved for in-app visual foundation and shell; external brand assets remain open;

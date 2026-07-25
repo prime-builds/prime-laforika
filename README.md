@@ -214,8 +214,8 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 
 ### Later product milestones
 
-- **M3:** First specialized production module (owner chooses; do not invent during M03_WP01–M03_WP07)
-- **M4:** First justified complex/offline module
+- **M04:** First specialized production module (owner chooses; do not invent during M03_WP01–M03_WP07)
+- **M05:** First justified complex/offline module
 
 Do not create future modules or infrastructure before a concrete milestone need. **O1** is resolved (custom NestJS/PostgreSQL; phone OTP only per ADR-0008). **O7** is partially resolved for the in-app visual system; external brand assets remain open. **O2–O6** and **O8** remain unresolved. Real-account builds remain controlled-test-only until **O8**.
 

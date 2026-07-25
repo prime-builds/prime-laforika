@@ -677,20 +677,24 @@ inside M03_WP01.**
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
-- **M3 — First specialized module.** Pick **one** production module (owner chooses; recommended:
+Milestone **M03** is the guest-first / phone-only / UI-foundation transition program
+(`M03_WP01`–`M03_WP07`). Later product milestones continue as **M04** and **M05** so they do not
+collide with that program id.
+
+- **M04 — First specialized module.** Pick **one** production module (owner chooses; recommended:
   a read-mostly module such as News/Events or Local Heritage) and introduce only the networking,
   errors, caching, storage, and shared UI it genuinely requires. _Exit:_ one specialized module
   works end-to-end and proves the simple-module architecture in production shape.
-- **M4 — First complex/offline module, when justified.** A later module such as Shop, Chat, or
+- **M05 — First complex/offline module, when justified.** A later module such as Shop, Chat, or
   Villas may introduce Drift and an outbox/synchronization policy after its real data and conflict
   requirements are known. Before implementation, define the app-level schema-contribution seam and
   backup eligibility. _Exit:_ migrations are tested from every supported schema version; account
   isolation, transaction/outbox crash recovery, replay idempotency, purge behavior, and Android
   backup policy are verified without creating a speculative app-wide sync framework.
 
-M3's module choice depends on product priority and must not be invented during M03_WP01–M03_WP07. Connectivity
-and shared UI infrastructure beyond proven need are added only through the first real feature that
-requires them.
+M04's module choice depends on product priority and must not be invented during M03_WP01–M03_WP07.
+Connectivity and shared UI infrastructure beyond proven need are added only through the first real
+feature that requires them.
 
 ---
 
