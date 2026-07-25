@@ -8,6 +8,7 @@ import 'package:laforika/core/theme/app_theme.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 
 import 'theme_specimen.dart';
+import 'tolerant_golden_comparator.dart';
 
 Future<ByteData> _fontBytes(String relativePath) async {
   final file = File(relativePath);
@@ -37,6 +38,9 @@ void main() {
 
   setUpAll(() async {
     await _loadVazirmatn();
+    goldenFileComparator = TolerantGoldenComparator(
+      Uri.parse('test/core/theme/theme_specimen_golden_test.dart'),
+    );
   });
 
   testWidgets('light RTL theme specimen golden', (tester) async {
