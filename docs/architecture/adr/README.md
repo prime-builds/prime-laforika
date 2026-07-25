@@ -23,3 +23,10 @@ built. When they disagree, `ARCHITECTURE.md` wins and the ADR should be supersed
 | [0005](./0005-local-persistence-and-offline.md) | Local persistence and deferred offline strategy | Accepted |
 | [0006](./0006-authentication-and-session.md) | Authentication and session model | Accepted |
 | [0007](./0007-custom-authentication-backend-and-session-security.md) | Custom authentication backend and session security | Accepted |
+| [0008](./0008-guest-first-access-and-phone-only-authentication.md) | Guest-first access and phone-only authentication | Accepted (partially supersedes credential/access product choice in ADR-0007) |
+| [0009](./0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) | Fluent-inspired visual foundation and adaptive app shell | Accepted |
+
+ADR-0008 does **not** rewrite ADR-0007. It supersedes only ADR-0007's phone-plus-email/password
+credential choice and any authenticated-first product implication. NestJS/PostgreSQL ownership,
+token security, session revocation, fixture delivery, and server authority from ADR-0007 remain
+in force. ADR-0006 remains the provider-neutral Flutter session boundary.
