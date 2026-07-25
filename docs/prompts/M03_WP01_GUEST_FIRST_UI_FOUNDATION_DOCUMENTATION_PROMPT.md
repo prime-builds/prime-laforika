@@ -34,7 +34,7 @@ The outcome that matters is that future coding agents can implement M03_WP02–M
 
 ## MILESTONE
 
-**Milestone-neutral architecture evolution package after the current M2 baseline.**
+**M03_WP01 — Documentation and decision freeze.**
 
 This package documents a controlled transition from the current implementation into the approved guest-first, phone-only, adaptive-shell product direction.
 
