@@ -35,6 +35,9 @@ Never silently copy code that contradicts the frozen architecture. Treat the con
 | Persistence | `shared_preferences`, `flutter_secure_storage`; Drift deferred until justified |
 | Localization | Persian `fa-IR`, RTL from day one |
 | Typography | Vazirmatn |
+| Access model | Guest-first: public Home after session restore; auth only for protected capabilities |
+| User-facing auth | Phone OTP only; email is optional profile/contact data |
+| Visual system | Fluent-inspired Laforika semantic light/dark; appearance System/Light/Dark (System default) |
 | Mocking | `mocktail` |
 | CI | GitHub Actions |
 | Generated Dart files | Committed, regenerated in CI, never hand-edited |
@@ -50,14 +53,15 @@ Toolchain upgrades, deployment-target changes, or replacements for load-bearing 
 Before writing code:
 
 1. Read this file and `docs/architecture/ARCHITECTURE.md` fully.
-2. Read every ADR relevant to the task (including ADR-0006 and ADR-0007 for auth work).
-3. Inspect `pubspec.yaml`, `analysis_options.yaml`, `l10n.yaml`, `.gitignore`, and the applicable CI workflow.
-4. For backend work, inspect `backend/package.json`, Prisma schema/migrations, `.env.example`, and OpenAPI contract generation.
-5. Inspect the target feature, its public barrel, its tests, and the closest existing analog.
-6. Confirm the current milestone and do not create future-module infrastructure early.
-7. Confirm actual dependencies before importing a package.
-8. Check whether generated code is used and follow the repository's generation command.
-9. Check configuration and secret handling before touching environment or platform files.
+2. Read every ADR relevant to the task (including ADR-0006, ADR-0007, and ADR-0008 for auth/access work; ADR-0009 for theme/shell work).
+3. For UI, theme, or shell tasks, read `docs/design/UI_FOUNDATION.md` and `docs/design/APP_SHELL.md`.
+4. Inspect `pubspec.yaml`, `analysis_options.yaml`, `l10n.yaml`, `.gitignore`, and the applicable CI workflow.
+5. For backend work, inspect `backend/package.json`, Prisma schema/migrations, `.env.example`, and OpenAPI contract generation.
+6. Inspect the target feature, its public barrel, its tests, and the closest existing analog.
+7. Confirm the current milestone / work package and do not create future-module infrastructure early.
+8. Confirm actual dependencies before importing a package.
+9. Check whether generated code is used and follow the repository's generation command.
+10. Check configuration and secret handling before touching environment or platform files.
 
 If a referenced file does not exist because the project has not reached that milestone, do not invent infrastructure unless the task explicitly creates it.
 
@@ -190,12 +194,17 @@ flutter run --flavor "$FLAVOR" \
 - Required reconstructable state belongs in typed path/query parameters.
 - `extra` is optional, ephemeral data only; a route must work from cold start or deep link without it.
 - Auth protection uses centralized `redirect` logic and a stable Riverpod-backed `refreshListenable` adapter.
+- Home and other public routes are guest-accessible after session restoration; authentication is required only for protected capabilities.
+- Protected capability redirects preserve validated internal return destinations and continue there after successful phone OTP login.
 - Validate preserved return destinations as registered internal routes and prevent redirect loops.
+- Approved shell selection rules (M03_WP04): Home selected with no module/tabs; module selection clears bottom-dock selection and shows contextual internal tabs. See `docs/design/APP_SHELL.md`.
 
 ## 10. Authentication
 
 O1 is resolved: Laforika owns a custom NestJS + PostgreSQL authentication API
 ([ADR-0007](docs/architecture/adr/0007-custom-authentication-backend-and-session-security.md)).
+Guest-first access and phone-only credentials are recorded in
+[ADR-0008](docs/architecture/adr/0008-guest-first-access-and-phone-only-authentication.md).
 The Flutter client keeps the provider-neutral session boundary from ADR-0006.
 
 - Session state is `unknown`, `authenticated(principal)`, or `unauthenticated`.
@@ -204,13 +213,16 @@ The Flutter client keeps the provider-neutral session boundary from ADR-0006.
 - Temporary hydration transport failures are recoverable; do not destroy a potentially valid refresh secret.
 - `core/auth/` defines the provider-neutral contract; the auth feature exports the custom API adapter; `app/` supplies the override.
 - Access tokens are short-lived RS256 JWTs kept in memory; opaque refresh tokens rotate with family reuse detection.
-- Phone OTP and email/password are credentials on one account; attachment is not account merging.
-- Do not build fake production authentication. Development fixture delivery is allowed only for SMS/email message transport.
+- Phone-number OTP is the only user-facing sign-in method. Do not implement email/password login or password-reset flows.
+- Email is optional profile/contact data only and must not silently create a login credential.
+- Do not invent a guest backend identity, anonymous principal, or guest access token.
+- Do not build fake production authentication. Development fixture delivery is allowed only for SMS message transport.
 - Test doubles are allowed only in tests.
 - Store only Laforika-owned refresh/session secrets in secure storage.
 - Logout must revoke server sessions, clear Laforika-owned secrets, dispose the `{environment, accountId}` scope, and transition to unauthenticated.
 - Client guards are UX; NestJS authorization is authoritative.
 - Real authentication remains controlled-test-only until O8 is resolved.
+- M03_WP03 migration work must use forward non-destructive Prisma migrations; never reset the database to drop deprecated credentials.
 
 ## 10a. Backend authentication service
 
@@ -261,11 +273,15 @@ Build storage infrastructure on demand only.
 - Avoid hardcoded left/right behavior; mirror directional icons and navigation affordances.
 - Format displayed numerals through `intl`; store and compute with Latin digits.
 - Dates are stored in Gregorian/UTC. Do not introduce Jalali display before O6 is resolved.
-- Use Vazirmatn and centralized theme/type tokens; avoid ad-hoc styles.
+- Use Vazirmatn and centralized semantic theme/type tokens; avoid ad-hoc styles and raw feature colors.
+- Appearance modes are System / Light / Dark with System default (M03_WP02). Palette and foundation rules: `docs/design/UI_FOUNDATION.md`.
+- Adaptive RTL shell rules: `docs/design/APP_SHELL.md` (M03_WP04).
 - Minimum touch target: 48dp.
 - Add semantics for icon-only controls and meaningful images.
-- Respect text scaling and avoid fixed heights that clip content.
-- Use the small shared breakpoint set; do not add a heavy responsive framework.
+- Respect text scaling and avoid fixed heights that clip content; verify at 2.0 text scale where shell/theme packages apply.
+- Verify light/dark and Persian RTL for themed surfaces; include light/dark RTL goldens when golden coverage exists for those packages.
+- Use the small shared breakpoint set; verify phone layouts at 320dp; do not add a heavy responsive framework.
+- Do not add a Fluent UI framework dependency.
 - Add shared UI primitives only after repeated app-wide use is proven.
 
 ## 14. Security and privacy
@@ -291,10 +307,12 @@ If a secret is staged, stop, unstage it, and report it. Never commit and remove 
 Tests mirror `lib/` under `test/`. Backend tests live under `backend/test/` (and Nest e2e conventions).
 
 - Unit-test repositories, mappers, use cases, controllers, failure mapping, config validation, redaction, and account scoping.
-- Backend unit/e2e tests cover normalization, password/OTP/token/session security invariants, migrations, and OpenAPI drift.
+- Backend unit/e2e tests cover normalization, OTP/token/session security invariants, migrations, and OpenAPI drift.
 - Widget-test meaningful loading, error, empty, and data states plus critical interactions.
 - Keep the root `fa-IR` and RTL assertion.
-- Golden-test design-system components and at least one full RTL screen when golden coverage exists.
+- For navigation/auth/shell packages, cover the guest/authenticated × public/protected route matrix and validated return destinations where applicable.
+- For theme/shell packages, cover light/dark RTL states, dock swipe / module-header states, 320dp width, and 2.0 text scale where in scope; report those verifications in the task report.
+- Golden-test design-system components and at least one full RTL screen when golden coverage exists (light and dark when the theme foundation exists).
 - Integration tests are required from M1 for real auth and each module's primary happy path; they must hit the real local backend, not a fake auth provider.
 - Use `mocktail`; do not introduce another mocking library.
 - Override Riverpod dependencies with fakes in `ProviderContainer` or `ProviderScope`.
@@ -366,8 +384,12 @@ Do not do any of the following without explicit approval:
 - Change the frozen architecture, accepted ADR direction, toolchain, application identity, flavor scheme, min/target SDK, or iOS deployment target.
 - Modify CI/CD, release publishing, signing, or store configuration.
 - Add or replace a load-bearing dependency, backend SDK, identity provider, analytics/crash vendor, maps provider, push provider, database technology, state tool, DI tool, or router.
-- Resolve owner decisions O1–O8 by assumption.
-- Introduce real authentication before O1 or external distribution before O8.
+- Add a Fluent UI framework dependency or Microsoft proprietary assets.
+- Reintroduce email/password login, password-reset, or auth-method-chooser credential UI/backend behavior unless a future approved ADR changes direction.
+- Invent a guest backend identity, anonymous principal, or guest access token.
+- Ship dead placeholder modules, dead Chat dock actions, or a speculative module registry/persistence framework.
+- Resolve owner decisions O2–O6 or O8 by assumption; do not invent external brand assets while O7's remainder is open.
+- Introduce external distribution before O8.
 - Hand-edit generated files.
 - Delete data, rewrite Git history, force-push, delete branches, or commit directly to `main`/`master`.
 - Run `flutter test --update-goldens` without explicit visual-baseline approval.

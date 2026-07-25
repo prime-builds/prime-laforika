@@ -10,13 +10,14 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 |---|---|
 | App / Dart project | Laforika / `laforika` |
 | Organization | `com.primebuilds` |
-| Frozen architecture | [`ARCHITECTURE.md`](architecture/ARCHITECTURE.md) v1.3 (`FROZEN`) |
+| Frozen architecture | [`ARCHITECTURE.md`](architecture/ARCHITECTURE.md) v1.4 (`FROZEN`) |
 | Agent / delivery rules | [`../AGENTS.md`](../AGENTS.md) |
 | Package prompts | [`prompts/`](prompts/) (versioned on the remote; not gitignored) |
+| Design specs | [`design/`](design/) (UI foundation + app shell) |
 
 ## Current merged baseline
 
-M2 Home / discovery shell on `main`, on top of the M1 custom authentication vertical slice (ADR-0007 / O1), NestJS auth API, Flutter auth client, and versioned milestone prompts under `docs/prompts/`.
+M03_WP01 documentation freeze on top of the M2 Home / discovery shell and M1 custom authentication vertical slice (ADR-0007 / O1, amended by ADR-0008). Architecture v1.4 records guest-first access, phone-only authentication, and the Fluent-inspired adaptive-shell target; M03_WP02–M03_WP07 implement the named code-to-target gaps.
 
 ## Completed check-ins
 
@@ -80,15 +81,28 @@ M2 Home / discovery shell on `main`, on top of the M1 custom authentication vert
 | Remaining decisions / limitations | O2–O8 unresolved; M3 module choice not assumed; GitHub Actions Android emulator job and three-flavor debug APK matrix intentionally omitted (owner-approved); local Android builds may require TUN + user Gradle mirror when Google Maven is unreachable |
 | Exact next work package | M3 — choose and implement one specialized production module |
 
+### M03_WP01 — Documentation and decision freeze — PR [#8](https://github.com/prime-builds/prime-laforika/pull/8)
+
+| Field | Value |
+|---|---|
+| Work package | M03_WP01 — Documentation and decision freeze |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/8 |
+| Final reviewed implementation commit | `129fc62e430e3627288c4e3e593f58c8eac5c9a1` |
+| Completed scope | ADR-0008 (guest-first + phone OTP only; partial supersession of ADR-0007 credential/access product choice); ADR-0009 (Fluent-inspired visual foundation + adaptive shell); architecture v1.4 with controlled M03_WP01–M03_WP07 transition note; `docs/design/UI_FOUNDATION.md` and `docs/design/APP_SHELL.md`; AGENTS/README alignment; package prompt `docs/prompts/M03_WP01_GUEST_FIRST_UI_FOUNDATION_DOCUMENTATION_PROMPT.md`; later product milestones renumbered to M04/M05 |
+| Verification | Docs-only: `git diff --check`; relative Markdown links resolve; naming remediation verified; CI green on PR #8 (`backend` + `quality`); Flutter/backend source gates not run (documentation-only) |
+| Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 partially resolved for in-app visual system (external brand assets deferred); M03_WP02–M03_WP07 implementation pending; M2 code may temporarily differ from the v1.4 target in named transition gaps |
+| Exact next work package | M03_WP02 — Light/dark theme foundation |
+
 ## Current milestone
 
-**M2 — Home / discovery shell** delivered in PR #7. Exact next work package: **M3 — choose and implement one specialized production module**.
+**M03_WP01 — Documentation and decision freeze** delivered in PR #8. Exact next work package: **M03_WP02 — Light/dark theme foundation**.
 
 ## Implemented capabilities
 
-- Frozen architecture document and accepted ADRs (0001–0007)
+- Frozen architecture document and accepted ADRs (0001–0009)
 - Repository agent guidance (`AGENTS.md`)
 - Operator-facing README and project inventory
+- Approved UI foundation and app-shell design specifications under `docs/design/`
 - Versioned milestone package prompts under `docs/prompts/`
 - License baseline (Apache-2.0)
 - Flutter application scaffold with frozen identity and toolchain
@@ -99,12 +113,14 @@ M2 Home / discovery shell on `main`, on top of the M1 custom authentication vert
 - Import-boundary enforcement tool and CI quality gates
 - Custom authentication vertical slice (NestJS API + Flutter client)
 - Authenticated Home / discovery shell with aggregated feature route registries
+- Documented guest-first / phone-only / adaptive-shell target (implementation in M03_WP02–M03_WP07)
 
 ## Deferred capabilities and owner decisions
 
 Deferred until later milestones or owner input (see architecture §14–§15):
 
-- Networking beyond auth, persistence, telemetry, maps, push, Jalali display, final branding, signing/distribution, privacy/account-data lifecycle (O2–O8 and later milestones)
+- M03_WP02–M03_WP07 implementation of theme, guest-first routing, phone-only auth UI, adaptive shell, Profile, Settings, Notifications, and visual hardening
+- Networking beyond auth, persistence, telemetry, maps, push, Jalali display, external brand assets, signing/distribution, privacy/account-data lifecycle (O2–O6, O7 remainder, O8, and later milestones M04+)
 
 ## Verification evidence
 
@@ -113,14 +129,16 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 - PR [#4](https://github.com/prime-builds/prime-laforika/pull/4): final reviewed implementation commit `34b6eee3f5152254b5d63897cdc7857f732c02e3`
 - PR [#6](https://github.com/prime-builds/prime-laforika/pull/6): final reviewed implementation commit `247c98f606d57455b596e7624aea2ccb23f31924`
 - PR [#7](https://github.com/prime-builds/prime-laforika/pull/7): final reviewed implementation commit `0bdcb625b37f6e6b41ce5a8d1310790a3612c0b5`
+- PR [#8](https://github.com/prime-builds/prime-laforika/pull/8): final reviewed implementation commit `129fc62e430e3627288c4e3e593f58c8eac5c9a1`
 
 ## Known limitations / risks
 
 - iOS flavor configuration is committed and list membership corrected; iOS build/run was not executed on the delivery host (non-macOS)
-- Owner decisions O2–O8 remain open and must not be assumed
+- Owner decisions O2–O6 and O8 remain open; O7 external brand assets remain deferred
 - CI no longer runs Android emulator integration or the three-flavor debug APK matrix (owner-approved quota deviation); local emulator verification was performed on the delivery host
-- M3 module selection is an owner decision; do not invent a specialized module early
+- M2 runtime still uses authenticated-first Home, dual-credential auth UI, and placeholder theme until M03_WP02–M03_WP07 land
+- M04 specialized-module selection is an owner decision; do not invent a specialized module early
 
 ## Exact next step
 
-Begin **M3 — choose and implement one specialized production module** after the owner selects the module; do not start M3 until asked.
+Begin **M03_WP02 — Light/dark theme foundation**; do not start M04 until the M03 transition packages are complete and the owner selects the module.

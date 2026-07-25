@@ -1,6 +1,6 @@
 # Laforika — Architecture
 
-**Status:** `FROZEN` · **Version:** 1.3 · **Owner:** Principal Architect · **Last updated:** 2026-07-22
+**Status:** `FROZEN` · **Version:** 1.4 · **Owner:** Principal Architect · **Last updated:** 2026-07-25
 
 This document is the **single source of truth** for how Laforika is built. Any code that
 contradicts it is a bug in the code or a needed change to this document — not both silently.
@@ -10,6 +10,18 @@ document states the decisions and the rules that follow from them.
 > The repository's `FLUTTER_ARCHITECTURE_TEMPLATE.md` is a topic checklist only. It is not
 > authoritative and is superseded by this document.
 
+### Controlled transition (M03_WP01 → M03_WP07)
+
+Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
+and the Fluent-inspired adaptive shell. The M2 code baseline may temporarily differ in the exact
+areas assigned to M03_WP02–M03_WP07 (authenticated-first Home redirects, dual-credential UI, placeholder
+theme, absence of the adaptive shell). That gap is **known and bounded**: each follow-up package
+closes a named gap. It is **not** permission for new code to extend the deprecated direction.
+Architecture contradictions **outside** this approved transition remain defects.
+
+Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
+[`../design/APP_SHELL.md`](../design/APP_SHELL.md).
+
 ### Assumptions (labeled)
 
 Where a requirement was unstated, these reasonable assumptions were made. Correct any that are
@@ -17,13 +29,20 @@ wrong; several map to owner decisions in §15.
 
 - **[A1]** Android minSdk 24 (Android 7.0+); Flutter 3.44.6 stable and Dart 3.12.2 are
   the frozen M0 toolchain baseline. Toolchain upgrades are explicit reviewed changes.
-- **[A2]** Authentication is required. O1 is resolved: Laforika owns a custom NestJS + PostgreSQL
-  authentication API (see §8 and [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md)).
-  The Flutter client keeps the provider-neutral session boundary from [ADR-0006](./adr/0006-authentication-and-session.md).
+- **[A2]** Login is **not** required to enter the app. Home and public content are guest-accessible
+  after session restoration; authentication is required only for protected capabilities
+  ([ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md)). O1 remains
+  resolved to a custom NestJS + PostgreSQL authentication API
+  ([ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md)), amended by
+  ADR-0008 to **phone OTP only**. The Flutter client keeps the provider-neutral session boundary
+  from [ADR-0006](./adr/0006-authentication-and-session.md).
 - **[A3]** A single Persian locale (`fa-IR`) at launch; all strings are localized so another
   locale can be added without structural refactoring, but it still requires ARB content, locale
   configuration, and tests.
-- **[A4]** Vazirmatn is the Persian UI font (open-source, no licensing cost) until branding (O7).
+- **[A4]** Vazirmatn is the Persian UI font. In-app visual system, semantic light/dark palette,
+  and shell behavior follow [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md)
+  and the design specs; external brand assets (logo, store icon, marketing) remain deferred (O7
+  remainder).
 - **[A5]** Dates are stored in Gregorian/UTC; user-facing calendar (Jalali?) is undecided (O6).
 - **[A6]** No third-party telemetry ships until a vendor + privacy policy exist (O4/O8).
 - **[A7]** Small team, no separate per-module ownership yet (justifies a monolith over packages).
@@ -69,7 +88,10 @@ pay that cost up front.
 | Navigation | `go_router`, redirect-based guards, per-feature route registry | [0003](./adr/0003-go-router-navigation.md) |
 | Networking + errors | `dio` + interceptors; sealed `Failure`/`Result`, no `dartz` | [0004](./adr/0004-networking-and-error-model.md) |
 | Local data / offline | secure storage + prefs now; **Drift** as the deferred default store | [0005](./adr/0005-local-persistence-and-offline.md) |
-| Auth | Provider-neutral Flutter session boundary; custom NestJS backend owns credentials/sessions | [0006](./adr/0006-authentication-and-session.md), [0007](./adr/0007-custom-authentication-backend-and-session-security.md) |
+| Auth session boundary | Provider-neutral Flutter session contract | [0006](./adr/0006-authentication-and-session.md) |
+| Auth backend / tokens | Custom NestJS + PostgreSQL; RS256 access + rotating refresh | [0007](./adr/0007-custom-authentication-backend-and-session-security.md) |
+| Access model / credentials | Guest-first Home; phone OTP only; email as profile data | [0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) (partially supersedes credential/access product choice in 0007) |
+| Visual foundation / shell | Fluent-inspired semantic light/dark; adaptive RTL app shell | [0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) |
 
 ---
 
@@ -118,7 +140,9 @@ laforika/
 ├─ l10n.yaml                         # explicit gen_l10n configuration
 ├─ config/{dev,staging,prod}.json   # --dart-define-from-file (NO secrets committed)
 ├─ docs/architecture/               # this document + ADRs
-├─ .github/workflows/ci.yml         # Flutter + backend + emulator gates
+├─ docs/design/                     # approved UI foundation + app-shell specs (docs only)
+├─ docs/prompts/                    # versioned work-package prompts
+├─ .github/workflows/ci.yml         # Flutter + backend quality gates
 ├─ analysis_options.yaml            # flutter_lints baseline
 └─ pubspec.yaml
 ```
@@ -332,18 +356,29 @@ may depend on it to open correctly from a cold start or deep link. Deep links ma
 table (one source of truth), enabling future push-notification and web deep-linking without
 rework.
 
-**Redirect contract (implemented with M1):**
+**Redirect contract (approved target; guest-first — M03_WP03 implements):**
 
 | Session | Destination | Result |
 |---|---|---|
 | `unknown` | any | remain on the deterministic startup surface; do not guess or flash login |
-| `unauthenticated` | public | allow |
-| `unauthenticated` | protected | redirect to login and preserve a validated internal destination |
-| `authenticated` | login/auth-only | return to the validated destination, otherwise Home |
+| `unauthenticated` | public (including Home) | allow |
+| `unauthenticated` | protected capability | redirect to **direct phone OTP** and preserve a validated internal destination |
+| `authenticated` | auth-only OTP/login routes | return to the validated destination, otherwise Home |
 | `authenticated` | public or protected | allow |
 
-A preserved destination must resolve to a registered internal route; external, malformed, or
-unknown locations are discarded. Router tests cover the matrix and loop prevention.
+Home is public. Public modules/content are guest-explorable. Authentication is required only at
+protected-capability boundaries (for example Chat and Notifications). A preserved destination must
+resolve to a registered internal route; external, malformed, or unknown locations are discarded.
+Router tests cover the guest/authenticated/public/protected matrix and loop prevention.
+
+**Shell selection (approved target — M03_WP04):** Home is selected after session restoration with no
+module and no module-internal tabs active. Selecting a module clears bottom-dock selection,
+highlights the module strip item, and shows contextual internal tabs. Feature route barrels remain
+the module-integration boundary. Full shell rules:
+[`../design/APP_SHELL.md`](../design/APP_SHELL.md).
+
+> **Transition note:** M2 code still gates unauthenticated users toward the auth-method chooser
+> before Home. That is a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -351,7 +386,10 @@ unknown locations are discarded. Router tests cover the matrix and loop preventi
 
 Full Flutter session contract in [ADR-0006](./adr/0006-authentication-and-session.md). Concrete
 backend and token model in [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md).
-O1 is **resolved**: Laforika owns a custom NestJS + PostgreSQL authentication API.
+Guest-first access and phone-only credentials in
+[ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md). O1 is **resolved**:
+Laforika owns a custom NestJS + PostgreSQL authentication API; ADR-0008 amends the user-facing
+credential model to **phone OTP only**.
 
 - **Session state:** `authControllerProvider` exposes
   `AuthState = { unknown, authenticated(principal), unauthenticated }`. The authenticated principal
@@ -361,28 +399,38 @@ O1 is **resolved**: Laforika owns a custom NestJS + PostgreSQL authentication AP
 - **Provider adapter:** `core/auth/` defines the provider-neutral session contract and overridable
   provider. The auth feature exports the custom API adapter through its public barrel, and `app/`
   composition supplies the override. `core/` never imports `features/`.
-- **Credentials:** phone OTP and email/password are two credentials on one stable account.
-  Credential attachment is not account merging. Normalized identifiers are globally unique.
+- **Credentials (approved target):** phone-number OTP is the **only** user-facing sign-in method.
+  Email is optional profile/contact data and must not silently create a login credential. The
+  verified phone number is the account's primary login identity. The auth-method chooser,
+  email/password login, and password reset are deprecated and removed in M03_WP03. Normalized phone
+  identifiers remain globally unique.
 - **Tokens:** short-lived RS256 access JWTs (in memory on the client) and opaque rotating refresh
   tokens (environment-scoped in `flutter_secure_storage`). Refresh uses token families with reuse
   detection and family revocation. Protected API requests enforce active session status server-side.
+  No guest access token or anonymous backend principal is introduced.
 - **Credential storage:** only Laforika-owned refresh/session secret material uses
-  `flutter_secure_storage`. Passwords, OTPs, and form contents are never persisted. Credentials are
-  never stored in preferences and never logged.
+  `flutter_secure_storage`. OTPs and form contents are never persisted. Credentials are never
+  stored in preferences and never logged.
 - **Refresh/recovery:** single-flight refresh; concurrent 401s await the same refresh; retry each
   original request once; never recursively refresh the refresh call. Definitive session invalidation
   clears secrets and becomes `unauthenticated`; temporary network failure does not.
 - **Logout:** revokes the current session (or all sessions when requested), clears Laforika-owned
   secrets, disposes the current `{environment, accountId}` provider scope, and transitions to
   `unauthenticated`. Account deletion awaits O8.
-- **Delivery:** OTP/email verification lifecycle is real; development uses fixture delivery;
-  staging/prod fail closed until real adapters are configured.
+- **Delivery:** phone OTP lifecycle is real; development uses fixture delivery; staging/prod fail
+  closed until real adapters are configured.
 - **Route protection:** a stable `GoRouter` reads the current auth state in `redirect`. An
   app-owned `Listenable` adapter, created with the router provider, subscribes to
   `authControllerProvider` through Riverpod and calls `notifyListeners()` when session state
   changes; it is supplied as `refreshListenable`. This re-runs redirects without reconstructing
-  the router. Public and protected routes preserve the intended destination through login.
+  the router. Protected capabilities preserve the intended destination through phone OTP login.
+- **Migration safety (M03_WP03):** never reset or silently delete a database to drop email/password
+  support; use committed forward Prisma migrations; stop for an owner decision if a non-test
+  account has only email/password and no verified phone. Historical migrations remain immutable.
 - **Authority:** client guards are UX; the NestJS API is authoritative for access control.
+
+> **Transition note:** M1/M2 code still exposes email/password and an auth-method chooser. That is
+> a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -471,12 +519,26 @@ until a module needs it** — but the choices are pre-decided so no one improvis
 - **Typography:** bundle **Vazirmatn** (open-source Persian font) in `assets/fonts/`, set as the
   default `fontFamily`. A type scale (display/title/body/label) lives in `core/theme/`; features
   use scale tokens, not ad-hoc `TextStyle`s.
+- **Theme (approved target — M03_WP02):** Laforika-owned semantic light and dark palettes
+  ([ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md);
+  [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md)). Appearance modes are `System`,
+  `Light`, and `Dark` with **`System` default**. Implement via Material 3 `ThemeData` and semantic
+  tokens — not a Fluent UI framework dependency. Motion ~180–250ms; respect reduced motion where
+  Flutter exposes it. Translucency cannot reduce contrast below accessibility targets; blur is
+  progressive enhancement only.
+- **Adaptive shell (approved target — M03_WP04):** see
+  [`../design/APP_SHELL.md`](../design/APP_SHELL.md) for module strip, search scoping, contextual
+  tabs, floating dock, and Profile/Settings/Notifications rules.
 - **Accessibility:** minimum 48dp touch targets; `Semantics`/`semanticLabel` on icon-only
   controls and images; respect system text scaling (no fixed heights that clip scaled text);
-  target WCAG AA contrast in theme tokens. Screen-reader pass on primary flows before release.
-- **Responsive:** phone-first. A small set of width breakpoints in `core/theme/` (e.g. compact /
-  medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy responsive framework. Tablet
-  polish is opportunistic, not a launch requirement.
+  verify at **2.0** text scale; target WCAG AA contrast in theme tokens. Screen-reader pass on
+  primary flows before release.
+- **Responsive:** phone-first; verify at **320dp** width. A small set of width breakpoints in
+  `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
+  responsive framework. Tablet polish is opportunistic, not a launch requirement.
+
+> **Transition note:** Current theme tokens remain a neutral placeholder until M03_WP02. The adaptive
+> shell is not yet implemented (M03_WP04).
 
 ---
 
@@ -500,8 +562,10 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   ships. Before any build using real accounts leaves controlled testing, O8 must define
   auth/account data collection, processors, retention, local deletion, account deletion, and
   applicable notice or consent. Until then, real authentication is test-only.
-- **Auth boundaries:** protected routes are enforced by redirect (§8); the NestJS API remains
-  authoritative for access control — client guards are UX, not security.
+- **Auth boundaries:** protected capabilities are enforced by redirect (§8); the NestJS API remains
+  authoritative for access control — client guards are UX, not security. Guests have no access
+  token and no anonymous backend principal. Profile contact data remains subject to the O8
+  account-data lifecycle policy before external distribution.
 - **Backend secrets:** JWT signing keys, refresh/OTP peppers, database URLs, and fixture inbox
   keys never live in the Flutter tree or tracked config. Staging/prod reject fixture delivery.
 
@@ -515,8 +579,13 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `Failure` mapping, config validation, HTTP redaction, and account scoping.
 - **Widget** — key screens' loading/error/empty/data states, critical interactions, and the M0
   `fa-IR`/RTL application-root assertion.
-- **Golden** — design-system components and at least one full screen **in RTL** to lock layout
-  direction.
+- **Route matrix (from M03_WP03/M03_WP07):** guest/authenticated × public/protected destinations, including
+  validated return destinations and loop prevention.
+- **Shell / visual (from M03_WP04/M03_WP07):** dock swipe mapping; expanded/compact module-header states;
+  light/dark RTL goldens; **320dp** width and **2.0** text-scale checks; semantics for icon-only
+  shell controls.
+- **Golden** — design-system components and at least one full screen **in RTL** (light and dark
+  when the theme foundation exists) to lock layout direction.
 - **Integration** (`integration_test`) — required from M1 for the real auth flow and then each
   module's primary happy path.
 - **Mocking:** `mocktail` (no code generation). Test tree mirrors `lib/`.
@@ -569,36 +638,63 @@ Backend generated OpenAPI output and Prisma schema/migrations are committed and 
 Each milestone is shippable/reviewable and unblocks the next. **No module directory is created
 before its milestone.**
 
-- **M0 — Project bootstrap.** Create the project with the frozen identity in §5; add
-  `analysis_options.yaml` (`flutter_lints`), the minimal `app/` and `core/` skeleton, explicit l10n
-  wiring with `app_fa.arb`, Vazirmatn and theme tokens, checked `AppConfig`/flavor binding,
-  `ProviderScope`/bootstrap, `go_router` with one minimal Home route, the executable boundary
-  checker, and the CI matrix in §13. _Exit:_ the app runs in `fa-IR` RTL, the root widget test
-  passes, all three debug flavor builds succeed, generated files are reproducible, and CI is green.
-- **M1 — Authentication decision and real vertical slice.** O1 is resolved (custom NestJS API).
-  Implement the custom API adapter, session controller, phone OTP and email/password flows,
-  credential attachment, secure refresh storage, Dio auth/refresh interceptors, protected-route
-  redirects, account-security controls, backend security invariants, and the Android-emulator
-  integration job against local PostgreSQL. _Exit:_ real authentication works in controlled
-  testing; no fake session or stubbed auth flow remains. Before that real-auth build leaves
-  controlled testing, the O8 distribution gate in §12 is satisfied.
-- **M2 — Home / discovery shell.** Build the authenticated landing surface and establish the
-  module-integration pattern with one real screen. Extract shared UI primitives only when the Home
-  implementation proves repeated use. _Exit:_ authenticated users land on a navigable Persian RTL
-  Home and adding a module follows the documented route-registry boundary.
-- **M3 — First specialized module.** Pick **one** production module (recommended: a read-mostly
-  module such as News/Events or Local Heritage) and introduce only the networking, errors, caching,
-  storage, and shared UI it genuinely requires beyond auth. _Exit:_ one specialized module works
-  end-to-end and proves the simple-module architecture in production shape.
-- **M4 — First complex/offline module, when justified.** A later module such as Shop, Chat, or
+### Completed baseline (history)
+
+- **M0 — Project bootstrap.** Frozen identity, flavors, RTL localization, theme placeholder,
+  routing, CI, and boundary enforcement. ✅
+- **M1 — Authentication vertical slice.** Custom NestJS API, provider-neutral session, dual
+  credentials as originally shipped, secure refresh, Dio interceptors, protected redirects. ✅
+- **M2 — Home / discovery shell.** Authenticated Persian RTL Home and feature route-registry
+  pattern. ✅
+
+### Approved transition packages (after M2)
+
+These close the gap between the M2 code baseline and the v1.4 target. **Do not implement them
+inside M03_WP01.**
+
+- **M03_WP01 — Documentation and decision freeze.** ADR-0008, ADR-0009, architecture v1.4, UI
+  foundation and shell specifications, contributor/README alignment. _Exit:_ approved target is
+  reviewable; no production code changes. ← **this package**
+- **M03_WP02 — Light/dark theme foundation.** Semantic tokens, Material 3 light/dark, System/Light/Dark
+  with System default and preferences persistence; typography/spacing/radius/elevation tokens;
+  light/dark RTL visual tests. No routing/auth/shell redesign.
+- **M03_WP03 — Guest-first routing and phone-only authentication.** Public Home for guests; direct
+  phone OTP; protected return destinations; remove method chooser, email/password login, and
+  password reset; forward non-destructive backend/OpenAPI/Prisma migration as required; email
+  becomes profile data. No shell redesign.
+- **M03_WP04 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
+  tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
+  dead Chat/module placeholder.
+- **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
+  Settings/Notifications header actions; backend profile contract as required.
+- **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
+  sections; protected Notifications with real states; no push SDK while O3 is unresolved.
+- **M03_WP07 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
+  return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
+  expanded/compact module header; documentation reconciliation.
+
+**Exact next package after M03_WP01:** **M03_WP02 — Light/dark theme foundation**.
+
+### Later product milestones (after the M03_WP01–M03_WP07 transition)
+
+Milestone **M03** is the guest-first / phone-only / UI-foundation transition program
+(`M03_WP01`–`M03_WP07`). Later product milestones continue as **M04** and **M05** so they do not
+collide with that program id.
+
+- **M04 — First specialized module.** Pick **one** production module (owner chooses; recommended:
+  a read-mostly module such as News/Events or Local Heritage) and introduce only the networking,
+  errors, caching, storage, and shared UI it genuinely requires. _Exit:_ one specialized module
+  works end-to-end and proves the simple-module architecture in production shape.
+- **M05 — First complex/offline module, when justified.** A later module such as Shop, Chat, or
   Villas may introduce Drift and an outbox/synchronization policy after its real data and conflict
   requirements are known. Before implementation, define the app-level schema-contribution seam and
   backup eligibility. _Exit:_ migrations are tested from every supported schema version; account
   isolation, transaction/outbox crash recovery, replay idempotency, purge behavior, and Android
   backup policy are verified without creating a speculative app-wide sync framework.
 
-M3's module choice depends on product priority. Connectivity and shared UI infrastructure beyond
-auth are added only through the first real feature that requires them.
+M04's module choice depends on product priority and must not be invented during M03_WP01–M03_WP07.
+Connectivity and shared UI infrastructure beyond proven need are added only through the first real
+feature that requires them.
 
 ---
 
@@ -609,24 +705,27 @@ architect should not decide them unilaterally. Each has a safe default so work i
 
 | # | Decision | Why it needs the owner | Interim default (unblocks work) |
 |---|---|---|---|
-| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; phone OTP + email/password; RS256 access + opaque rotating refresh; monorepo `backend/`. See [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1. |
+| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; RS256 access + opaque rotating refresh; monorepo `backend/`. User-facing credential amended by [ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) to **phone OTP only** (email is profile data). Backend ownership/token security remain [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1; credential/access product change lands in M03_WP03. |
 | O2 | **Maps provider** — Google Maps vs. Iranian providers (Neshan / Balad) | Google services are often unreliable/restricted in Iran; affects a core module + vendor keys/cost. | Defer; maps module not before provider chosen. |
 | O3 | **Push notifications** — FCM vs. local/regional service | FCM depends on Google Play services (unreliable in-market); vendor + privacy. | Defer; no push infra built yet. |
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
 | O5 | **Distribution channel** — Google Play vs. Cafe Bazaar / Myket vs. direct APK | Determines signing, update mechanism, store policies, CI publish step. | CI produces debug-signed, non-publishable APKs only. |
 | O6 | **Jalali (Persian) calendar** for user-facing dates | Product/UX behavior for a Persian audience. | Gregorian storage; display calendar TBD. |
-| O7 | **Branding** — app name display, palette, logo, launch icon | Design-system tokens and store assets. | Neutral placeholder theme tokens. |
+| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP04 implement the approved in-app system; do not invent external brand assets. |
 | O8 | **Legal/privacy** — privacy policy, terms, data retention, age policy | Legal obligation; gates telemetry and any real-account build leaving controlled testing. | Real auth remains test-only; no telemetry; account-data lifecycle must be approved before external distribution. |
 
 ---
 
 ## Freeze record
 
-Version 1.3 records resolved O1 (custom NestJS authentication backend and session security) via
-ADR-0007 while preserving the Flutter provider-neutral session boundary from ADR-0006. The
-architecture pattern, Flutter toolchain, state/DI choice, router, HTTP client, storage defaults,
-localization direction, and remaining owner decisions O2–O8 are unchanged except where O8 continues
-to gate external distribution of real-account builds.
+Version 1.4 records the approved guest-first, phone-only, Fluent-inspired adaptive-shell target via
+ADR-0008 and ADR-0009 on top of the M2 baseline. ADR-0008 **partially supersedes** only the
+dual-credential and authenticated-first product implications of ADR-0007; NestJS/PostgreSQL
+ownership, token security, session revocation, fixture delivery, and server authority from ADR-0007
+remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
+resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
+unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02–M03_WP07 close the
+documented code-to-target gaps; M03_WP01 itself changes documentation only.
 
 ---
 
@@ -634,4 +733,5 @@ to gate external distribution of real-account builds.
 
 Material changes to a load-bearing decision require a new or superseding **ADR**; this document
 is then updated to point at it. Non-structural clarifications edit this document directly and bump
-the version. ADRs are immutable once `Accepted` (supersede, don't rewrite).
+the version. ADRs are immutable once `Accepted` (supersede, don't rewrite). ADR-0008 supersedes
+only the credential/access product choice in ADR-0007 without editing that accepted file.
