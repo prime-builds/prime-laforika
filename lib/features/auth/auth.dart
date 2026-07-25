@@ -6,9 +6,6 @@ import 'package:laforika/core/storage/secure_store.dart';
 import 'package:laforika/features/auth/data/auth_repository.dart';
 import 'package:laforika/features/auth/data/custom_api_auth_gateway.dart';
 import 'package:laforika/features/auth/presentation/account_security_screen.dart';
-import 'package:laforika/features/auth/presentation/auth_method_screen.dart';
-import 'package:laforika/features/auth/presentation/email_auth_screen.dart';
-import 'package:laforika/features/auth/presentation/password_reset_screen.dart';
 import 'package:laforika/features/auth/presentation/phone_auth_screen.dart';
 import 'package:laforika/features/auth/presentation/session_startup_screen.dart';
 
@@ -18,17 +15,9 @@ export 'package:laforika/features/auth/data/auth_repository.dart';
 const authStartupRouteName = 'authStartup';
 const authStartupRoutePath = '/startup';
 
-const authMethodRouteName = 'authMethod';
-const authMethodRoutePath = '/auth';
-
-const authPhoneRouteName = 'authPhone';
-const authPhoneRoutePath = '/auth/phone';
-
-const authEmailRouteName = 'authEmail';
-const authEmailRoutePath = '/auth/email';
-
-const authPasswordResetRouteName = 'authPasswordReset';
-const authPasswordResetRoutePath = '/auth/password-reset';
+/// Canonical user-facing auth entry — direct phone OTP (not a method chooser).
+const authRouteName = 'auth';
+const authRoutePath = '/auth';
 
 const accountSecurityRouteName = 'accountSecurity';
 const accountSecurityRoutePath = '/account/security';
@@ -44,17 +33,16 @@ CustomApiAuthGateway createCustomApiAuthGateway({
   return CustomApiAuthGateway(repository: repository, secureStore: secureStore);
 }
 
-Set<String> get authOnlyPaths => {
-  authMethodRoutePath,
-  authPhoneRoutePath,
-  authEmailRoutePath,
-  authPasswordResetRoutePath,
-};
+/// Auth-only paths (login UI). Guests may visit these without redirect.
+Set<String> get authOnlyPaths => {authRoutePath};
+
+/// Explicitly protected capability paths. Guests are redirected to [authRoutePath].
+Set<String> get authProtectedPaths => {accountSecurityRoutePath};
 
 Set<String> get authRegisteredPaths => {
   authStartupRoutePath,
   ...authOnlyPaths,
-  accountSecurityRoutePath,
+  ...authProtectedPaths,
 };
 
 List<RouteBase> authRoutes() => [
@@ -64,24 +52,9 @@ List<RouteBase> authRoutes() => [
     builder: (context, state) => const SessionStartupScreen(),
   ),
   GoRoute(
-    path: authMethodRoutePath,
-    name: authMethodRouteName,
-    builder: (context, state) => const AuthMethodScreen(),
-  ),
-  GoRoute(
-    path: authPhoneRoutePath,
-    name: authPhoneRouteName,
+    path: authRoutePath,
+    name: authRouteName,
     builder: (context, state) => const PhoneAuthScreen(),
-  ),
-  GoRoute(
-    path: authEmailRoutePath,
-    name: authEmailRouteName,
-    builder: (context, state) => const EmailAuthScreen(),
-  ),
-  GoRoute(
-    path: authPasswordResetRoutePath,
-    name: authPasswordResetRouteName,
-    builder: (context, state) => const PasswordResetScreen(),
   ),
   GoRoute(
     path: accountSecurityRoutePath,

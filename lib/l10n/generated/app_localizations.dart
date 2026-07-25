@@ -100,7 +100,7 @@ abstract class AppLocalizations {
   /// **'لفوریکا'**
   String get appTitle;
 
-  /// Home welcome title for authenticated discovery shell
+  /// Home welcome title for guest-accessible discovery shell
   ///
   /// In fa, this message translates to:
   /// **'به لفوریکا خوش آمدید'**
@@ -111,36 +111,6 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.'**
   String get homeWelcomeSubtitle;
-
-  /// Home account-status section title
-  ///
-  /// In fa, this message translates to:
-  /// **'وضعیت حساب'**
-  String get homeAccountStatusTitle;
-
-  /// Home status when phone credential is attached
-  ///
-  /// In fa, this message translates to:
-  /// **'شماره موبایل تأیید شده است'**
-  String get homePhoneReady;
-
-  /// Home status when phone credential is missing
-  ///
-  /// In fa, this message translates to:
-  /// **'شماره موبایل به حساب متصل نیست'**
-  String get homePhoneMissing;
-
-  /// Home status when email credential is attached
-  ///
-  /// In fa, this message translates to:
-  /// **'ایمیل تأیید شده است'**
-  String get homeEmailReady;
-
-  /// Home status when email credential is missing
-  ///
-  /// In fa, this message translates to:
-  /// **'ایمیل به حساب متصل نیست'**
-  String get homeEmailMissing;
 
   /// Home quick-action section title
   ///
@@ -154,10 +124,10 @@ abstract class AppLocalizations {
   /// **'امنیت حساب'**
   String get homeAccountSecurityTitle;
 
-  /// Home destination description for account security
+  /// Home destination description for account security sessions
   ///
   /// In fa, this message translates to:
-  /// **'روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.'**
+  /// **'نشست‌های فعال را مدیریت کنید و از حساب خارج شوید.'**
   String get homeAccountSecurityDescription;
 
   /// Semantic label for opening account security from Home
@@ -202,30 +172,6 @@ abstract class AppLocalizations {
   /// **'تلاش دوباره'**
   String get authRetry;
 
-  /// No description provided for @authMethodTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'ورود به لفوریکا'**
-  String get authMethodTitle;
-
-  /// No description provided for @authMethodSubtitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'یکی از روش‌های ورود را انتخاب کنید.'**
-  String get authMethodSubtitle;
-
-  /// No description provided for @authContinueWithPhone.
-  ///
-  /// In fa, this message translates to:
-  /// **'ادامه با شماره موبایل'**
-  String get authContinueWithPhone;
-
-  /// No description provided for @authContinueWithEmail.
-  ///
-  /// In fa, this message translates to:
-  /// **'ادامه با ایمیل و رمز عبور'**
-  String get authContinueWithEmail;
-
   /// No description provided for @authPhoneTitle.
   ///
   /// In fa, this message translates to:
@@ -237,30 +183,6 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'شماره موبایل'**
   String get authPhoneLabel;
-
-  /// No description provided for @authEmailTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'ورود با ایمیل'**
-  String get authEmailTitle;
-
-  /// No description provided for @authEmailLabel.
-  ///
-  /// In fa, this message translates to:
-  /// **'ایمیل'**
-  String get authEmailLabel;
-
-  /// No description provided for @authPasswordLabel.
-  ///
-  /// In fa, this message translates to:
-  /// **'رمز عبور'**
-  String get authPasswordLabel;
-
-  /// No description provided for @authNewPasswordLabel.
-  ///
-  /// In fa, this message translates to:
-  /// **'رمز عبور جدید'**
-  String get authNewPasswordLabel;
 
   /// No description provided for @authOtpLabel.
   ///
@@ -298,42 +220,6 @@ abstract class AppLocalizations {
   /// **'لطفاً صبر کنید…'**
   String get authPleaseWait;
 
-  /// No description provided for @authSignUp.
-  ///
-  /// In fa, this message translates to:
-  /// **'ثبت‌نام'**
-  String get authSignUp;
-
-  /// No description provided for @authSignIn.
-  ///
-  /// In fa, this message translates to:
-  /// **'ورود'**
-  String get authSignIn;
-
-  /// No description provided for @authForgotPassword.
-  ///
-  /// In fa, this message translates to:
-  /// **'فراموشی رمز عبور'**
-  String get authForgotPassword;
-
-  /// No description provided for @authPasswordResetTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'بازیابی رمز عبور'**
-  String get authPasswordResetTitle;
-
-  /// No description provided for @authResetPassword.
-  ///
-  /// In fa, this message translates to:
-  /// **'تنظیم رمز جدید'**
-  String get authResetPassword;
-
-  /// No description provided for @authPasswordResetSuccess.
-  ///
-  /// In fa, this message translates to:
-  /// **'رمز عبور به‌روز شد. اکنون می‌توانید وارد شوید.'**
-  String get authPasswordResetSuccess;
-
   /// No description provided for @authCodeSentTo.
   ///
   /// In fa, this message translates to:
@@ -364,59 +250,17 @@ abstract class AppLocalizations {
   /// **'شناسه حساب: {accountId}'**
   String accountIdLabel(String accountId);
 
-  /// No description provided for @accountPhoneAttached.
-  ///
-  /// In fa, this message translates to:
-  /// **'موبایل تأییدشده: {phone}'**
-  String accountPhoneAttached(String phone);
-
-  /// No description provided for @accountPhoneMissing.
-  ///
-  /// In fa, this message translates to:
-  /// **'موبایل متصل نیست'**
-  String get accountPhoneMissing;
-
-  /// No description provided for @accountEmailAttached.
-  ///
-  /// In fa, this message translates to:
-  /// **'ایمیل تأییدشده: {email}'**
-  String accountEmailAttached(String email);
-
-  /// No description provided for @accountEmailMissing.
-  ///
-  /// In fa, this message translates to:
-  /// **'ایمیل متصل نیست'**
-  String get accountEmailMissing;
-
-  /// No description provided for @accountAttachEmailTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'اتصال ایمیل و رمز عبور'**
-  String get accountAttachEmailTitle;
-
-  /// No description provided for @accountAttachPhoneTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'اتصال شماره موبایل'**
-  String get accountAttachPhoneTitle;
-
-  /// No description provided for @accountRemoveEmail.
-  ///
-  /// In fa, this message translates to:
-  /// **'حذف ایمیل'**
-  String get accountRemoveEmail;
-
-  /// No description provided for @accountRemovePhone.
-  ///
-  /// In fa, this message translates to:
-  /// **'حذف موبایل'**
-  String get accountRemovePhone;
-
   /// No description provided for @accountSessionsTitle.
   ///
   /// In fa, this message translates to:
   /// **'نشست‌های فعال'**
   String get accountSessionsTitle;
+
+  /// No description provided for @accountSessionsEmpty.
+  ///
+  /// In fa, this message translates to:
+  /// **'نشست فعالی یافت نشد.'**
+  String get accountSessionsEmpty;
 
   /// No description provided for @accountSessionDevice.
   ///
@@ -441,30 +285,6 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'خروج از همه دستگاه‌ها'**
   String get accountLogoutAll;
-
-  /// No description provided for @accountChangePasswordTitle.
-  ///
-  /// In fa, this message translates to:
-  /// **'تغییر رمز عبور'**
-  String get accountChangePasswordTitle;
-
-  /// No description provided for @accountCurrentPasswordLabel.
-  ///
-  /// In fa, this message translates to:
-  /// **'رمز عبور فعلی'**
-  String get accountCurrentPasswordLabel;
-
-  /// No description provided for @accountChangePasswordAction.
-  ///
-  /// In fa, this message translates to:
-  /// **'به‌روزرسانی رمز عبور'**
-  String get accountChangePasswordAction;
-
-  /// No description provided for @accountChangePasswordSuccess.
-  ///
-  /// In fa, this message translates to:
-  /// **'رمز عبور به‌روز شد. لطفاً دوباره وارد شوید.'**
-  String get accountChangePasswordSuccess;
 
   /// No description provided for @authErrorInvalidCredentials.
   ///
@@ -501,12 +321,6 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'نشست شما پایان یافته است. دوباره وارد شوید.'**
   String get authErrorSessionRevoked;
-
-  /// No description provided for @authErrorLastCredential.
-  ///
-  /// In fa, this message translates to:
-  /// **'نمی‌توان آخرین روش ورود را حذف کرد.'**
-  String get authErrorLastCredential;
 
   /// No description provided for @authErrorValidation.
   ///

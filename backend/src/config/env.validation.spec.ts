@@ -15,7 +15,6 @@ function baseConfig(
     JWT_PUBLIC_KEY_PATH: './keys/public.pem',
     REFRESH_TOKEN_PEPPER: 'refresh-pepper-for-tests-only',
     OTP_CODE_PEPPER: 'otp-pepper-for-tests-only-xx',
-    PASSWORD_PEPPER: 'password-pepper-for-tests-only',
     RATE_LIMIT_PEPPER: 'rate-limit-pepper-for-tests-only',
     TRUST_FORWARDED_ORIGIN: false,
     FIXTURE_DELIVERY_ENABLED: true,

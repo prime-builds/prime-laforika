@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../support/test_prefs.dart';
-
 import 'package:laforika/app/app.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_session_gateway.dart';
@@ -11,8 +9,13 @@ import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/config/app_config.dart';
 import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/error/failure.dart';
+import 'package:laforika/features/auth/auth.dart';
+import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/home/home.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
+
+import '../../support/fake_auth_repository.dart';
+import '../../support/test_prefs.dart';
 
 class _RecordingGateway implements AuthSessionGateway {
   _RecordingGateway(this._hydrate, {this.logoutDelay = Duration.zero});
@@ -67,26 +70,20 @@ const _config = AppConfig(
   featureFlags: <String, bool>{},
 );
 
-const _fullPrincipal = AuthPrincipal(
-  accountId: 'acc-home-secret',
-  hasPhone: true,
-  hasEmail: true,
-  maskedPhone: '+989****67',
-  maskedEmail: 'us***@example.com',
-);
+const _principal = AuthPrincipal(accountId: 'acc-home-secret');
 
 Future<AppLocalizations> _l10n() =>
     AppLocalizations.delegate.load(const Locale('fa', 'IR'));
 
-Future<ProviderContainer> _pumpAuthenticatedHome(
+Future<ProviderContainer> _pumpHome(
   WidgetTester tester, {
-  required AuthPrincipal principal,
+  required AuthState hydrate,
   AuthSessionGateway? gateway,
+  FakeAuthRepository? repository,
   Size? physicalSize,
   double textScale = 1.0,
 }) async {
-  final boundGateway =
-      gateway ?? _RecordingGateway(AuthAuthenticated(principal));
+  final boundGateway = gateway ?? _RecordingGateway(hydrate);
 
   addTearDown(() {
     tester.view.resetPhysicalSize();
@@ -106,6 +103,8 @@ Future<ProviderContainer> _pumpAuthenticatedHome(
         appConfigProvider.overrideWithValue(_config),
         authSessionGatewayProvider.overrideWithValue(boundGateway),
         testPrefsOverride(),
+        if (repository != null)
+          authRepositoryProvider.overrideWithValue(repository),
       ],
       child: Consumer(
         builder: (context, ref, _) {
@@ -124,10 +123,10 @@ Future<ProviderContainer> _pumpAuthenticatedHome(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('authenticated home shows phone and email ready states', (
+  testWidgets('guest home shows discovery without logout or credential UI', (
     tester,
   ) async {
-    await _pumpAuthenticatedHome(tester, principal: _fullPrincipal);
+    await _pumpHome(tester, hydrate: const AuthUnauthenticated());
     final l10n = await _l10n();
 
     expect(
@@ -139,74 +138,38 @@ void main() {
     expect(find.byKey(const Key('home_discovery_shell')), findsOneWidget);
     expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
     expect(find.text(l10n.homeWelcomeSubtitle), findsOneWidget);
-    expect(find.text(l10n.homeAccountStatusTitle), findsOneWidget);
-    expect(find.text(l10n.homePhoneReady), findsOneWidget);
-    expect(find.text(l10n.homeEmailReady), findsOneWidget);
-    expect(find.text('+989****67'), findsOneWidget);
-    expect(find.text('us***@example.com'), findsOneWidget);
-    expect(find.textContaining('acc-home-secret'), findsNothing);
     expect(find.byKey(const Key('home_account_security')), findsOneWidget);
-    expect(find.byKey(const Key('home_logout')), findsOneWidget);
-    expect(find.text(l10n.homeAccountSecurityTitle), findsOneWidget);
+    expect(find.byKey(const Key('home_logout')), findsNothing);
+    expect(find.byKey(const Key('home_account_status')), findsNothing);
+    expect(find.textContaining('ایمیل'), findsNothing);
+    expect(find.textContaining('acc-home-secret'), findsNothing);
   });
 
-  testWidgets('phone-only principal shows email missing', (tester) async {
-    await _pumpAuthenticatedHome(
-      tester,
-      principal: const AuthPrincipal(
-        accountId: 'acc-phone',
-        hasPhone: true,
-        maskedPhone: '+989****11',
-      ),
-    );
-    final l10n = await _l10n();
-
-    expect(find.text(l10n.homePhoneReady), findsOneWidget);
-    expect(find.text(l10n.homeEmailMissing), findsOneWidget);
-    expect(find.text('+989****11'), findsOneWidget);
-    expect(find.textContaining('acc-phone'), findsNothing);
-  });
-
-  testWidgets('email-only principal shows phone missing', (tester) async {
-    await _pumpAuthenticatedHome(
-      tester,
-      principal: const AuthPrincipal(
-        accountId: 'acc-email',
-        hasEmail: true,
-        maskedEmail: 'ab***@example.com',
-      ),
-    );
-    final l10n = await _l10n();
-
-    expect(find.text(l10n.homeEmailReady), findsOneWidget);
-    expect(find.text(l10n.homePhoneMissing), findsOneWidget);
-    expect(find.text('ab***@example.com'), findsOneWidget);
-    expect(find.textContaining('null'), findsNothing);
-  });
-
-  testWidgets('missing masks do not render null or empty punctuation', (
+  testWidgets('authenticated home shows logout without credential status', (
     tester,
   ) async {
-    await _pumpAuthenticatedHome(
-      tester,
-      principal: const AuthPrincipal(
-        accountId: 'acc-bare',
-        hasPhone: true,
-        hasEmail: true,
-      ),
-    );
+    await _pumpHome(tester, hydrate: const AuthAuthenticated(_principal));
     final l10n = await _l10n();
 
-    expect(find.text(l10n.homePhoneReady), findsOneWidget);
-    expect(find.text(l10n.homeEmailReady), findsOneWidget);
-    expect(find.textContaining('null'), findsNothing);
-    expect(find.textContaining('acc-bare'), findsNothing);
+    expect(find.byKey(const Key('home_logout')), findsOneWidget);
+    expect(find.byKey(const Key('home_account_security')), findsOneWidget);
+    expect(find.text(l10n.homeAccountSecurityTitle), findsOneWidget);
+    expect(find.byKey(const Key('home_account_status')), findsNothing);
+    expect(find.textContaining('acc-home-secret'), findsNothing);
+    expect(find.textContaining('رمز'), findsNothing);
   });
 
   testWidgets('account security destination navigates via public path', (
     tester,
   ) async {
-    await _pumpAuthenticatedHome(tester, principal: _fullPrincipal);
+    final repository = FakeAuthRepository()
+      ..meResult = const Success(AccountMeDto(accountId: 'acc-home-secret'))
+      ..sessionsResult = const Success(<SessionDto>[]);
+    await _pumpHome(
+      tester,
+      hydrate: const AuthAuthenticated(_principal),
+      repository: repository,
+    );
     final l10n = await _l10n();
 
     await tester.tap(find.byKey(const Key('home_account_security')));
@@ -215,16 +178,14 @@ void main() {
     expect(find.text(l10n.accountSecurityTitle), findsOneWidget);
   });
 
-  testWidgets('logout invokes gateway once and returns to auth entry', (
-    tester,
-  ) async {
+  testWidgets('logout returns to guest Home not login', (tester) async {
     final gateway = _RecordingGateway(
-      const AuthAuthenticated(_fullPrincipal),
+      const AuthAuthenticated(_principal),
       logoutDelay: const Duration(milliseconds: 200),
     );
-    final container = await _pumpAuthenticatedHome(
+    final container = await _pumpHome(
       tester,
-      principal: _fullPrincipal,
+      hydrate: const AuthAuthenticated(_principal),
       gateway: gateway,
     );
     final l10n = await _l10n();
@@ -244,54 +205,41 @@ void main() {
 
     expect(gateway.logoutCurrentCalls, 1);
     expect(container.read(authControllerProvider), isA<AuthUnauthenticated>());
-    expect(find.text(l10n.authMethodTitle), findsOneWidget);
-    expect(find.byType(HomeScreen), findsNothing);
+    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+    expect(find.byKey(const Key('home_logout')), findsNothing);
+    expect(find.text(l10n.authPhoneTitle), findsNothing);
   });
 
   testWidgets('narrow short layout does not overflow', (tester) async {
-    await _pumpAuthenticatedHome(
+    await _pumpHome(
       tester,
-      principal: _fullPrincipal,
+      hydrate: const AuthAuthenticated(_principal),
       physicalSize: const Size(320, 568),
     );
 
     expect(tester.takeException(), isNull);
     expect(find.byType(Scrollable), findsWidgets);
-    expect(find.byKey(const Key('home_account_security')), findsOneWidget);
-    expect(find.byKey(const Key('home_logout')), findsOneWidget);
-  });
-
-  testWidgets('wide layout keeps actions reachable', (tester) async {
-    await _pumpAuthenticatedHome(
-      tester,
-      principal: _fullPrincipal,
-      physicalSize: const Size(900, 800),
-    );
-
-    expect(tester.takeException(), isNull);
-    expect(find.byKey(const Key('home_account_status')), findsOneWidget);
     expect(find.byKey(const Key('home_account_security')), findsOneWidget);
   });
 
   testWidgets('text scale 2.0 remains scrollable without overflow', (
     tester,
   ) async {
-    await _pumpAuthenticatedHome(
+    await _pumpHome(
       tester,
-      principal: _fullPrincipal,
+      hydrate: const AuthAuthenticated(_principal),
       physicalSize: const Size(320, 568),
       textScale: 2.0,
     );
 
     expect(tester.takeException(), isNull);
     expect(find.byType(Scrollable), findsWidgets);
-    expect(find.byKey(const Key('home_logout')), findsOneWidget);
   });
 
   testWidgets('logout and account-security expose localized semantics', (
     tester,
   ) async {
-    await _pumpAuthenticatedHome(tester, principal: _fullPrincipal);
+    await _pumpHome(tester, hydrate: const AuthAuthenticated(_principal));
     final l10n = await _l10n();
 
     final destination = tester.widget<Semantics>(
@@ -300,14 +248,13 @@ void main() {
     expect(destination.properties.label, l10n.homeOpenAccountSecurity);
     expect(destination.properties.button, isTrue);
     expect(find.byTooltip(l10n.homeLogoutTooltip), findsOneWidget);
-    expect(find.text(l10n.homePhoneReady), findsOneWidget);
-    expect(find.text(l10n.homeEmailReady), findsOneWidget);
   });
 
   test('home barrel route constants remain stable', () {
     expect(homeRouteName, 'home');
     expect(homeRoutePath, '/');
     expect(homeRegisteredPaths, <String>{homeRoutePath});
+    expect(homePublicPaths, <String>{homeRoutePath});
     expect(homeRoutes(), isNotEmpty);
   });
 }

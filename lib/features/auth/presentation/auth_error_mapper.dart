@@ -9,7 +9,6 @@ String mapAuthFailure(AppLocalizations l10n, Failure failure) {
     'AUTH_RATE_LIMITED' => l10n.authErrorRateLimited,
     'AUTH_CONFLICT' => l10n.authErrorConflict,
     'AUTH_SESSION_REVOKED' => l10n.authErrorSessionRevoked,
-    'AUTH_LAST_CREDENTIAL' => l10n.authErrorLastCredential,
     'VALIDATION_ERROR' => l10n.authErrorValidation,
     'NETWORK_ERROR' => l10n.authErrorNetwork,
     'TIMEOUT' => l10n.authErrorNetwork,

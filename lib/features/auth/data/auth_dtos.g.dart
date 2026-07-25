@@ -10,10 +10,6 @@ TokenPairDto _$TokenPairDtoFromJson(Map<String, dynamic> json) => TokenPairDto(
   accessToken: json['accessToken'] as String,
   refreshToken: json['refreshToken'] as String,
   accountId: json['accountId'] as String,
-  hasPhone: json['hasPhone'] as bool? ?? false,
-  hasEmail: json['hasEmail'] as bool? ?? false,
-  maskedPhone: json['maskedPhone'] as String?,
-  maskedEmail: json['maskedEmail'] as String?,
 );
 
 Map<String, dynamic> _$TokenPairDtoToJson(TokenPairDto instance) =>
@@ -21,10 +17,6 @@ Map<String, dynamic> _$TokenPairDtoToJson(TokenPairDto instance) =>
       'accessToken': instance.accessToken,
       'refreshToken': instance.refreshToken,
       'accountId': instance.accountId,
-      'hasPhone': instance.hasPhone,
-      'hasEmail': instance.hasEmail,
-      'maskedPhone': instance.maskedPhone,
-      'maskedEmail': instance.maskedEmail,
     };
 
 ChallengeCreatedDto _$ChallengeCreatedDtoFromJson(Map<String, dynamic> json) =>
@@ -44,22 +36,11 @@ Map<String, dynamic> _$ChallengeCreatedDtoToJson(
   'expiresAt': instance.expiresAt,
 };
 
-AccountMeDto _$AccountMeDtoFromJson(Map<String, dynamic> json) => AccountMeDto(
-  accountId: json['accountId'] as String,
-  hasPhone: json['hasPhone'] as bool,
-  hasEmail: json['hasEmail'] as bool,
-  maskedPhone: json['maskedPhone'] as String?,
-  maskedEmail: json['maskedEmail'] as String?,
-);
+AccountMeDto _$AccountMeDtoFromJson(Map<String, dynamic> json) =>
+    AccountMeDto(accountId: json['accountId'] as String);
 
 Map<String, dynamic> _$AccountMeDtoToJson(AccountMeDto instance) =>
-    <String, dynamic>{
-      'accountId': instance.accountId,
-      'hasPhone': instance.hasPhone,
-      'hasEmail': instance.hasEmail,
-      'maskedPhone': instance.maskedPhone,
-      'maskedEmail': instance.maskedEmail,
-    };
+    <String, dynamic>{'accountId': instance.accountId};
 
 SessionDto _$SessionDtoFromJson(Map<String, dynamic> json) => SessionDto(
   sessionId: json['sessionId'] as String,

@@ -6,7 +6,6 @@ import {
   timingSafeEqual,
 } from 'crypto';
 import { readFileSync } from 'fs';
-import * as argon2 from 'argon2';
 import {
   parsePhoneNumberFromString,
   type CountryCode,
@@ -54,52 +53,6 @@ export function maskEmail(email: string): string {
   if (!domain) return '***';
   const visible = local.slice(0, Math.min(2, local.length));
   return `${visible}***@${domain}`;
-}
-
-const COMMON_PASSWORDS = new Set(
-  [
-    'password',
-    'password123456',
-    '123456789012345',
-    'qwertyuiopasdfg',
-    'iloveyouiloveyou',
-    'adminadminadmin',
-    'letmeinletmein1',
-    'welcomewelcome1',
-    'changemechangeme',
-    'footballfootball',
-  ].map((p) => p.toLowerCase()),
-);
-
-export function assertPasswordPolicy(password: string): void {
-  if (password.length < 15 || password.length > 128) {
-    throw new AppError('VALIDATION_ERROR', 400, ['password']);
-  }
-  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
-    throw new AppError('VALIDATION_ERROR', 400, ['password']);
-  }
-}
-
-export async function hashPassword(
-  password: string,
-  pepper: string,
-): Promise<string> {
-  assertPasswordPolicy(password);
-  return argon2.hash(`${password}${pepper}`, {
-    type: argon2.argon2id,
-    memoryCost: 19456,
-    timeCost: 2,
-    parallelism: 1,
-  });
-}
-
-export async function verifyPassword(
-  hash: string,
-  password: string,
-  pepper: string,
-): Promise<{ ok: boolean; needsRehash: boolean }> {
-  const ok = await argon2.verify(hash, `${password}${pepper}`);
-  return { ok, needsRehash: ok && argon2.needsRehash(hash) };
 }
 
 export function hashOpaqueSecret(value: string, pepper: string): string {

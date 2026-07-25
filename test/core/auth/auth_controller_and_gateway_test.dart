@@ -11,12 +11,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/memory_secure_store.dart';
 
 void main() {
-  const principal = AuthPrincipal(
-    accountId: 'acc-1',
-    hasPhone: true,
-    hasEmail: false,
-    maskedPhone: '+989****67',
-  );
+  const principal = AuthPrincipal(accountId: 'acc-1');
 
   group('AuthController', () {
     late FakeAuthRepository repository;
@@ -101,7 +96,6 @@ void main() {
             accessToken: 'a2',
             refreshToken: 'r2',
             accountId: 'acc-1',
-            hasPhone: true,
           ),
         );
       final store = MemorySecureStore();

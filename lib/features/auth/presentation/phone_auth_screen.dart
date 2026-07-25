@@ -94,13 +94,7 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
             .onCredentialsAccepted(
               accessToken: tokens.accessToken,
               refreshToken: tokens.refreshToken,
-              principal: AuthPrincipal(
-                accountId: tokens.accountId,
-                hasPhone: tokens.hasPhone,
-                hasEmail: tokens.hasEmail,
-                maskedPhone: tokens.maskedPhone,
-                maskedEmail: tokens.maskedEmail,
-              ),
+              principal: AuthPrincipal(accountId: tokens.accountId),
             );
       },
       failure: (failure) async {

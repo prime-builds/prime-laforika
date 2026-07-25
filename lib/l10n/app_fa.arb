@@ -6,31 +6,11 @@
   },
   "homeWelcomeTitle": "به لفوریکا خوش آمدید",
   "@homeWelcomeTitle": {
-    "description": "Home welcome title for authenticated discovery shell"
+    "description": "Home welcome title for guest-accessible discovery shell"
   },
   "homeWelcomeSubtitle": "از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.",
   "@homeWelcomeSubtitle": {
     "description": "Home welcome subtitle explaining available areas"
-  },
-  "homeAccountStatusTitle": "وضعیت حساب",
-  "@homeAccountStatusTitle": {
-    "description": "Home account-status section title"
-  },
-  "homePhoneReady": "شماره موبایل تأیید شده است",
-  "@homePhoneReady": {
-    "description": "Home status when phone credential is attached"
-  },
-  "homePhoneMissing": "شماره موبایل به حساب متصل نیست",
-  "@homePhoneMissing": {
-    "description": "Home status when phone credential is missing"
-  },
-  "homeEmailReady": "ایمیل تأیید شده است",
-  "@homeEmailReady": {
-    "description": "Home status when email credential is attached"
-  },
-  "homeEmailMissing": "ایمیل به حساب متصل نیست",
-  "@homeEmailMissing": {
-    "description": "Home status when email credential is missing"
   },
   "homeAvailableSectionsTitle": "دسترسی سریع",
   "@homeAvailableSectionsTitle": {
@@ -40,9 +20,9 @@
   "@homeAccountSecurityTitle": {
     "description": "Home destination title for account security"
   },
-  "homeAccountSecurityDescription": "روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.",
+  "homeAccountSecurityDescription": "نشست‌های فعال را مدیریت کنید و از حساب خارج شوید.",
   "@homeAccountSecurityDescription": {
-    "description": "Home destination description for account security"
+    "description": "Home destination description for account security sessions"
   },
   "homeOpenAccountSecurity": "باز کردن امنیت حساب",
   "@homeOpenAccountSecurity": {
@@ -63,16 +43,8 @@
   "authStartupLoading": "در حال بازیابی نشست…",
   "authStartupError": "بازیابی نشست ممکن نشد. اتصال را بررسی کنید و دوباره تلاش کنید.",
   "authRetry": "تلاش دوباره",
-  "authMethodTitle": "ورود به لفوریکا",
-  "authMethodSubtitle": "یکی از روش‌های ورود را انتخاب کنید.",
-  "authContinueWithPhone": "ادامه با شماره موبایل",
-  "authContinueWithEmail": "ادامه با ایمیل و رمز عبور",
   "authPhoneTitle": "ورود با موبایل",
   "authPhoneLabel": "شماره موبایل",
-  "authEmailTitle": "ورود با ایمیل",
-  "authEmailLabel": "ایمیل",
-  "authPasswordLabel": "رمز عبور",
-  "authNewPasswordLabel": "رمز عبور جدید",
   "authOtpLabel": "کد تأیید",
   "authSendCode": "ارسال کد",
   "authVerifyCode": "تأیید کد",
@@ -87,12 +59,6 @@
     }
   },
   "authPleaseWait": "لطفاً صبر کنید…",
-  "authSignUp": "ثبت‌نام",
-  "authSignIn": "ورود",
-  "authForgotPassword": "فراموشی رمز عبور",
-  "authPasswordResetTitle": "بازیابی رمز عبور",
-  "authResetPassword": "تنظیم رمز جدید",
-  "authPasswordResetSuccess": "رمز عبور به‌روز شد. اکنون می‌توانید وارد شوید.",
   "authCodeSentTo": "کد به {destination} ارسال شد.",
   "@authCodeSentTo": {
     "placeholders": {
@@ -112,44 +78,18 @@
       }
     }
   },
-  "accountPhoneAttached": "موبایل تأییدشده: {phone}",
-  "@accountPhoneAttached": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "accountPhoneMissing": "موبایل متصل نیست",
-  "accountEmailAttached": "ایمیل تأییدشده: {email}",
-  "@accountEmailAttached": {
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "accountEmailMissing": "ایمیل متصل نیست",
-  "accountAttachEmailTitle": "اتصال ایمیل و رمز عبور",
-  "accountAttachPhoneTitle": "اتصال شماره موبایل",
-  "accountRemoveEmail": "حذف ایمیل",
-  "accountRemovePhone": "حذف موبایل",
   "accountSessionsTitle": "نشست‌های فعال",
+  "accountSessionsEmpty": "نشست فعالی یافت نشد.",
   "accountSessionDevice": "دستگاه",
   "accountSessionCurrent": "نشست فعلی",
   "accountRevokeSession": "لغو نشست",
   "accountLogoutAll": "خروج از همه دستگاه‌ها",
-  "accountChangePasswordTitle": "تغییر رمز عبور",
-  "accountCurrentPasswordLabel": "رمز عبور فعلی",
-  "accountChangePasswordAction": "به‌روزرسانی رمز عبور",
-  "accountChangePasswordSuccess": "رمز عبور به‌روز شد. لطفاً دوباره وارد شوید.",
   "authErrorInvalidCredentials": "اطلاعات ورود نادرست است.",
   "authErrorChallengeExpired": "کد منقضی شده است. دوباره درخواست کنید.",
   "authErrorChallengeInvalid": "کد نادرست است.",
   "authErrorRateLimited": "تعداد درخواست‌ها زیاد است. کمی بعد تلاش کنید.",
   "authErrorConflict": "این شناسه قبلاً استفاده شده است.",
   "authErrorSessionRevoked": "نشست شما پایان یافته است. دوباره وارد شوید.",
-  "authErrorLastCredential": "نمی‌توان آخرین روش ورود را حذف کرد.",
   "authErrorValidation": "اطلاعات واردشده معتبر نیست.",
   "authErrorNetwork": "ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.",
   "authErrorGeneric": "خطایی رخ داد. لطفاً دوباره تلاش کنید."

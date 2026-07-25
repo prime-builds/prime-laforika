@@ -1,48 +1,20 @@
 /// Opaque authenticated principal — stable account scoping only.
 class AuthPrincipal {
-  const AuthPrincipal({
-    required this.accountId,
-    this.hasPhone = false,
-    this.hasEmail = false,
-    this.maskedPhone,
-    this.maskedEmail,
-  });
+  const AuthPrincipal({required this.accountId});
 
   final String accountId;
-  final bool hasPhone;
-  final bool hasEmail;
-  final String? maskedPhone;
-  final String? maskedEmail;
 
-  AuthPrincipal copyWith({
-    String? accountId,
-    bool? hasPhone,
-    bool? hasEmail,
-    String? maskedPhone,
-    String? maskedEmail,
-  }) {
-    return AuthPrincipal(
-      accountId: accountId ?? this.accountId,
-      hasPhone: hasPhone ?? this.hasPhone,
-      hasEmail: hasEmail ?? this.hasEmail,
-      maskedPhone: maskedPhone ?? this.maskedPhone,
-      maskedEmail: maskedEmail ?? this.maskedEmail,
-    );
+  AuthPrincipal copyWith({String? accountId}) {
+    return AuthPrincipal(accountId: accountId ?? this.accountId);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is AuthPrincipal &&
-        other.accountId == accountId &&
-        other.hasPhone == hasPhone &&
-        other.hasEmail == hasEmail &&
-        other.maskedPhone == maskedPhone &&
-        other.maskedEmail == maskedEmail;
+    return other is AuthPrincipal && other.accountId == accountId;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(accountId, hasPhone, hasEmail, maskedPhone, maskedEmail);
+  int get hashCode => accountId.hashCode;
 }
 
 /// Application session state.

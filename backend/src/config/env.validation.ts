@@ -56,10 +56,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  PASSWORD_PEPPER!: string;
-
-  @IsString()
-  @IsNotEmpty()
   RATE_LIMIT_PEPPER!: string;
 
   @IsBoolean()
@@ -160,7 +156,6 @@ export function validateEnv(config: Record<string, unknown>) {
     if (
       validated.REFRESH_TOKEN_PEPPER.length < 32 ||
       validated.OTP_CODE_PEPPER.length < 32 ||
-      validated.PASSWORD_PEPPER.length < 32 ||
       validated.RATE_LIMIT_PEPPER.length < 32 ||
       validated.FIXTURE_INBOX_KEY.length < 32
     ) {

@@ -48,44 +48,8 @@ describe('OpenAPI contract', () => {
       method: 'post',
       statuses: [400, 401],
     },
-    {
-      path: '/auth/email/sign-up',
-      method: 'post',
-      statuses: [400, 409, 429, 503],
-    },
-    { path: '/auth/email/verify', method: 'post', statuses: [400, 401, 409] },
-    { path: '/auth/email/sign-in', method: 'post', statuses: [400, 401] },
-    {
-      path: '/auth/password/reset-challenges',
-      method: 'post',
-      statuses: [400, 429, 503],
-    },
-    { path: '/auth/password/reset', method: 'post', statuses: [400] },
     { path: '/auth/refresh', method: 'post', statuses: [400, 401] },
     { path: '/account/me', method: 'get', statuses: [401] },
-    {
-      path: '/account/phone/challenges',
-      method: 'post',
-      statuses: [400, 401, 409, 429, 503],
-    },
-    {
-      path: '/account/phone/challenges/{challengeId}/verify',
-      method: 'post',
-      statuses: [400, 401, 409],
-    },
-    { path: '/account/phone', method: 'delete', statuses: [400, 401] },
-    {
-      path: '/account/email/challenges',
-      method: 'post',
-      statuses: [400, 401, 409, 429, 503],
-    },
-    {
-      path: '/account/email/verify',
-      method: 'post',
-      statuses: [400, 401, 409],
-    },
-    { path: '/account/email', method: 'delete', statuses: [400, 401] },
-    { path: '/account/password', method: 'put', statuses: [400, 401] },
     { path: '/auth/sessions', method: 'get', statuses: [401] },
     {
       path: '/auth/sessions/{sessionId}',
@@ -96,19 +60,29 @@ describe('OpenAPI contract', () => {
     { path: '/auth/logout-all', method: 'post', statuses: [401] },
   ];
 
+  const REMOVED_PATHS = [
+    '/auth/email/sign-up',
+    '/auth/email/verify',
+    '/auth/email/sign-in',
+    '/auth/password/reset-challenges',
+    '/auth/password/reset',
+    '/account/phone/challenges',
+    '/account/phone',
+    '/account/email/challenges',
+    '/account/email/verify',
+    '/account/email',
+    '/account/password',
+  ];
+
   it('critical request schemas have non-empty properties', () => {
     const schemas = doc.components?.schemas ?? {};
-    for (const name of [
-      'PhoneDto',
-      'EmailSignUpDto',
-      'EmailSignInDto',
-      'RefreshDto',
-      'ChangePasswordDto',
-    ]) {
+    for (const name of ['PhoneDto', 'RefreshDto', 'CodeDto']) {
       const schema = schemas[name];
       expect(schema).toBeDefined();
       expect(Object.keys(schema?.properties ?? {}).length).toBeGreaterThan(0);
     }
+    expect(schemas.EmailSignUpDto).toBeUndefined();
+    expect(schemas.ChangePasswordDto).toBeUndefined();
   });
 
   it('critical response schemas have non-empty properties', () => {
@@ -126,11 +100,19 @@ describe('OpenAPI contract', () => {
       }
       expect(Object.keys(schema.properties ?? {}).length).toBeGreaterThan(0);
     }
+    expect(schemas.AccountViewDto?.properties?.hasPhone).toBeUndefined();
+    expect(schemas.AccountViewDto?.properties?.hasEmail).toBeUndefined();
   });
 
   it('excludes fixture inbox from public paths', () => {
     expect(doc.paths['/dev/fixtures/inbox']).toBeUndefined();
     expect(doc.paths['/v1/dev/fixtures/inbox']).toBeUndefined();
+  });
+
+  it('removes deprecated email/password credential paths', () => {
+    for (const path of REMOVED_PATHS) {
+      expect(pathOf(path)).toBeUndefined();
+    }
   });
 
   it('protects account/me with bearer security', () => {
@@ -156,7 +138,7 @@ describe('OpenAPI contract', () => {
   it('success response schemas remain non-empty for critical operations', () => {
     const criticalSuccess: Array<{ path: string; method: string }> = [
       { path: '/auth/phone/challenges', method: 'post' },
-      { path: '/auth/email/sign-in', method: 'post' },
+      { path: '/auth/phone/challenges/{challengeId}/verify', method: 'post' },
       { path: '/auth/refresh', method: 'post' },
       { path: '/account/me', method: 'get' },
     ];

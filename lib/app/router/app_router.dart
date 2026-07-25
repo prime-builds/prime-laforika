@@ -21,6 +21,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final returnTo = state.uri.queryParameters['from'];
 
       final registered = appRegisteredPaths;
+      final public = appPublicPaths;
+      final protected = appProtectedPaths;
 
       switch (auth) {
         case AuthUnknown():
@@ -31,13 +33,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return null;
         case AuthUnauthenticated():
           if (location == authStartupRoutePath) {
-            return authMethodRoutePath;
+            return homeRoutePath;
           }
           if (authOnlyPaths.contains(location)) {
             return null;
           }
-          final encoded = Uri.encodeComponent(location);
-          return '$authMethodRoutePath?from=$encoded';
+          if (public.contains(location)) {
+            return null;
+          }
+          if (protected.contains(location)) {
+            final encoded = Uri.encodeComponent(location);
+            return '$authRoutePath?from=$encoded';
+          }
+          // Unknown non-public path: treat as protected for fail-closed UX.
+          if (registered.contains(location)) {
+            final encoded = Uri.encodeComponent(location);
+            return '$authRoutePath?from=$encoded';
+          }
+          return homeRoutePath;
         case AuthAuthenticated():
           if (location == authStartupRoutePath ||
               authOnlyPaths.contains(location)) {

@@ -43,13 +43,7 @@ class CustomApiAuthGateway implements AuthSessionGateway {
       case Success(:final value):
         _accessToken = value.accessToken;
         await _secureStore.write(_refreshTokenKey, value.refreshToken);
-        _principal = AuthPrincipal(
-          accountId: value.accountId,
-          hasPhone: value.hasPhone,
-          hasEmail: value.hasEmail,
-          maskedPhone: value.maskedPhone,
-          maskedEmail: value.maskedEmail,
-        );
+        _principal = AuthPrincipal(accountId: value.accountId);
         return AuthAuthenticated(_principal!);
       case FailureResult(:final failure):
         if (failure is AuthFailure) {
@@ -98,13 +92,7 @@ class CustomApiAuthGateway implements AuthSessionGateway {
       case Success(:final value):
         _accessToken = value.accessToken;
         await _secureStore.write(_refreshTokenKey, value.refreshToken);
-        _principal = AuthPrincipal(
-          accountId: value.accountId,
-          hasPhone: value.hasPhone,
-          hasEmail: value.hasEmail,
-          maskedPhone: value.maskedPhone,
-          maskedEmail: value.maskedEmail,
-        );
+        _principal = AuthPrincipal(accountId: value.accountId);
         return Success(value.accessToken);
       case FailureResult(:final failure):
         if (failure is AuthFailure) {

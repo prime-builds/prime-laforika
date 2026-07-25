@@ -8,10 +8,6 @@ class TokenPairDto {
     required this.accessToken,
     required this.refreshToken,
     required this.accountId,
-    this.hasPhone = false,
-    this.hasEmail = false,
-    this.maskedPhone,
-    this.maskedEmail,
   });
 
   factory TokenPairDto.fromJson(Map<String, dynamic> json) =>
@@ -20,10 +16,6 @@ class TokenPairDto {
   final String accessToken;
   final String refreshToken;
   final String accountId;
-  final bool hasPhone;
-  final bool hasEmail;
-  final String? maskedPhone;
-  final String? maskedEmail;
 
   Map<String, dynamic> toJson() => _$TokenPairDtoToJson(this);
 }
@@ -50,22 +42,12 @@ class ChallengeCreatedDto {
 
 @JsonSerializable()
 class AccountMeDto {
-  const AccountMeDto({
-    required this.accountId,
-    required this.hasPhone,
-    required this.hasEmail,
-    this.maskedPhone,
-    this.maskedEmail,
-  });
+  const AccountMeDto({required this.accountId});
 
   factory AccountMeDto.fromJson(Map<String, dynamic> json) =>
       _$AccountMeDtoFromJson(json);
 
   final String accountId;
-  final bool hasPhone;
-  final bool hasEmail;
-  final String? maskedPhone;
-  final String? maskedEmail;
 
   Map<String, dynamic> toJson() => _$AccountMeDtoToJson(this);
 }
