@@ -17,8 +17,7 @@ final class TolerantGoldenComparator extends LocalFileComparator {
       await getGoldenBytes(golden),
     );
 
-    final diff = result.diffPercent;
-    if (result.passed || (diff != null && diff <= maxDiffPercent)) {
+    if (result.passed || result.diffPercent <= maxDiffPercent) {
       return true;
     }
 
