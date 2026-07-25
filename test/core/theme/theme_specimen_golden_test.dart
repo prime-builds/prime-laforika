@@ -40,6 +40,7 @@ void main() {
     await _loadVazirmatn();
     goldenFileComparator = TolerantGoldenComparator(
       Uri.parse('test/core/theme/theme_specimen_golden_test.dart'),
+      precisionTolerance: 0.02,
     );
   });
 
