@@ -1,8 +1,20 @@
 # Laforika
 
-Laforika is a Persian-first Flutter mobile application built as a feature-first modular monolith, with a sibling NestJS authentication API under `backend/`.
+Laforika (لفوریکا) is a Persian-first, RTL Flutter mobile application with a sibling NestJS
+authentication API under `backend/`.
 
-Next work package: **M3 — First specialized production module** (owner chooses which module; do not start until asked).
+**Approved product direction (architecture v1.4):** the app is guest-explorable — Home is public
+after session restoration, and phone OTP is required only for protected capabilities. Appearance
+targets System / Light / Dark (System default) with a Fluent-inspired but Laforika-owned visual
+system. See [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and
+[`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
+
+**Current implementation vs approved target:** M2 on `main` still uses an authenticated-first Home,
+dual-credential auth UI, and a neutral placeholder theme. WP0 freezes the target in documentation
+only. WP1–WP6 close those named gaps. Do not treat the M2 code behavior as the long-term product
+contract.
+
+Exact next work package after WP0: **WP1 — Light/dark theme foundation**.
 
 ## Technical baseline
 
@@ -16,7 +28,7 @@ Next work package: **M3 — First specialized production module** (owner chooses
 - GitHub Actions quality gates (Flutter unit/analyze + backend Postgres gates)
 - Android-emulator auth integration is **local-only** (saves Actions minutes/storage on free plans)
 
-The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) (v1.3). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
+The frozen architecture is the source of truth: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) (v1.4). Supporting decisions are recorded under [`docs/architecture/adr/`](docs/architecture/adr/). Design specs live under [`docs/design/`](docs/design/). Merged delivery state is tracked in [`docs/project_inventory.md`](docs/project_inventory.md).
 
 ## Prerequisites
 
@@ -165,7 +177,8 @@ tool/                        # Architecture boundary checks
 config/                      # Non-secret flavor configuration
 assets/fonts/vazirmatn/      # Bundled Vazirmatn font + OFL license
 docs/architecture/           # Frozen architecture and ADRs
-docs/prompts/                # Versioned milestone package prompts
+docs/design/                 # UI foundation + app-shell specifications
+docs/prompts/                # Versioned work-package prompts
 docs/project_inventory.md    # Merged delivery inventory
 ```
 
@@ -174,21 +187,37 @@ Dependencies flow downward: `app → features → core`. Features expose curated
 ## Development workflow
 
 1. Read [`AGENTS.md`](AGENTS.md) and the relevant architecture/ADR sections.
-2. Inspect existing code and the closest analog before implementation.
-3. Keep changes within scope and add tests with new logic.
-4. Run the applicable quality gates and report actual results.
+2. For UI/theme/shell work, also read [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
+3. Inspect existing code and the closest analog before implementation.
+4. Keep changes within scope and add tests with new logic.
+5. Run the applicable quality gates and report actual results.
 
 Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, and load-bearing dependency changes require explicit approval.
 
 ## Roadmap
 
-- **M0:** Bootstrap, flavors, RTL localization, theme, routing, CI, and boundary enforcement ✅
+### Completed
+
+- **M0:** Bootstrap, flavors, RTL localization, theme placeholder, routing, CI, and boundary enforcement ✅
 - **M1:** Custom authentication vertical slice ✅
-- **M2:** Authenticated Home/discovery shell ✅
-- **M3:** First specialized production module (owner chooses)
+- **M2:** Authenticated Home/discovery shell (route-registry baseline) ✅
+
+### Approved transition (architecture v1.4 target)
+
+- **WP0:** Guest-first / phone-only / UI-foundation documentation and decision freeze ← current package
+- **WP1:** Light/dark theme foundation ← **exact next package**
+- **WP2:** Guest-first routing and phone-only authentication
+- **WP3:** Adaptive application shell
+- **WP4:** Profile vertical slice
+- **WP5:** Settings and Notifications
+- **WP6:** Integration and visual hardening
+
+### Later product milestones
+
+- **M3:** First specialized production module (owner chooses; do not invent during WP0–WP6)
 - **M4:** First justified complex/offline module
 
-Do not create future modules or infrastructure before a concrete milestone need. Owner decisions **O2–O8** remain unresolved; **O1 is resolved**. Real-account builds remain controlled-test-only until **O8**.
+Do not create future modules or infrastructure before a concrete milestone need. **O1** is resolved (custom NestJS/PostgreSQL; phone OTP only per ADR-0008). **O7** is partially resolved for the in-app visual system; external brand assets remain open. **O2–O6** and **O8** remain unresolved. Real-account builds remain controlled-test-only until **O8**.
 
 ## Feature route integration
 
@@ -198,11 +227,11 @@ When adding a module in its roadmap milestone:
 2. Expose route name/path constants, `List<RouteBase>`, and registered paths from the feature public barrel (`features/<feature>/<feature>.dart`).
 3. Aggregate only that public barrel in [`lib/app/router/routes.dart`](lib/app/router/routes.dart) (`appRoutes()` and `appRegisteredPaths`).
 4. Never import another feature’s `presentation/`, `data/`, or `domain/` internals.
-5. Ensure the new internal path is included in `appRegisteredPaths` so authenticated return destinations stay validated.
-6. Add route/redirect/boundary tests.
-7. Do not introduce future modules early.
+5. Ensure the new internal path is included in `appRegisteredPaths` so return destinations stay validated.
+6. Add route/redirect/boundary tests (including guest/authenticated coverage when the route is public or protected).
+7. Do not introduce future modules early or ship dead placeholder destinations.
 
-See architecture §3 (module boundaries) and §7 (navigation / route registry) in [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md).
+See architecture §3 (module boundaries) and §7 (navigation / route registry) in [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md), and shell rules in [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
 
 ## License
 
