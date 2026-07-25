@@ -229,7 +229,7 @@ The Flutter client keeps the provider-neutral session boundary from ADR-0006.
 - Backend lives under `backend/` (NestJS, strict TypeScript, npm lockfile committed).
 - Validate configuration at startup; reject fixture delivery outside `dev`/`test`; fail closed in staging/prod without real delivery adapters.
 - Never commit secrets, PEM keys, `.env` values, dumps, or fixture inbox contents.
-- Persist only hashed/HMAC representations of passwords (Argon2id), OTP/email codes, and refresh tokens.
+- Persist only hashed/HMAC representations of OTP codes and refresh tokens.
 - Sanitize structured security logs; never log credentials, OTPs, tokens, passwords, emails, phones, or raw bodies.
 - Version API routes under `/v1`; commit the generated OpenAPI contract and check drift in CI.
 - Prisma migrations are committed; migrate clean databases in tests.

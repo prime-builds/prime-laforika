@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_state.dart';
@@ -93,12 +94,17 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
     if (_loading) return;
     setState(() => _loading = true);
     await ref.read(authControllerProvider.notifier).logout();
+    if (!mounted) return;
+    // Guest-first: land on public Home, not the preserved protected return path.
+    context.go('/');
   }
 
   Future<void> _logoutAll() async {
     if (_loading) return;
     setState(() => _loading = true);
     await ref.read(authControllerProvider.notifier).logoutAll();
+    if (!mounted) return;
+    context.go('/');
   }
 
   @override

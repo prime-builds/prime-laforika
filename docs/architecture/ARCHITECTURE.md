@@ -13,12 +13,11 @@ document states the decisions and the rules that follow from them.
 ### Controlled transition (M03_WP01 → M03_WP07)
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
-and the Fluent-inspired adaptive shell. The M2 code baseline may temporarily differ in the exact
-areas assigned to M03_WP03–M03_WP07 (authenticated-first Home redirects, dual-credential UI, absence
-of the adaptive shell). The M03_WP02 theme foundation is implemented. Remaining gaps are **known
-and bounded**: each follow-up package closes a named gap. It is **not** permission for new code to
-extend the deprecated direction. Architecture contradictions **outside** this approved transition
-remain defects.
+and the Fluent-inspired adaptive shell. M03_WP02 (theme) and M03_WP03 (guest-first routing and
+phone-only authentication) are implemented. Remaining gaps are **known and bounded** to
+M03_WP04–M03_WP07 (adaptive shell, Profile, Settings/Notifications, visual hardening). It is
+**not** permission for new code to extend a deprecated direction. Architecture contradictions
+**outside** this approved transition remain defects.
 
 Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
@@ -357,7 +356,7 @@ may depend on it to open correctly from a cold start or deep link. Deep links ma
 table (one source of truth), enabling future push-notification and web deep-linking without
 rework.
 
-**Redirect contract (approved target; guest-first — M03_WP03 implements):**
+**Redirect contract (guest-first — implemented in M03_WP03):**
 
 | Session | Destination | Result |
 |---|---|---|
@@ -368,18 +367,16 @@ rework.
 | `authenticated` | public or protected | allow |
 
 Home is public. Public modules/content are guest-explorable. Authentication is required only at
-protected-capability boundaries (for example Chat and Notifications). A preserved destination must
-resolve to a registered internal route; external, malformed, or unknown locations are discarded.
-Router tests cover the guest/authenticated/public/protected matrix and loop prevention.
+protected-capability boundaries (for example Account Security today; Chat and Notifications later).
+A preserved destination must resolve to a registered internal **path only** (query parameters and
+fragments are rejected). External, malformed, or unknown locations fall back to Home. Router tests
+cover the guest/authenticated/public/protected matrix and loop prevention.
 
 **Shell selection (approved target — M03_WP04):** Home is selected after session restoration with no
 module and no module-internal tabs active. Selecting a module clears bottom-dock selection,
 highlights the module strip item, and shows contextual internal tabs. Feature route barrels remain
 the module-integration boundary. Full shell rules:
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
-
-> **Transition note:** M2 code still gates unauthenticated users toward the auth-method chooser
-> before Home. That is a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -400,10 +397,10 @@ credential model to **phone OTP only**.
 - **Provider adapter:** `core/auth/` defines the provider-neutral session contract and overridable
   provider. The auth feature exports the custom API adapter through its public barrel, and `app/`
   composition supplies the override. `core/` never imports `features/`.
-- **Credentials (approved target):** phone-number OTP is the **only** user-facing sign-in method.
+- **Credentials:** phone-number OTP is the **only** user-facing sign-in method.
   Email is optional profile/contact data and must not silently create a login credential. The
   verified phone number is the account's primary login identity. The auth-method chooser,
-  email/password login, and password reset are deprecated and removed in M03_WP03. Normalized phone
+  email/password login, and password reset are removed (M03_WP03). Normalized phone
   identifiers remain globally unique.
 - **Tokens:** short-lived RS256 access JWTs (in memory on the client) and opaque rotating refresh
   tokens (environment-scoped in `flutter_secure_storage`). Refresh uses token families with reuse
@@ -425,13 +422,10 @@ credential model to **phone OTP only**.
   `authControllerProvider` through Riverpod and calls `notifyListeners()` when session state
   changes; it is supplied as `refreshListenable`. This re-runs redirects without reconstructing
   the router. Protected capabilities preserve the intended destination through phone OTP login.
-- **Migration safety (M03_WP03):** never reset or silently delete a database to drop email/password
+- **Migration safety:** never reset or silently delete a database to drop email/password
   support; use committed forward Prisma migrations; stop for an owner decision if a non-test
   account has only email/password and no verified phone. Historical migrations remain immutable.
 - **Authority:** client guards are UX; the NestJS API is authoritative for access control.
-
-> **Transition note:** M1/M2 code still exposes email/password and an auth-method chooser. That is
-> a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -539,8 +533,8 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
-> **Transition note:** Theme foundation is implemented (M03_WP02). Guest-first / phone-only auth
-> (M03_WP03), adaptive shell (M03_WP04), Profile/Settings/Notifications (M03_WP05–M03_WP06), and
+> **Transition note:** Theme foundation (M03_WP02) and guest-first / phone-only auth (M03_WP03) are
+> implemented. Adaptive shell (M03_WP04), Profile/Settings/Notifications (M03_WP05–M03_WP06), and
 > full visual hardening (M03_WP07) remain pending.
 
 ---
@@ -662,10 +656,10 @@ These close the gap between the M2 code baseline and the v1.4 target.
 - **M03_WP03 — Guest-first routing and phone-only authentication.** Public Home for guests; direct
   phone OTP; protected return destinations; remove method chooser, email/password login, and
   password reset; forward non-destructive backend/OpenAPI/Prisma migration as required; email
-  becomes profile data. No shell redesign. ← **exact next package**
+  becomes profile data. No shell redesign. ✅
 - **M03_WP04 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
   tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
-  dead Chat/module placeholder.
+  dead Chat/module placeholder. ← **exact next package**
 - **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
   Settings/Notifications header actions; backend profile contract as required.
 - **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
@@ -674,7 +668,7 @@ These close the gap between the M2 code baseline and the v1.4 target.
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
 
-**Exact next package after M03_WP02:** **M03_WP03 — Guest-first routing and phone-only authentication**.
+**Exact next package after M03_WP03:** **M03_WP04 — Adaptive application shell**.
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
@@ -706,7 +700,7 @@ architect should not decide them unilaterally. Each has a safe default so work i
 
 | # | Decision | Why it needs the owner | Interim default (unblocks work) |
 |---|---|---|---|
-| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; RS256 access + opaque rotating refresh; monorepo `backend/`. User-facing credential amended by [ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) to **phone OTP only** (email is profile data). Backend ownership/token security remain [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1; credential/access product change lands in M03_WP03. |
+| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; RS256 access + opaque rotating refresh; monorepo `backend/`. User-facing credential amended by [ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) to **phone OTP only** (email is profile data). Backend ownership/token security remain [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1; phone-only / guest-first product change implemented in M03_WP03. |
 | O2 | **Maps provider** — Google Maps vs. Iranian providers (Neshan / Balad) | Google services are often unreliable/restricted in Iran; affects a core module + vendor keys/cost. | Defer; maps module not before provider chosen. |
 | O3 | **Push notifications** — FCM vs. local/regional service | FCM depends on Google Play services (unreliable in-market); vendor + privacy. | Defer; no push infra built yet. |
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
@@ -725,8 +719,9 @@ dual-credential and authenticated-first product implications of ADR-0007; NestJS
 ownership, token security, session revocation, fixture delivery, and server authority from ADR-0007
 remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
 resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
-unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02–M03_WP07 close the
-documented code-to-target gaps; M03_WP01 itself changes documentation only.
+unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02 and
+M03_WP03 are implemented; M03_WP04–M03_WP07 close the remaining documented code-to-target gaps.
+M03_WP01 itself changed documentation only.
 
 ---
 

@@ -62,7 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: iconStyle,
             onPressed: _logoutPending
                 ? null
-                : () => context.push(accountSecurityRoutePath),
+                : () => context.go(accountSecurityRoutePath),
             icon: const Icon(Icons.security),
           ),
           if (authenticated)
@@ -174,7 +174,7 @@ class _HomeDestinationCard extends StatelessWidget {
             excludeSemantics: true,
             child: InkWell(
               onTap: enabled
-                  ? () => context.push(accountSecurityRoutePath)
+                  ? () => context.go(accountSecurityRoutePath)
                   : null,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(

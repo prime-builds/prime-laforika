@@ -369,67 +369,122 @@ void main() {
 
   test('return destinations accept public/protected and reject unsafe', () {
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         homeRoutePath,
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isTrue,
+      homeRoutePath,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         accountSecurityRoutePath,
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isTrue,
+      accountSecurityRoutePath,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         authRoutePath,
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isFalse,
+      isNull,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         authStartupRoutePath,
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isFalse,
+      isNull,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         'https://evil.example/path',
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isFalse,
+      isNull,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         '//evil.example/path',
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isFalse,
+      isNull,
     );
     expect(
-      isValidReturnDestination(
+      canonicalizeReturnDestination(
         '/unknown/module',
         registeredPaths: appRegisteredPaths,
         authOnlyPaths: authOnlyPaths,
         startupPath: authStartupRoutePath,
       ),
-      isFalse,
+      isNull,
     );
+    expect(
+      canonicalizeReturnDestination(
+        '$accountSecurityRoutePath?x=1',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isNull,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        '$accountSecurityRoutePath#frag',
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      isNull,
+    );
+  });
+
+  testWidgets('authenticated /auth with query/fragment from falls back to Home', (
+    tester,
+  ) async {
+    final gateway = _ControllableGateway(const AuthAuthenticated(_principal));
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final router = container.read(goRouterProvider);
+    router.go(
+      '$authRoutePath?from=${Uri.encodeComponent('$accountSecurityRoutePath?x=1')}',
+    );
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, homeRoutePath);
+
+    router.go(
+      '$authRoutePath?from=${Uri.encodeComponent(accountSecurityRoutePath)}',
+    );
+    await tester.pumpAndSettle();
+    expect(router.state.uri.path, accountSecurityRoutePath);
   });
 }

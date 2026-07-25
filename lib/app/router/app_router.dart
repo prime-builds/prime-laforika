@@ -54,13 +54,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         case AuthAuthenticated():
           if (location == authStartupRoutePath ||
               authOnlyPaths.contains(location)) {
-            if (isValidReturnDestination(
+            final canonical = canonicalizeReturnDestination(
               returnTo,
               registeredPaths: registered,
               authOnlyPaths: authOnlyPaths,
               startupPath: authStartupRoutePath,
-            )) {
-              return returnTo;
+            );
+            if (canonical != null) {
+              return canonical;
             }
             return homeRoutePath;
           }

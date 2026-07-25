@@ -96,6 +96,9 @@ class _PhoneAuthScreenState extends ConsumerState<PhoneAuthScreen> {
               refreshToken: tokens.refreshToken,
               principal: AuthPrincipal(accountId: tokens.accountId),
             );
+        if (mounted) {
+          setState(() => _loading = false);
+        }
       },
       failure: (failure) async {
         setState(() {

@@ -450,7 +450,7 @@ export class SessionService {
     };
   }
 
-  /** Convenience for non-challenge flows (email sign-in, etc.). */
+  /** Convenience for issuing a new session outside challenge flows. */
   async createSession(userId: string, deviceLabel?: string) {
     const records = await this.prisma.$transaction((tx) =>
       this.createSessionRecords(tx, userId, deviceLabel),

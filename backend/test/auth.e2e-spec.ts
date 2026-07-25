@@ -182,6 +182,96 @@ describe('Auth e2e (phone-only)', () => {
       .expect(HttpStatus.BAD_REQUEST);
   });
 
+  it('rejects consumed and expired OTP challenges', async () => {
+    const phone = '09121110007';
+    const normalized = normalizePhone(phone);
+    const challengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    const challenge = challengeRes.body as ChallengeResponse;
+    const code = await readCode(normalized, 'PHONE_SIGN_IN');
+
+    await request(app.getHttpServer())
+      .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+      .send({ code })
+      .expect(HttpStatus.OK);
+
+    await request(app.getHttpServer())
+      .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+      .send({ code })
+      .expect(HttpStatus.BAD_REQUEST);
+
+    const expiredPhone = '09121110008';
+    const expiredNormalized = normalizePhone(expiredPhone);
+    const expiredChallengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone: expiredPhone })
+      .expect(HttpStatus.OK);
+    const expiredChallenge = expiredChallengeRes.body as ChallengeResponse;
+    const expiredCode = await readCode(expiredNormalized, 'PHONE_SIGN_IN');
+    await prisma.authChallenge.update({
+      where: { id: expiredChallenge.challengeId },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+    await request(app.getHttpServer())
+      .post(`/v1/auth/phone/challenges/${expiredChallenge.challengeId}/verify`)
+      .send({ code: expiredCode })
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('concurrent phone verification allows only one success', async () => {
+    const phone = '09121110009';
+    const normalized = normalizePhone(phone);
+    const challengeRes = await request(app.getHttpServer())
+      .post('/v1/auth/phone/challenges')
+      .send({ phone })
+      .expect(HttpStatus.OK);
+    const challenge = challengeRes.body as ChallengeResponse;
+    const code = await readCode(normalized, 'PHONE_SIGN_IN');
+
+    const results = await Promise.all([
+      request(app.getHttpServer())
+        .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+        .send({ code }),
+      request(app.getHttpServer())
+        .post(`/v1/auth/phone/challenges/${challenge.challengeId}/verify`)
+        .send({ code }),
+    ]);
+
+    const statuses = results.map((r) => r.status).sort((a, b) => a - b);
+    expect(statuses).toEqual([200, 400]);
+    const success = results.find((r) => r.status === 200);
+    expect((success?.body as TokenResponse).accountId).toBeTruthy();
+  });
+
+  it('revokes a non-current session by id', async () => {
+    const first = await signInPhone('09121110010');
+    const second = await signInPhone('09121110010');
+    const sessionsRes = await request(app.getHttpServer())
+      .get('/v1/auth/sessions')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(HttpStatus.OK);
+    const sessions = sessionsRes.body as SessionListItem[];
+    const other = sessions.find((s) => !s.isCurrent && !s.revoked);
+    expect(other).toBeDefined();
+
+    await request(app.getHttpServer())
+      .delete(`/v1/auth/sessions/${other!.sessionId}`)
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(HttpStatus.OK);
+
+    await request(app.getHttpServer())
+      .get('/v1/account/me')
+      .set('Authorization', `Bearer ${first.accessToken}`)
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    await request(app.getHttpServer())
+      .get('/v1/account/me')
+      .set('Authorization', `Bearer ${second.accessToken}`)
+      .expect(HttpStatus.OK);
+  });
+
   it('deprecated email/password endpoints are absent', async () => {
     await request(app.getHttpServer())
       .post('/v1/auth/email/sign-up')

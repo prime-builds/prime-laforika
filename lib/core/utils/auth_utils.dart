@@ -20,29 +20,65 @@ String toLatinDigits(String input) {
   return buffer.toString();
 }
 
-/// Validates a preserved return destination against known internal routes.
-bool isValidReturnDestination(
+/// Path-only policy for preserved return destinations.
+///
+/// Current app routes carry no reconstructable query state that must survive
+/// login. Query parameters and URI fragments are therefore **rejected** (not
+/// stripped) so ephemeral or attacker-controlled state cannot ride through
+/// `/auth?from=…`. Successful validation returns the canonical registered path
+/// only (no query, no fragment).
+String? canonicalizeReturnDestination(
   String? destination, {
   required Set<String> registeredPaths,
   required Set<String> authOnlyPaths,
   required String startupPath,
 }) {
   if (destination == null || destination.isEmpty) {
-    return false;
+    return null;
+  }
+  // Reject absolute / protocol-relative forms before URI parsing quirks.
+  if (destination.contains('://') || destination.startsWith('//')) {
+    return null;
+  }
+  // Path-only: reject query and fragment markers rather than silently discarding.
+  if (destination.contains('?') || destination.contains('#')) {
+    return null;
   }
   final uri = Uri.tryParse(destination);
   if (uri == null) {
-    return false;
+    return null;
   }
   if (uri.hasScheme || uri.hasAuthority) {
-    return false;
+    return null;
+  }
+  if (uri.hasQuery || uri.fragment.isNotEmpty) {
+    return null;
   }
   final path = uri.path.isEmpty ? '/' : uri.path;
   if (path == startupPath) {
-    return false;
+    return null;
   }
   if (authOnlyPaths.contains(path)) {
-    return false;
+    return null;
   }
-  return registeredPaths.contains(path);
+  if (!registeredPaths.contains(path)) {
+    return null;
+  }
+  return path;
+}
+
+/// Whether [destination] is a valid path-only internal return destination.
+bool isValidReturnDestination(
+  String? destination, {
+  required Set<String> registeredPaths,
+  required Set<String> authOnlyPaths,
+  required String startupPath,
+}) {
+  return canonicalizeReturnDestination(
+        destination,
+        registeredPaths: registeredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: startupPath,
+      ) !=
+      null;
 }
