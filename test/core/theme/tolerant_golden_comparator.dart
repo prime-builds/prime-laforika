@@ -1,14 +1,24 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Local golden comparator with a small pixel tolerance for cross-OS font
 /// rasterization (Windows baselines vs Linux CI).
+///
+/// [precisionTolerance] is a fraction of differing pixels in the inclusive
+/// range `0.0`–`1.0` (for example `0.02` means 2%).
 final class TolerantGoldenComparator extends LocalFileComparator {
-  TolerantGoldenComparator(super.testFile, {this.maxDiffPercent = 2.0});
+  TolerantGoldenComparator(super.testFile, {this.precisionTolerance = 0.02}) {
+    if (precisionTolerance < 0.0 || precisionTolerance > 1.0) {
+      throw ArgumentError.value(
+        precisionTolerance,
+        'precisionTolerance',
+        'must be between 0.0 and 1.0 inclusive',
+      );
+    }
+  }
 
-  /// Maximum allowed differing pixels as a percent of the image.
-  final double maxDiffPercent;
+  /// Maximum allowed pixel difference as a fraction of the image (`0.0`–`1.0`).
+  final double precisionTolerance;
 
   @override
   Future<bool> compare(Uint8List imageBytes, Uri golden) async {
@@ -17,11 +27,14 @@ final class TolerantGoldenComparator extends LocalFileComparator {
       await getGoldenBytes(golden),
     );
 
-    if (result.passed || result.diffPercent <= maxDiffPercent) {
+    final passed = result.passed || result.diffPercent <= precisionTolerance;
+    if (passed) {
+      result.dispose();
       return true;
     }
 
-    // Preserve Flutter's failure output for out-of-tolerance diffs.
-    return super.compare(imageBytes, golden);
+    final error = await generateFailureOutput(result, golden, basedir);
+    result.dispose();
+    throw FlutterError(error);
   }
 }
