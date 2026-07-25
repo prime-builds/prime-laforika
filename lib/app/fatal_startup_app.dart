@@ -8,6 +8,7 @@ import 'package:laforika/l10n/generated/app_localizations.dart';
 /// Deterministic localized fatal surface for configuration/startup failures.
 ///
 /// Never displays raw exceptions or implementation details.
+/// Theme follows system brightness without depending on preference storage.
 class FatalStartupApp extends StatelessWidget {
   const FatalStartupApp({super.key});
 
@@ -17,7 +18,9 @@ class FatalStartupApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: ThemeMode.system,
       locale: _locale,
       supportedLocales: const <Locale>[_locale],
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
@@ -44,7 +47,7 @@ class _FatalStartupScreen extends StatelessWidget {
         child: Align(
           alignment: AlignmentDirectional.center,
           child: Padding(
-            padding: const EdgeInsetsDirectional.all(AppTokens.spaceLg),
+            padding: const EdgeInsetsDirectional.all(AppTokens.pagePadding),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[

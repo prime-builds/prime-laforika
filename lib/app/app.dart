@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:laforika/app/router/app_router.dart';
+import 'package:laforika/core/theme/app_appearance_controller.dart';
 import 'package:laforika/core/theme/app_theme.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
@@ -15,11 +16,14 @@ class LaforikaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
+    final appearance = ref.watch(appAppearanceControllerProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      theme: buildAppTheme(),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: appearance.themeMode,
       locale: locale,
       supportedLocales: const <Locale>[locale],
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[

@@ -14,10 +14,11 @@ document states the decisions and the rules that follow from them.
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
 and the Fluent-inspired adaptive shell. The M2 code baseline may temporarily differ in the exact
-areas assigned to M03_WP02–M03_WP07 (authenticated-first Home redirects, dual-credential UI, placeholder
-theme, absence of the adaptive shell). That gap is **known and bounded**: each follow-up package
-closes a named gap. It is **not** permission for new code to extend the deprecated direction.
-Architecture contradictions **outside** this approved transition remain defects.
+areas assigned to M03_WP03–M03_WP07 (authenticated-first Home redirects, dual-credential UI, absence
+of the adaptive shell). The M03_WP02 theme foundation is implemented. Remaining gaps are **known
+and bounded**: each follow-up package closes a named gap. It is **not** permission for new code to
+extend the deprecated direction. Architecture contradictions **outside** this approved transition
+remain defects.
 
 Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
@@ -519,13 +520,14 @@ until a module needs it** — but the choices are pre-decided so no one improvis
 - **Typography:** bundle **Vazirmatn** (open-source Persian font) in `assets/fonts/`, set as the
   default `fontFamily`. A type scale (display/title/body/label) lives in `core/theme/`; features
   use scale tokens, not ad-hoc `TextStyle`s.
-- **Theme (approved target — M03_WP02):** Laforika-owned semantic light and dark palettes
+- **Theme (implemented — M03_WP02):** Laforika-owned semantic light and dark palettes
   ([ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md);
   [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md)). Appearance modes are `System`,
-  `Light`, and `Dark` with **`System` default**. Implement via Material 3 `ThemeData` and semantic
-  tokens — not a Fluent UI framework dependency. Motion ~180–250ms; respect reduced motion where
-  Flutter exposes it. Translucency cannot reduce contrast below accessibility targets; blur is
-  progressive enhancement only.
+  `Light`, and `Dark` with **`System` default**, persisted through `PrefsFacade`. Material 3
+  `ThemeData` and semantic tokens — not a Fluent UI framework dependency. Motion ~180–250ms;
+  respect reduced motion where Flutter exposes it. Translucency cannot reduce contrast below
+  accessibility targets; blur is progressive enhancement only. Broader visual hardening remains
+  M03_WP07.
 - **Adaptive shell (approved target — M03_WP04):** see
   [`../design/APP_SHELL.md`](../design/APP_SHELL.md) for module strip, search scoping, contextual
   tabs, floating dock, and Profile/Settings/Notifications rules.
@@ -537,8 +539,9 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
-> **Transition note:** Current theme tokens remain a neutral placeholder until M03_WP02. The adaptive
-> shell is not yet implemented (M03_WP04).
+> **Transition note:** Theme foundation is implemented (M03_WP02). Guest-first / phone-only auth
+> (M03_WP03), adaptive shell (M03_WP04), Profile/Settings/Notifications (M03_WP05–M03_WP06), and
+> full visual hardening (M03_WP07) remain pending.
 
 ---
 
@@ -649,19 +652,17 @@ before its milestone.**
 
 ### Approved transition packages (after M2)
 
-These close the gap between the M2 code baseline and the v1.4 target. **Do not implement them
-inside M03_WP01.**
+These close the gap between the M2 code baseline and the v1.4 target.
 
 - **M03_WP01 — Documentation and decision freeze.** ADR-0008, ADR-0009, architecture v1.4, UI
-  foundation and shell specifications, contributor/README alignment. _Exit:_ approved target is
-  reviewable; no production code changes. ← **this package**
+  foundation and shell specifications, contributor/README alignment. ✅
 - **M03_WP02 — Light/dark theme foundation.** Semantic tokens, Material 3 light/dark, System/Light/Dark
   with System default and preferences persistence; typography/spacing/radius/elevation tokens;
-  light/dark RTL visual tests. No routing/auth/shell redesign.
+  light/dark RTL visual tests. No routing/auth/shell redesign. ✅
 - **M03_WP03 — Guest-first routing and phone-only authentication.** Public Home for guests; direct
   phone OTP; protected return destinations; remove method chooser, email/password login, and
   password reset; forward non-destructive backend/OpenAPI/Prisma migration as required; email
-  becomes profile data. No shell redesign.
+  becomes profile data. No shell redesign. ← **exact next package**
 - **M03_WP04 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
   tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
   dead Chat/module placeholder.
@@ -673,7 +674,7 @@ inside M03_WP01.**
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
 
-**Exact next package after M03_WP01:** **M03_WP02 — Light/dark theme foundation**.
+**Exact next package after M03_WP02:** **M03_WP03 — Guest-first routing and phone-only authentication**.
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 

@@ -1,9 +1,10 @@
 # Laforika — UI Foundation
 
-**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP02 (theme tokens), M03_WP07 (visual hardening)
+**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP02 (theme tokens — implemented), M03_WP07 (visual hardening — pending)
 
-This document freezes the in-app visual foundation. It is **not** permission to claim these tokens
-are already implemented in code. Current M0–M2 theme code remains a neutral placeholder until M03_WP02.
+This document freezes the in-app visual foundation. The M03_WP02 theme/token foundation is
+implemented in `core/theme/` and appearance persistence. Broader app-wide visual hardening remains
+M03_WP07.
 
 ## 1. Authority
 
@@ -80,9 +81,9 @@ raw hex literals.
 | `Light` | Force light semantic palette |
 | `Dark` | Force dark semantic palette |
 
-Persistence uses the approved preferences facade (`PrefsFacade` / `shared_preferences`) when M03_WP02
-implements selection. Language switching is not introduced; `fa-IR` remains the only configured
-locale.
+Persistence uses the approved preferences facade (`PrefsFacade` / `shared_preferences`). Language
+switching is not introduced; `fa-IR` remains the only configured locale. A production Settings
+selector lands in M03_WP06; M03_WP02 exposes the state/API only.
 
 ## 7. Typography
 

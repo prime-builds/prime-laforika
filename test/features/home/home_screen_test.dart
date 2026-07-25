@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/test_prefs.dart';
+
 import 'package:laforika/app/app.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_session_gateway.dart';
@@ -103,6 +105,7 @@ Future<ProviderContainer> _pumpAuthenticatedHome(
       overrides: [
         appConfigProvider.overrideWithValue(_config),
         authSessionGatewayProvider.overrideWithValue(boundGateway),
+        testPrefsOverride(),
       ],
       child: Consumer(
         builder: (context, ref, _) {

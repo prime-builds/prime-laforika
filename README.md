@@ -9,12 +9,12 @@ targets System / Light / Dark (System default) with a Fluent-inspired but Lafori
 system. See [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and
 [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
 
-**Current implementation vs approved target:** M2 on `main` still uses an authenticated-first Home,
-dual-credential auth UI, and a neutral placeholder theme. M03_WP01 freezes the target in documentation
-only. M03_WP02–M03_WP07 close those named gaps. Do not treat the M2 code behavior as the long-term product
-contract.
+**Current implementation vs approved target:** M03_WP02 delivers the semantic light/dark Material 3
+theme foundation with System/Light/Dark appearance persistence. Remaining transition gaps include
+authenticated-first Home / dual-credential auth UI (M03_WP03) and the adaptive shell / Profile /
+Settings / Notifications packages (M03_WP04–M03_WP07).
 
-Exact next work package after M03_WP01: **M03_WP02 — Light/dark theme foundation**.
+Exact next work package: **M03_WP03 — Guest-first routing and phone-only authentication**.
 
 ## Technical baseline
 
@@ -204,9 +204,9 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 
 ### Approved transition (architecture v1.4 target)
 
-- **M03_WP01:** Guest-first / phone-only / UI-foundation documentation and decision freeze ← current package
-- **M03_WP02:** Light/dark theme foundation ← **exact next package**
-- **M03_WP03:** Guest-first routing and phone-only authentication
+- **M03_WP01:** Guest-first / phone-only / UI-foundation documentation and decision freeze ✅
+- **M03_WP02:** Light/dark theme foundation ✅
+- **M03_WP03:** Guest-first routing and phone-only authentication ← **exact next package**
 - **M03_WP04:** Adaptive application shell
 - **M03_WP05:** Profile vertical slice
 - **M03_WP06:** Settings and Notifications
