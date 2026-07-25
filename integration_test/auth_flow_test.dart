@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_state.dart';
@@ -11,7 +10,7 @@ import 'package:laforika/features/home/home.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 import 'package:laforika/main.dart' as app;
 
-/// Real-backend Android auth vertical slice against Nest + PostgreSQL.
+/// Real-backend Android guest-first phone OTP flow against Nest + PostgreSQL.
 ///
 /// Requires:
 /// - backend listening where `config/dev.json` points (`10.0.2.2:3000` on emulator)
@@ -21,151 +20,156 @@ void main() {
 
   const fixtureKey = String.fromEnvironment('FIXTURE_INBOX_KEY');
 
-  testWidgets('phone signup → attach email → email login → refresh → logout', (
-    tester,
-  ) async {
-    expect(
-      fixtureKey,
-      isNotEmpty,
-      reason: 'FIXTURE_INBOX_KEY dart-define is required for this flow',
-    );
+  testWidgets(
+    'guest Home → protected Account Security → phone OTP → resume → refresh → logout → guest Home',
+    (tester) async {
+      expect(
+        fixtureKey,
+        isNotEmpty,
+        reason: 'FIXTURE_INBOX_KEY dart-define is required for this flow',
+      );
 
-    final suffix = DateTime.now().millisecondsSinceEpoch.toString();
-    final phone = '0912${suffix.substring(suffix.length - 7)}';
-    final normalizedPhone = '+98${phone.substring(1)}';
-    final email = 'm2_$suffix@example.com';
-    const password = 'correct-horse-battery-1';
+      final suffix = DateTime.now().millisecondsSinceEpoch.toString();
+      final phone = '0912${suffix.substring(suffix.length - 7)}';
+      final normalizedPhone = '+98${phone.substring(1)}';
 
-    await app.main();
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+      await app.main();
+      await _pumpUntilFound(
+        tester,
+        find.byType(HomeScreen),
+        timeout: const Duration(seconds: 20),
+      );
 
-    // Startup → unauthenticated auth entry.
-    expect(find.byKey(const Key('auth_continue_phone')), findsOneWidget);
+      final l10n = await AppLocalizations.delegate.load(
+        const Locale('fa', 'IR'),
+      );
 
-    await tester.tap(find.byKey(const Key('auth_continue_phone')));
-    await tester.pumpAndSettle();
+      // Guest Home after hydration — not login.
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byKey(const Key('home_discovery_shell')), findsOneWidget);
+      expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+      expect(find.byKey(const Key('home_logout')), findsNothing);
+      expect(find.text(l10n.authPhoneTitle), findsNothing);
 
-    await tester.enterText(find.byKey(const Key('auth_phone_field')), phone);
-    await tester.tap(find.byKey(const Key('auth_phone_send')));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.tap(find.byKey(const Key('home_account_security_action')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('auth_phone_field')),
+        timeout: const Duration(seconds: 15),
+      );
 
-    final phoneCode = await _readFixtureCode(
-      destination: normalizedPhone,
-      purpose: 'PHONE_SIGN_IN',
-      fixtureKey: fixtureKey,
-    );
-    await tester.enterText(find.byKey(const Key('auth_otp_field')), phoneCode);
-    await tester.tap(find.byKey(const Key('auth_otp_verify')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+      // Direct phone OTP — no method chooser / email option.
+      expect(find.text(l10n.authPhoneTitle), findsOneWidget);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+      expect(find.textContaining('ایمیل'), findsNothing);
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
-    expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byKey(const Key('home_discovery_shell')), findsOneWidget);
-    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
-    expect(find.text(l10n.homeAccountStatusTitle), findsOneWidget);
-    expect(find.text(l10n.homePhoneReady), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('auth_phone_field')), phone);
+      await tester.tap(find.byKey(const Key('auth_phone_send')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('auth_otp_field')),
+        timeout: const Duration(seconds: 15),
+      );
 
-    final homeElement = tester.element(find.byType(HomeScreen));
-    final homeContainer = ProviderScope.containerOf(homeElement);
-    final authState = homeContainer.read(authControllerProvider);
-    expect(authState, isA<AuthAuthenticated>());
-    final accountId = (authState as AuthAuthenticated).principal.accountId;
-    expect(accountId, isNotEmpty);
-    expect(find.textContaining(accountId), findsNothing);
+      final phoneCode = await _readFixtureCode(
+        destination: normalizedPhone,
+        purpose: 'PHONE_SIGN_IN',
+        fixtureKey: fixtureKey,
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth_otp_field')),
+        phoneCode,
+      );
+      await tester.tap(find.byKey(const Key('auth_otp_verify')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('account_security_screen')),
+        timeout: const Duration(seconds: 20),
+      );
 
-    // Ensure Account Security was not opened as a side-effect of login.
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byKey(const Key('account_attach_email')), findsNothing);
+      // Resume protected Account Security.
+      expect(find.byKey(const Key('account_security_screen')), findsOneWidget);
+      expect(find.text(l10n.accountSessionsTitle), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('home_account_security')),
-      200,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('home_account_security')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+      final securityElement = tester.element(
+        find.byKey(const Key('account_security_screen')),
+      );
+      final container = ProviderScope.containerOf(securityElement);
+      final authState = container.read(authControllerProvider);
+      expect(authState, isA<AuthAuthenticated>());
+      final accountId = (authState as AuthAuthenticated).principal.accountId;
+      expect(accountId, isNotEmpty);
 
-    await tester.enterText(
-      find.byKey(const Key('account_attach_email')),
-      email,
-    );
-    await tester.enterText(
-      find.byKey(const Key('account_attach_password')),
-      password,
-    );
-    await tester.tap(find.byKey(const Key('account_attach_email_send')));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+      // Force access-token expiry and verify refresh on protected call.
+      final gateway =
+          container.read(authSessionGatewayProvider) as CustomApiAuthGateway;
+      gateway.expireAccessTokenInMemory();
+      final meResult = await container.read(authRepositoryProvider).me();
+      expect(meResult.isSuccess, isTrue);
+      expect(meResult.valueOrNull?.accountId, accountId);
+      expect(
+        gateway.accessToken,
+        isNot(equals('expired.integration.test.token')),
+      );
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+      expect(
+        (container.read(authControllerProvider) as AuthAuthenticated)
+            .principal
+            .accountId,
+        accountId,
+      );
 
-    final emailCode = await _readFixtureCode(
-      destination: email,
-      purpose: 'EMAIL_ATTACH',
-      fixtureKey: fixtureKey,
-    );
-    await tester.enterText(
-      find.byKey(const Key('account_attach_email_code')),
-      emailCode,
-    );
-    await tester.tap(find.byKey(const Key('account_attach_email_verify')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.tap(find.byKey(const Key('account_logout_current')));
+      await _pumpUntilFound(
+        tester,
+        find.byType(HomeScreen),
+        timeout: const Duration(seconds: 20),
+      );
 
-    expect(find.byKey(const Key('account_id_label')), findsOneWidget);
-    final securityAccountText = tester
-        .widget<Text>(find.byKey(const Key('account_id_label')))
-        .data!;
-    expect(securityAccountText, contains(accountId));
+      // Logout returns to guest Home, not login.
+      expect(find.byType(HomeScreen), findsOneWidget);
+      expect(find.byKey(const Key('home_logout')), findsNothing);
+      expect(find.text(l10n.authPhoneTitle), findsNothing);
+      expect(
+        container.read(authControllerProvider),
+        isA<AuthUnauthenticated>(),
+      );
 
-    // Return to Home through normal router navigation.
-    final securityContext = tester.element(
-      find.byKey(const Key('account_id_label')),
-    );
-    GoRouter.of(securityContext).go(homeRoutePath);
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-    expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+      await tester.tap(find.byKey(const Key('home_account_security_action')));
+      await _pumpUntilFound(
+        tester,
+        find.text(l10n.authPhoneTitle),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(find.text(l10n.authPhoneTitle), findsOneWidget);
+    },
+  );
+}
 
-    // Re-open account security from Home, then logout current session.
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('home_account_security')),
-      200,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('home_account_security')));
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-    await tester.tap(find.byKey(const Key('account_logout')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(find.byKey(const Key('auth_continue_email')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('auth_continue_email')));
-    await tester.pumpAndSettle();
-
-    // Switch to sign-in mode (second segment).
-    await tester.tap(find.text('ورود'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('auth_email_field')), email);
-    await tester.enterText(
-      find.byKey(const Key('auth_password_field')),
-      password,
-    );
-    await tester.tap(find.byKey(const Key('auth_email_submit')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.text(l10n.homeEmailReady), findsOneWidget);
-
-    // Forced access-token expiry → single-flight refresh without logout.
-    final element = tester.element(find.byType(HomeScreen));
-    final container = ProviderScope.containerOf(element);
-    final gateway =
-        container.read(authSessionGatewayProvider) as CustomApiAuthGateway;
-    gateway.expireAccessTokenInMemory();
-    final me = await container.read(authRepositoryProvider).me();
-    expect(me.isSuccess, isTrue);
-    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
-
-    await tester.tap(find.byKey(const Key('home_logout')));
-    await tester.pumpAndSettle(const Duration(seconds: 3));
-    expect(find.byKey(const Key('auth_continue_phone')), findsOneWidget);
-    expect(find.byType(HomeScreen), findsNothing);
-  });
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  required Duration timeout,
+}) async {
+  final end = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(end)) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (finder.evaluate().isNotEmpty) {
+      await tester.pump();
+      return;
+    }
+  }
+  final visibleTexts = find
+      .byType(Text)
+      .evaluate()
+      .map((e) {
+        final widget = e.widget;
+        return widget is Text ? widget.data : null;
+      })
+      .whereType<String>()
+      .take(12)
+      .join(' | ');
+  fail('Timed out waiting for $finder. Visible text: $visibleTexts');
 }
 
 Future<String> _readFixtureCode({
@@ -173,8 +177,6 @@ Future<String> _readFixtureCode({
   required String purpose,
   required String fixtureKey,
 }) async {
-  // Hits the real Nest fixture inbox (in-memory in remediations; path unchanged).
-  // No fake auth injection — codes come from GET /v1/dev/fixtures/inbox.
   final dio = Dio(
     BaseOptions(
       baseUrl: 'http://10.0.2.2:3000/v1',
@@ -182,21 +184,17 @@ Future<String> _readFixtureCode({
       receiveTimeout: const Duration(seconds: 10),
     ),
   );
-
-  for (var attempt = 0; attempt < 20; attempt++) {
+  for (var attempt = 0; attempt < 10; attempt += 1) {
     final response = await dio.get<Map<String, dynamic>>(
       '/dev/fixtures/inbox',
-      queryParameters: <String, dynamic>{
-        'destination': destination,
-        'purpose': purpose,
-      },
-      options: Options(headers: <String, dynamic>{'x-fixture-key': fixtureKey}),
+      queryParameters: {'destination': destination, 'purpose': purpose},
+      options: Options(headers: {'X-Fixture-Key': fixtureKey}),
     );
-    final code = response.data?['code'] as String?;
+    final code = response.data?['code']?.toString();
     if (code != null && code.isNotEmpty) {
       return code;
     }
-    await Future<void>.delayed(const Duration(milliseconds: 250));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
   }
-  fail('Fixture code not available for $purpose / $destination');
+  fail('fixture OTP unavailable');
 }

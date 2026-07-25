@@ -11,10 +11,7 @@ import 'package:laforika/l10n/generated/app_localizations.dart';
 /// Maximum content width for tablet/wide Home layouts.
 const double _homeMaxContentWidth = 720;
 
-/// Width at which account-status and quick-action may sit side by side.
-const double _homeWideBreakpoint = 600;
-
-/// Authenticated Home / discovery shell.
+/// Guest-first Home / discovery shell.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -44,7 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
-    final principal = auth is AuthAuthenticated ? auth.principal : null;
+    final authenticated = auth is AuthAuthenticated;
 
     final iconStyle = IconButton.styleFrom(
       minimumSize: const Size(
@@ -65,22 +62,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: iconStyle,
             onPressed: _logoutPending
                 ? null
-                : () => context.push(accountSecurityRoutePath),
+                : () => context.go(accountSecurityRoutePath),
             icon: const Icon(Icons.security),
           ),
-          IconButton(
-            key: const Key('home_logout'),
-            tooltip: l10n.homeLogoutTooltip,
-            style: iconStyle,
-            onPressed: _logoutPending ? null : _logout,
-            icon: const Icon(Icons.logout),
-          ),
+          if (authenticated)
+            IconButton(
+              key: const Key('home_logout'),
+              tooltip: l10n.homeLogoutTooltip,
+              style: iconStyle,
+              onPressed: _logoutPending ? null : _logout,
+              icon: const Icon(Icons.logout),
+            ),
         ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= _homeWideBreakpoint;
             return Align(
               alignment: AlignmentDirectional.topCenter,
               child: ConstrainedBox(
@@ -94,44 +91,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       _HomeWelcome(l10n: l10n, theme: theme),
                       const SizedBox(height: AppTokens.spaceLg),
-                      if (principal != null)
-                        wide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: _AccountStatusCard(
-                                      l10n: l10n,
-                                      theme: theme,
-                                      principal: principal,
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppTokens.spaceMd),
-                                  Expanded(
-                                    child: _HomeDestinationCard(
-                                      l10n: l10n,
-                                      theme: theme,
-                                      enabled: !_logoutPending,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _AccountStatusCard(
-                                    l10n: l10n,
-                                    theme: theme,
-                                    principal: principal,
-                                  ),
-                                  const SizedBox(height: AppTokens.spaceMd),
-                                  _HomeDestinationCard(
-                                    l10n: l10n,
-                                    theme: theme,
-                                    enabled: !_logoutPending,
-                                  ),
-                                ],
-                              ),
+                      _HomeDestinationCard(
+                        l10n: l10n,
+                        theme: theme,
+                        enabled: !_logoutPending,
+                      ),
                     ],
                   ),
                 ),
@@ -165,109 +129,6 @@ class _HomeWelcome extends StatelessWidget {
           l10n.homeWelcomeSubtitle,
           style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.start,
-        ),
-      ],
-    );
-  }
-}
-
-class _AccountStatusCard extends StatelessWidget {
-  const _AccountStatusCard({
-    required this.l10n,
-    required this.theme,
-    required this.principal,
-  });
-
-  final AppLocalizations l10n;
-  final ThemeData theme;
-  final AuthPrincipal principal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      key: const Key('home_account_status'),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.homeAccountStatusTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppTokens.spaceMd),
-            _CredentialStatusRow(
-              key: const Key('home_phone_status'),
-              ready: principal.hasPhone,
-              readyLabel: l10n.homePhoneReady,
-              missingLabel: l10n.homePhoneMissing,
-              maskedValue: principal.maskedPhone,
-              readyIcon: Icons.phone_android,
-              missingIcon: Icons.phone_disabled_outlined,
-            ),
-            const SizedBox(height: AppTokens.spaceSm),
-            _CredentialStatusRow(
-              key: const Key('home_email_status'),
-              ready: principal.hasEmail,
-              readyLabel: l10n.homeEmailReady,
-              missingLabel: l10n.homeEmailMissing,
-              maskedValue: principal.maskedEmail,
-              readyIcon: Icons.mark_email_read_outlined,
-              missingIcon: Icons.mark_email_unread_outlined,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CredentialStatusRow extends StatelessWidget {
-  const _CredentialStatusRow({
-    super.key,
-    required this.ready,
-    required this.readyLabel,
-    required this.missingLabel,
-    required this.maskedValue,
-    required this.readyIcon,
-    required this.missingIcon,
-  });
-
-  final bool ready;
-  final String readyLabel;
-  final String missingLabel;
-  final String? maskedValue;
-  final IconData readyIcon;
-  final IconData missingIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = ready ? readyLabel : missingLabel;
-    final showMask =
-        ready && maskedValue != null && maskedValue!.trim().isNotEmpty;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ExcludeSemantics(child: Icon(ready ? readyIcon : missingIcon)),
-        const SizedBox(width: AppTokens.spaceSm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: theme.textTheme.bodyLarge),
-              if (showMask) ...[
-                const SizedBox(height: AppTokens.spaceSm / 2),
-                Text(
-                  maskedValue!.trim(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
       ],
     );
@@ -313,7 +174,7 @@ class _HomeDestinationCard extends StatelessWidget {
             excludeSemantics: true,
             child: InkWell(
               onTap: enabled
-                  ? () => context.push(accountSecurityRoutePath)
+                  ? () => context.go(accountSecurityRoutePath)
                   : null,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(

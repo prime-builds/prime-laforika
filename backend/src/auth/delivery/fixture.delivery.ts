@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AppError } from '../../common/errors/app-error';
-import { EmailDeliveryPort, SmsDeliveryPort } from './delivery.ports';
+import { SmsDeliveryPort } from './delivery.ports';
 
 export type FixtureInboxEntry = {
   id: string;
-  channel: 'SMS' | 'EMAIL';
+  channel: 'SMS';
   destinationNormalized: string;
   purpose: string;
   code: string;
@@ -83,39 +83,10 @@ export class FixtureSmsDelivery implements SmsDeliveryPort {
   }
 }
 
-@Injectable()
-export class FixtureEmailDelivery implements EmailDeliveryPort {
-  constructor(private readonly inbox: FixtureInbox) {}
-
-  async sendCode(input: {
-    destinationEmail: string;
-    purpose: string;
-    code: string;
-    expiresAt: Date;
-  }): Promise<void> {
-    await Promise.resolve();
-    this.inbox.push({
-      channel: 'EMAIL',
-      destinationNormalized: input.destinationEmail,
-      purpose: input.purpose,
-      code: input.code,
-      expiresAt: input.expiresAt,
-    });
-  }
-}
-
 /** Staging/prod placeholder — fail closed until a real adapter is wired. */
 @Injectable()
 export class UnavailableSmsDelivery implements SmsDeliveryPort {
   async sendOtp(): Promise<void> {
-    await Promise.resolve();
-    throw new AppError('DELIVERY_UNAVAILABLE', 503);
-  }
-}
-
-@Injectable()
-export class UnavailableEmailDelivery implements EmailDeliveryPort {
-  async sendCode(): Promise<void> {
     await Promise.resolve();
     throw new AppError('DELIVERY_UNAVAILABLE', 503);
   }

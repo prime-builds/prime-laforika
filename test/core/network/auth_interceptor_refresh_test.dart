@@ -45,11 +45,7 @@ void main() {
     featureFlags: <String, bool>{},
   );
 
-  const principal = AuthPrincipal(
-    accountId: 'acc-refresh',
-    hasPhone: true,
-    hasEmail: true,
-  );
+  const principal = AuthPrincipal(accountId: 'acc-refresh');
 
   test(
     '401 refresh retries through attached Dio without provider self-dependency',
@@ -61,8 +57,6 @@ void main() {
             accessToken: 'fresh-access',
             refreshToken: 'fresh-refresh',
             accountId: 'acc-refresh',
-            hasPhone: true,
-            hasEmail: true,
           ),
         );
 
@@ -112,7 +106,7 @@ void main() {
         }
         expect(auth, 'Bearer fresh-access');
         return ResponseBody.fromString(
-          '{"accountId":"acc-refresh","hasPhone":true,"hasEmail":true}',
+          '{"accountId":"acc-refresh"}',
           200,
           headers: {
             Headers.contentTypeHeader: [Headers.jsonContentType],

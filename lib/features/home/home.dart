@@ -15,6 +15,9 @@ const String homeRoutePath = '/';
 /// Registered internal paths owned by the Home feature.
 Set<String> get homeRegisteredPaths => <String>{homeRoutePath};
 
+/// Guest-accessible public paths owned by the Home feature.
+Set<String> get homePublicPaths => <String>{homeRoutePath};
+
 /// Home feature route registry for `app/router` aggregation.
 List<RouteBase> homeRoutes() {
   return <RouteBase>[

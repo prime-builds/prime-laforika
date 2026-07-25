@@ -67,46 +67,57 @@ void main() {
     });
   });
 
-  group('isValidReturnDestination', () {
-    test('accepts registered internal paths and rejects loops/external', () {
-      final registered = {'/', '/account/security'};
-      final authOnly = {'/auth', '/auth/phone'};
+  group('canonicalizeReturnDestination (path-only policy)', () {
+    const registered = {'/', '/account/security'};
+    const authOnly = {'/auth'};
+    const startup = '/startup';
+
+    String? canon(String? value) => canonicalizeReturnDestination(
+      value,
+      registeredPaths: registered,
+      authOnlyPaths: authOnly,
+      startupPath: startup,
+    );
+
+    test('returns canonical registered public and protected paths', () {
+      expect(canon('/'), '/');
+      expect(canon('/account/security'), '/account/security');
       expect(
         isValidReturnDestination(
           '/account/security',
           registeredPaths: registered,
           authOnlyPaths: authOnly,
-          startupPath: '/startup',
+          startupPath: startup,
         ),
         isTrue,
       );
-      expect(
-        isValidReturnDestination(
-          '/auth',
-          registeredPaths: registered,
-          authOnlyPaths: authOnly,
-          startupPath: '/startup',
-        ),
-        isFalse,
-      );
-      expect(
-        isValidReturnDestination(
-          'https://evil.example',
-          registeredPaths: registered,
-          authOnlyPaths: authOnly,
-          startupPath: '/startup',
-        ),
-        isFalse,
-      );
-      expect(
-        isValidReturnDestination(
-          '/startup',
-          registeredPaths: registered,
-          authOnlyPaths: authOnly,
-          startupPath: '/startup',
-        ),
-        isFalse,
-      );
+    });
+
+    test('rejects auth-only and startup paths', () {
+      expect(canon('/auth'), isNull);
+      expect(canon('/startup'), isNull);
+    });
+
+    test('rejects query parameters and fragments', () {
+      expect(canon('/account/security?x=1'), isNull);
+      expect(canon('/account/security?from=/'), isNull);
+      expect(canon('/account/security#section'), isNull);
+      expect(canon('/?q=1'), isNull);
+      expect(canon('/#top'), isNull);
+    });
+
+    test('rejects external schemes and protocol-relative authorities', () {
+      expect(canon('https://evil.example/path'), isNull);
+      expect(canon('http://evil.example'), isNull);
+      expect(canon('//evil.example/path'), isNull);
+    });
+
+    test('rejects unknown, malformed, and empty values', () {
+      expect(canon(null), isNull);
+      expect(canon(''), isNull);
+      expect(canon('/unknown/module'), isNull);
+      expect(canon('not a path'), isNull);
+      expect(canon('account/security'), isNull);
     });
   });
 

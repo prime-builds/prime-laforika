@@ -17,7 +17,7 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 
 ## Current merged baseline
 
-M03_WP02 light/dark theme foundation on top of the M03_WP01 documentation freeze, M2 Home / discovery shell, and M1 custom authentication vertical slice (ADR-0007 / O1, amended by ADR-0008). Architecture v1.4 records guest-first access, phone-only authentication, and the Fluent-inspired adaptive-shell target; M03_WP03–M03_WP07 implement the remaining named code-to-target gaps.
+M03_WP03 guest-first routing and phone-only authentication on top of the M03_WP02 theme foundation, M03_WP01 documentation freeze, M2 Home / discovery shell, and M1 custom authentication vertical slice (ADR-0007 / O1, amended by ADR-0008). Architecture v1.4 records guest-first access, phone-only authentication, and the Fluent-inspired adaptive-shell target; M03_WP04–M03_WP07 implement the remaining named code-to-target gaps.
 
 ## Completed check-ins
 
@@ -105,9 +105,21 @@ M03_WP02 light/dark theme foundation on top of the M03_WP01 documentation freeze
 | Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP03–M03_WP07 pending; authenticated-first Home and dual-credential auth UI remain until later M03 packages; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
 | Exact next work package | M03_WP03 — Guest-first routing and phone-only authentication |
 
+### M03_WP03 — Guest-first routing and phone-only authentication — PR [#10](https://github.com/prime-builds/prime-laforika/pull/10)
+
+| Field | Value |
+|---|---|
+| Work package | M03_WP03 — Guest-first routing and phone-only authentication |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/10 |
+| Final reviewed implementation commit | `ba8cd8fc404e1e5d6389de0697a37832bd70382f` |
+| Completed scope | Guest-first public Home after session restore; protected Account Security with validated path-only return destinations; canonical `/auth` as phone OTP only (method chooser / email / password-reset removed); Nest phone-only auth (email/password endpoints and Argon2 removed); forward Prisma `phone_only_auth` migration with orphan-phone guard; OpenAPI narrowed; Flutter/backend tests including migration behavior, consumed/expired/concurrent OTP, session revoke, and emulator integration |
+| Verification | Local: Flutter format/analyze/tests/import boundaries; backend format/lint/typecheck/unit/e2e/openapi; Android debug APKs `dev`/`staging`/`prod`; emulator `integration_test/auth_flow_test.dart` against real local Nest backend; CI green on PR #10 (`backend` + `quality`) |
+| Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP04–M03_WP07 pending; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
+| Exact next work package | M03_WP04 — Adaptive application shell |
+
 ## Current milestone
 
-**M03_WP02 — Light/dark theme foundation** delivered in PR #9. Exact next work package: **M03_WP03 — Guest-first routing and phone-only authentication**.
+**M03_WP03 — Guest-first routing and phone-only authentication** delivered in PR #10. Exact next work package: **M03_WP04 — Adaptive application shell**.
 
 ## Implemented capabilities
 
@@ -124,15 +136,15 @@ M03_WP02 light/dark theme foundation on top of the M03_WP01 documentation freeze
 - Persian `fa-IR` localization, RTL, Vazirmatn theme foundation
 - Semantic light/dark appearance (System/Light/Dark) with preference persistence
 - Import-boundary enforcement tool and CI quality gates
-- Custom authentication vertical slice (NestJS API + Flutter client)
-- Authenticated Home / discovery shell with aggregated feature route registries
-- Documented guest-first / phone-only / adaptive-shell target (remaining implementation in M03_WP03–M03_WP07)
+- Custom authentication vertical slice (NestJS API + Flutter client; phone OTP only)
+- Guest-first Home / discovery shell with protected Account Security and path-only return destinations
+- Documented adaptive-shell / Profile / Settings / Notifications / visual-hardening target (remaining implementation in M03_WP04–M03_WP07)
 
 ## Deferred capabilities and owner decisions
 
 Deferred until later milestones or owner input (see architecture §14–§15):
 
-- M03_WP03–M03_WP07 implementation of guest-first routing, phone-only auth UI, adaptive shell, Profile, Settings, Notifications, and visual hardening
+- M03_WP04–M03_WP07 implementation of adaptive shell, Profile, Settings, Notifications, and visual hardening
 - Networking beyond auth, persistence, telemetry, maps, push, Jalali display, external brand assets, signing/distribution, privacy/account-data lifecycle (O2–O6, O7 remainder, O8, and later milestones M04+)
 
 ## Verification evidence
@@ -144,15 +156,16 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 - PR [#7](https://github.com/prime-builds/prime-laforika/pull/7): final reviewed implementation commit `0bdcb625b37f6e6b41ce5a8d1310790a3612c0b5`
 - PR [#8](https://github.com/prime-builds/prime-laforika/pull/8): final reviewed implementation commit `129fc62e430e3627288c4e3e593f58c8eac5c9a1`
 - PR [#9](https://github.com/prime-builds/prime-laforika/pull/9): final reviewed implementation commit `98729a6f0f3953448db40706e78322bc46c3b1d5`
+- PR [#10](https://github.com/prime-builds/prime-laforika/pull/10): final reviewed implementation commit `ba8cd8fc404e1e5d6389de0697a37832bd70382f`
 
 ## Known limitations / risks
 
 - iOS flavor configuration is committed and list membership corrected; iOS build/run was not executed on the delivery host (non-macOS)
 - Owner decisions O2–O6 and O8 remain open; O7 external brand assets remain deferred
 - CI no longer runs Android emulator integration or the three-flavor debug APK matrix (owner-approved quota deviation); local emulator verification was performed on the delivery host
-- M2 runtime still uses authenticated-first Home and dual-credential auth UI until M03_WP03+ land; theme foundation is implemented
+- M2 runtime historically used authenticated-first Home and dual-credential auth UI; M03_WP03 closes that gap
 - M04 specialized-module selection is an owner decision; do not invent a specialized module early
 
 ## Exact next step
 
-Begin **M03_WP03 — Guest-first routing and phone-only authentication**; do not start M04 until the M03 transition packages are complete and the owner selects the module.
+Begin **M03_WP04 — Adaptive application shell**; do not start M04 until the M03 transition packages are complete and the owner selects the module.

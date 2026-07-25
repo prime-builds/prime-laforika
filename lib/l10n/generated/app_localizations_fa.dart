@@ -19,21 +19,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'از اینجا به بخش‌های در دسترس لفوریکا دسترسی دارید.';
 
   @override
-  String get homeAccountStatusTitle => 'وضعیت حساب';
-
-  @override
-  String get homePhoneReady => 'شماره موبایل تأیید شده است';
-
-  @override
-  String get homePhoneMissing => 'شماره موبایل به حساب متصل نیست';
-
-  @override
-  String get homeEmailReady => 'ایمیل تأیید شده است';
-
-  @override
-  String get homeEmailMissing => 'ایمیل به حساب متصل نیست';
-
-  @override
   String get homeAvailableSectionsTitle => 'دسترسی سریع';
 
   @override
@@ -41,7 +26,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get homeAccountSecurityDescription =>
-      'روش‌های ورود، رمز عبور و نشست‌های فعال را مدیریت کنید.';
+      'نشست‌های فعال را مدیریت کنید و از حساب خارج شوید.';
 
   @override
   String get homeOpenAccountSecurity => 'باز کردن امنیت حساب';
@@ -67,34 +52,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get authRetry => 'تلاش دوباره';
 
   @override
-  String get authMethodTitle => 'ورود به لفوریکا';
-
-  @override
-  String get authMethodSubtitle => 'یکی از روش‌های ورود را انتخاب کنید.';
-
-  @override
-  String get authContinueWithPhone => 'ادامه با شماره موبایل';
-
-  @override
-  String get authContinueWithEmail => 'ادامه با ایمیل و رمز عبور';
-
-  @override
   String get authPhoneTitle => 'ورود با موبایل';
 
   @override
   String get authPhoneLabel => 'شماره موبایل';
-
-  @override
-  String get authEmailTitle => 'ورود با ایمیل';
-
-  @override
-  String get authEmailLabel => 'ایمیل';
-
-  @override
-  String get authPasswordLabel => 'رمز عبور';
-
-  @override
-  String get authNewPasswordLabel => 'رمز عبور جدید';
 
   @override
   String get authOtpLabel => 'کد تأیید';
@@ -117,25 +78,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get authPleaseWait => 'لطفاً صبر کنید…';
 
   @override
-  String get authSignUp => 'ثبت‌نام';
-
-  @override
-  String get authSignIn => 'ورود';
-
-  @override
-  String get authForgotPassword => 'فراموشی رمز عبور';
-
-  @override
-  String get authPasswordResetTitle => 'بازیابی رمز عبور';
-
-  @override
-  String get authResetPassword => 'تنظیم رمز جدید';
-
-  @override
-  String get authPasswordResetSuccess =>
-      'رمز عبور به‌روز شد. اکنون می‌توانید وارد شوید.';
-
-  @override
   String authCodeSentTo(String destination) {
     return 'کد به $destination ارسال شد.';
   }
@@ -155,35 +97,10 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String accountPhoneAttached(String phone) {
-    return 'موبایل تأییدشده: $phone';
-  }
-
-  @override
-  String get accountPhoneMissing => 'موبایل متصل نیست';
-
-  @override
-  String accountEmailAttached(String email) {
-    return 'ایمیل تأییدشده: $email';
-  }
-
-  @override
-  String get accountEmailMissing => 'ایمیل متصل نیست';
-
-  @override
-  String get accountAttachEmailTitle => 'اتصال ایمیل و رمز عبور';
-
-  @override
-  String get accountAttachPhoneTitle => 'اتصال شماره موبایل';
-
-  @override
-  String get accountRemoveEmail => 'حذف ایمیل';
-
-  @override
-  String get accountRemovePhone => 'حذف موبایل';
-
-  @override
   String get accountSessionsTitle => 'نشست‌های فعال';
+
+  @override
+  String get accountSessionsEmpty => 'نشست فعالی یافت نشد.';
 
   @override
   String get accountSessionDevice => 'دستگاه';
@@ -196,19 +113,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get accountLogoutAll => 'خروج از همه دستگاه‌ها';
-
-  @override
-  String get accountChangePasswordTitle => 'تغییر رمز عبور';
-
-  @override
-  String get accountCurrentPasswordLabel => 'رمز عبور فعلی';
-
-  @override
-  String get accountChangePasswordAction => 'به‌روزرسانی رمز عبور';
-
-  @override
-  String get accountChangePasswordSuccess =>
-      'رمز عبور به‌روز شد. لطفاً دوباره وارد شوید.';
 
   @override
   String get authErrorInvalidCredentials => 'اطلاعات ورود نادرست است.';
@@ -230,9 +134,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get authErrorSessionRevoked =>
       'نشست شما پایان یافته است. دوباره وارد شوید.';
-
-  @override
-  String get authErrorLastCredential => 'نمی‌توان آخرین روش ورود را حذف کرد.';
 
   @override
   String get authErrorValidation => 'اطلاعات واردشده معتبر نیست.';

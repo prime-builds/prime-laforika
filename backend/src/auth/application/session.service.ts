@@ -22,7 +22,6 @@ import {
   generateRefreshToken,
   hashOpaqueSecret,
   loadPem,
-  maskEmail,
   maskPhone,
   randomUuid,
   safeEqualHex,
@@ -31,14 +30,8 @@ import {
   destinationRateLimitBucketKey,
   fingerprintOrigin,
 } from '../../common/security/origin.util';
-import {
-  EMAIL_DELIVERY_PORT,
-  SMS_DELIVERY_PORT,
-} from '../delivery/delivery.ports';
-import type {
-  EmailDeliveryPort,
-  SmsDeliveryPort,
-} from '../delivery/delivery.ports';
+import { SMS_DELIVERY_PORT } from '../delivery/delivery.ports';
+import type { SmsDeliveryPort } from '../delivery/delivery.ports';
 
 const ACCESS_TTL_SEC = 10 * 60;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -141,7 +134,6 @@ export class ChallengeService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @Inject(SMS_DELIVERY_PORT) private readonly sms: SmsDeliveryPort,
-    @Inject(EMAIL_DELIVERY_PORT) private readonly email: EmailDeliveryPort,
   ) {}
 
   async createChallenge(input: {
@@ -149,8 +141,6 @@ export class ChallengeService {
     destinationType: DestinationType;
     destinationNormalized: string;
     userId?: string;
-    pendingPasswordHash?: string;
-    pendingEmailDisplay?: string;
     originFingerprint?: string;
   }) {
     await this.enforceRateLimit(
@@ -208,33 +198,19 @@ export class ChallengeService {
         codeHash,
         expiresAt,
         userId: input.userId,
-        pendingPasswordHash: input.pendingPasswordHash,
-        pendingEmailDisplay: input.pendingEmailDisplay,
       },
     });
 
-    if (input.destinationType === 'PHONE') {
-      await this.sms.sendOtp({
-        destinationE164: input.destinationNormalized,
-        purpose: input.purpose,
-        code,
-        expiresAt,
-      });
-    } else {
-      await this.email.sendCode({
-        destinationEmail: input.destinationNormalized,
-        purpose: input.purpose,
-        code,
-        expiresAt,
-      });
-    }
+    await this.sms.sendOtp({
+      destinationE164: input.destinationNormalized,
+      purpose: input.purpose,
+      code,
+      expiresAt,
+    });
 
     return {
       challengeId: challenge.id,
-      maskedDestination:
-        input.destinationType === 'PHONE'
-          ? maskPhone(input.destinationNormalized)
-          : maskEmail(input.destinationNormalized),
+      maskedDestination: maskPhone(input.destinationNormalized),
       resendAvailableAt: new Date(Date.now() + RESEND_MS).toISOString(),
       expiresAt: challenge.expiresAt.toISOString(),
     };
@@ -251,7 +227,6 @@ export class ChallengeService {
       code: string;
       purpose: ChallengePurpose;
       accountId?: string;
-      requirePendingPassword?: boolean;
       requireBoundUser?: boolean;
     },
     action: (
@@ -302,12 +277,6 @@ export class ChallengeService {
             } satisfies AuthorizeChallengeOutcome<T>;
           }
           if (input.requireBoundUser && !challenge.userId) {
-            return {
-              status: 'error',
-              code: 'AUTH_CHALLENGE_INVALID',
-            } satisfies AuthorizeChallengeOutcome<T>;
-          }
-          if (input.requirePendingPassword && !challenge.pendingPasswordHash) {
             return {
               status: 'error',
               code: 'AUTH_CHALLENGE_INVALID',
@@ -481,7 +450,7 @@ export class SessionService {
     };
   }
 
-  /** Convenience for non-challenge flows (email sign-in, etc.). */
+  /** Convenience for issuing a new session outside challenge flows. */
   async createSession(userId: string, deviceLabel?: string) {
     const records = await this.prisma.$transaction((tx) =>
       this.createSessionRecords(tx, userId, deviceLabel),
@@ -666,22 +635,9 @@ export class SessionService {
     ]);
   }
 
-  accountView(user: {
-    id: string;
-    phoneE164: string | null;
-    emailNormalized: string | null;
-    emailVerifiedAt: Date | null;
-  }) {
-    const hasEmail = Boolean(user.emailNormalized && user.emailVerifiedAt);
+  accountView(user: { id: string }) {
     return {
       accountId: user.id,
-      hasPhone: Boolean(user.phoneE164),
-      hasEmail,
-      maskedPhone: user.phoneE164 ? maskPhone(user.phoneE164) : null,
-      maskedEmail:
-        hasEmail && user.emailNormalized
-          ? maskEmail(user.emailNormalized)
-          : null,
     };
   }
 

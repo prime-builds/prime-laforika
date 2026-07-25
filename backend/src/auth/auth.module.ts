@@ -9,15 +9,10 @@ import {
 import { AuthController } from './presentation/auth.controller';
 import { FixtureController } from './presentation/fixture.controller';
 import { AccessTokenGuard } from '../common/guards/access-token.guard';
+import { SMS_DELIVERY_PORT } from './delivery/delivery.ports';
 import {
-  EMAIL_DELIVERY_PORT,
-  SMS_DELIVERY_PORT,
-} from './delivery/delivery.ports';
-import {
-  FixtureEmailDelivery,
   FixtureInbox,
   FixtureSmsDelivery,
-  UnavailableEmailDelivery,
   UnavailableSmsDelivery,
 } from './delivery/fixture.delivery';
 
@@ -74,24 +69,6 @@ export class AuthModule implements OnModuleInit {
               return new FixtureSmsDelivery(inbox);
             }
             return new UnavailableSmsDelivery();
-          },
-        },
-        {
-          provide: EMAIL_DELIVERY_PORT,
-          inject: [ConfigService, FixtureInbox],
-          useFactory: (config: ConfigService, inbox: FixtureInbox) => {
-            if (
-              isFixtureDeliveryMode({
-                APP_ENVIRONMENT: config.get<string>('APP_ENVIRONMENT'),
-                FIXTURE_DELIVERY_ENABLED: config.get<boolean>(
-                  'FIXTURE_DELIVERY_ENABLED',
-                ),
-                DELIVERY_MODE: config.get<string>('DELIVERY_MODE'),
-              })
-            ) {
-              return new FixtureEmailDelivery(inbox);
-            }
-            return new UnavailableEmailDelivery();
           },
         },
       ],

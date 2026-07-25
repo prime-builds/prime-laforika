@@ -15,7 +15,6 @@ class FakeAuthRepository extends AuthRepository {
     AuthFailure(code: 'AUTH_SESSION_REVOKED'),
   );
   Result<List<SessionDto>> sessionsResult = const Success(<SessionDto>[]);
-  Result<void> changePasswordResult = const Success(null);
   Result<void> logoutResult = const Success(null);
   Result<void> logoutAllResult = const Success(null);
   Result<ChallengeCreatedDto> phoneChallengeResult = const FailureResult(
@@ -67,22 +66,10 @@ class FakeAuthRepository extends AuthRepository {
   Future<Result<List<SessionDto>>> listSessions() async => sessionsResult;
 
   @override
-  Future<Result<void>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async => changePasswordResult;
-
-  @override
   Future<Result<void>> logout() async => logoutResult;
 
   @override
   Future<Result<void>> logoutAll() async => logoutAllResult;
-
-  @override
-  Future<Result<void>> removePhone() async => const Success(null);
-
-  @override
-  Future<Result<void>> removeEmail() async => const Success(null);
 
   @override
   Future<Result<void>> revokeSession(String sessionId) async =>

@@ -11,3 +11,9 @@ Set<String> get appRegisteredPaths => <String>{
   ...authRegisteredPaths,
   ...homeRegisteredPaths,
 };
+
+/// Guest-accessible public paths after session restoration.
+Set<String> get appPublicPaths => <String>{...homePublicPaths};
+
+/// Explicitly protected capability paths.
+Set<String> get appProtectedPaths => <String>{...authProtectedPaths};

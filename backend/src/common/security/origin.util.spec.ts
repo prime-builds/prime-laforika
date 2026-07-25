@@ -19,9 +19,9 @@ describe('origin.util', () => {
 
   describe('fingerprintDestination', () => {
     const base = {
-      destinationType: 'EMAIL',
-      destinationNormalized: 'user@example.com',
-      purpose: 'EMAIL_VERIFY',
+      destinationType: 'PHONE',
+      destinationNormalized: '+989121234567',
+      purpose: 'PHONE_SIGN_IN',
       pepper: 'rate-limit-pepper',
     };
 
@@ -32,36 +32,31 @@ describe('origin.util', () => {
     it('different destinations differ', () => {
       const other = {
         ...base,
-        destinationNormalized: 'other@example.com',
+        destinationNormalized: '+989121234568',
       };
       expect(fingerprintDestination(base)).not.toBe(
         fingerprintDestination(other),
       );
     });
 
-    it('phone vs email namespaces differ for the same normalized string', () => {
-      const shared = 'shared-normalized-value';
-      const emailFp = fingerprintDestination({
+    it('purpose namespaces differ for the same phone', () => {
+      const other = {
         ...base,
-        destinationType: 'EMAIL',
-        destinationNormalized: shared,
-      });
-      const phoneFp = fingerprintDestination({
-        ...base,
-        destinationType: 'PHONE',
-        destinationNormalized: shared,
-      });
-      expect(emailFp).not.toBe(phoneFp);
+        purpose: 'OTHER_PURPOSE',
+      };
+      expect(fingerprintDestination(base)).not.toBe(
+        fingerprintDestination(other),
+      );
     });
 
     it('origin vs destination namespaces differ for the same raw value', () => {
-      const raw = 'user@example.com';
+      const raw = '+989121234567';
       const pepper = 'shared-pepper';
       const originFp = fingerprintOrigin(raw, pepper);
       const destFp = fingerprintDestination({
-        destinationType: 'EMAIL',
+        destinationType: 'PHONE',
         destinationNormalized: raw,
-        purpose: 'EMAIL_VERIFY',
+        purpose: 'PHONE_SIGN_IN',
         pepper,
       });
       expect(originFp).not.toBe(destFp);
@@ -73,20 +68,11 @@ describe('origin.util', () => {
       );
     });
 
-    it('destinationRateLimitBucketKey never contains raw email/phone substrings', () => {
-      const emailKey = destinationRateLimitBucketKey(base);
-      expect(emailKey).not.toContain('example.com');
-      expect(emailKey).not.toContain('user@');
-      expect(emailKey).not.toContain(base.destinationNormalized);
-
-      const phoneKey = destinationRateLimitBucketKey({
-        destinationType: 'PHONE',
-        destinationNormalized: '+989121234567',
-        purpose: 'PHONE_SIGN_IN',
-        pepper: base.pepper,
-      });
+    it('destinationRateLimitBucketKey never contains raw phone substrings', () => {
+      const phoneKey = destinationRateLimitBucketKey(base);
       expect(phoneKey).not.toContain('+989');
       expect(phoneKey).not.toContain('989121234567');
+      expect(phoneKey).not.toContain(base.destinationNormalized);
       expect(phoneKey).toMatch(
         /^challenge:dest:v1:PHONE:[a-f0-9]+:PHONE_SIGN_IN$/,
       );

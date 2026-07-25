@@ -102,13 +102,6 @@ void main() {
         l10n.authErrorInvalidCredentials,
       );
       expect(
-        mapAuthFailure(
-          l10n,
-          const ValidationFailure(code: 'AUTH_LAST_CREDENTIAL'),
-        ),
-        l10n.authErrorLastCredential,
-      );
-      expect(
         mapAuthFailure(l10n, const NetworkFailure()),
         l10n.authErrorNetwork,
       );
