@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/test_prefs.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:laforika/app/app.dart';
@@ -86,6 +88,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
         ],
         child: const LaforikaApp(),
       ),
@@ -106,6 +109,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
         ],
         child: const LaforikaApp(),
       ),
@@ -125,6 +129,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
         ],
         child: const LaforikaApp(),
       ),
@@ -161,6 +166,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
           authRepositoryProvider.overrideWithValue(repository),
         ],
         child: const MaterialApp(
@@ -222,6 +228,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
           authRepositoryProvider.overrideWithValue(repository),
         ],
         child: Consumer(
@@ -379,6 +386,7 @@ void main() {
         overrides: [
           appConfigProvider.overrideWithValue(_config),
           authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
         ],
         child: Consumer(
           builder: (context, ref, _) {
