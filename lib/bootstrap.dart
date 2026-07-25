@@ -12,7 +12,11 @@ import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/config/app_config.dart';
 import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/network/dio_provider.dart';
+import 'package:laforika/core/storage/in_memory_prefs_facade.dart';
+import 'package:laforika/core/storage/prefs_facade.dart';
+import 'package:laforika/core/storage/prefs_facade_provider.dart';
 import 'package:laforika/core/storage/secure_store_provider.dart';
+import 'package:laforika/core/storage/shared_preferences_prefs_facade.dart';
 import 'package:laforika/features/auth/auth.dart';
 
 /// Application bootstrap: binding, config, error zone, and ProviderScope.
@@ -44,10 +48,23 @@ Future<void> bootstrap() async {
         _reportSanitizedDiagnostic('A Flutter framework error occurred.');
       };
 
+      // Preference load is non-critical: failure falls back to System appearance
+      // without entering the fatal-startup surface.
+      late final PrefsFacade prefsFacade;
+      try {
+        prefsFacade = await SharedPreferencesPrefsFacade.create();
+      } on Object {
+        _reportSanitizedDiagnostic(
+          'Appearance preference storage unavailable; using System default.',
+        );
+        prefsFacade = InMemoryPrefsFacade();
+      }
+
       runApp(
         ProviderScope(
           overrides: [
             appConfigProvider.overrideWithValue(config),
+            prefsFacadeProvider.overrideWithValue(prefsFacade),
             authSessionGatewayProvider.overrideWith((ref) {
               // Use read (not watch) so the gateway instance stays stable for the
               // process lifetime. Watching dio/secureStore would recreate the
