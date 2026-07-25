@@ -1,8 +1,8 @@
 # Laforika — Application Shell
 
-**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** WP3 (shell), WP2 (guest routing), WP4–WP5 (Profile/Settings/Notifications), WP6 (hardening)
+**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening)
 
-This document freezes adaptive shell behavior. It is **not** implemented by WP0. Diagrams use
+This document freezes adaptive shell behavior. It is **not** implemented by M03_WP01. Diagrams use
 generic labels only (`Module 1`, `Item 1`). Do not invent production modules or dummy content.
 
 Authority: [`../architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md),
@@ -143,7 +143,7 @@ Horizontal swiping across the dock follows visual RTL adjacency and **must not w
 
 No fake guest account, anonymous backend principal, guest access token, or guest database scope.
 
-If no real Chat route exists when WP3 is implemented, WP3 must not ship a dead dock action; it must
+If no real Chat route exists when M03_WP04 is implemented, M03_WP04 must not ship a dead dock action; it must
 stop for a scoped product decision or omit the unavailable action until a real destination exists.
 
 ---
@@ -165,7 +165,7 @@ stop for a scoped product decision or omit the unavailable action until a real d
 - Verified phone number: read-only with verification indicator.
 - Explicit save, validation, loading, error, and success states.
 - Logout and account/security actions lower in the page hierarchy (not primary header action).
-- Validation lengths and backend constraints come from the real WP4 API/domain design — do not
+- Validation lengths and backend constraints come from the real M03_WP05 API/domain design — do not
   invent limits here.
 
 ### Profile header (directional)
@@ -196,7 +196,7 @@ No language switcher. No speculative settings catalog.
 - Guests enter phone OTP with Notifications preserved.
 - Initial implemented states: loading, empty, error, data — when a real notification source exists.
 - O3 remains unresolved. Do not add FCM, a regional push SDK, permissions, background handlers,
-  tokens, or push-provider configuration in WP0 or WP5 unless O3 is separately resolved.
+  tokens, or push-provider configuration in M03_WP01 or M03_WP06 unless O3 is separately resolved.
 
 ---
 
@@ -294,7 +294,7 @@ Documentation-only ASCII states. Production must not ship dummy content.
 ### Chat — authenticated
 
 - Chat dock selected.
-- Real Chat surface when the feature exists (not created by WP0/WP3 placeholders).
+- Real Chat surface when the feature exists (not created by M03_WP01/M03_WP04 placeholders).
 
 ### Profile — guest
 
@@ -315,7 +315,7 @@ Documentation-only ASCII states. Production must not ship dummy content.
 - ≥48dp touch targets on dock and strip items.
 - Localized semantics for every icon-only control.
 - Selected state not color-only.
-- Verify light/dark, RTL, 320dp width, and 2.0 text scale (WP6).
+- Verify light/dark, RTL, 320dp width, and 2.0 text scale (M03_WP07).
 - Translucency must not drop contrast below WCAG AA targets.
 - Respect reduced motion where Flutter exposes it.
 
@@ -329,7 +329,7 @@ Documentation-only ASCII states. Production must not ship dummy content.
 | Feature public barrels for routes | Cross-feature internal imports |
 | Generic docs labels (`Module 1`) | Inventing production module names/content |
 | Deferred personalization until needed | Speculative module registry / persistence |
-| WP-scoped implementation packages | Claiming shell behavior done in WP0 |
+| work-package-scoped implementation packages | Claiming shell behavior done in M03_WP01 |
 
 ---
 
@@ -337,12 +337,12 @@ Documentation-only ASCII states. Production must not ship dummy content.
 
 | Behavior | Package |
 |---|---|
-| Theme tokens / System·Light·Dark | WP1 |
-| Guest-first routing + phone-only auth | WP2 |
-| Adaptive strip, search, tabs, dock | WP3 |
-| Profile vertical slice | WP4 |
-| Settings + Notifications | WP5 |
-| Route matrix + visual hardening | WP6 |
+| Theme tokens / System·Light·Dark | M03_WP02 |
+| Guest-first routing + phone-only auth | M03_WP03 |
+| Adaptive strip, search, tabs, dock | M03_WP04 |
+| Profile vertical slice | M03_WP05 |
+| Settings + Notifications | M03_WP06 |
+| Route matrix + visual hardening | M03_WP07 |
 
-WP0 documents only. Current authenticated-first Home and placeholder theme are known temporary
+M03_WP01 documents only. Current authenticated-first Home and placeholder theme are known temporary
 gaps until the packages above close them.

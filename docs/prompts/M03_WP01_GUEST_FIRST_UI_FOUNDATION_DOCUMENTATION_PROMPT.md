@@ -1,8 +1,8 @@
-# Laforika WP0 — Guest-First Access and UI Foundation Documentation Prompt
+# Laforika M03_WP01 — Guest-First Access and UI Foundation Documentation Prompt
 
 ## TASK
 
-Deliver **WP0 — product, architecture, and UI-foundation documentation** for Laforika.
+Deliver **M03_WP01 — Documentation and decision freeze** for Laforika.
 
 Record the owner-approved direction established in the UI-design discussion before any implementation work begins:
 
@@ -11,7 +11,7 @@ Record the owner-approved direction established in the UI-design discussion befo
 3. Email is optional profile/contact data, not an authentication credential.
 4. The application adopts a Windows 11 / Fluent-inspired—but Laforika-owned—semantic light and dark visual system, with the system appearance as the default.
 5. The adaptive RTL application shell, module-selection rules, search behavior, internal tabs, floating bottom dock, Profile, Settings, and Notifications behavior are frozen as documented product contracts.
-6. The approved implementation sequence is split into WP1–WP6 and recorded without implementing any of them in this package.
+6. The approved implementation sequence is split into M03_WP02–M03_WP07 and recorded without implementing any of them in this package.
 
 This is a **documentation-only architecture-change package**. Do not modify production code, tests, generated files, dependencies, backend schema, API contracts, CI, or platform configuration.
 
@@ -28,7 +28,7 @@ The current repository architecture and M1/M2 behavior were designed around:
 
 Those assumptions are now intentionally changed. The repository needs one coherent and reviewable source of truth before Cursor implements the changes across separate work packages.
 
-The outcome that matters is that future coding agents can implement WP1–WP6 without reconstructing decisions from conversation history, inventing missing behavior, silently preserving deprecated email/password flows, or creating speculative infrastructure.
+The outcome that matters is that future coding agents can implement M03_WP02–M03_WP07 without reconstructing decisions from conversation history, inventing missing behavior, silently preserving deprecated email/password flows, or creating speculative infrastructure.
 
 ---
 
@@ -38,7 +38,7 @@ The outcome that matters is that future coding agents can implement WP1–WP6 wi
 
 This package documents a controlled transition from the current implementation into the approved guest-first, phone-only, adaptive-shell product direction.
 
-It does **not** itself satisfy the implementation work in WP1–WP6.
+It does **not** itself satisfy the implementation work in M03_WP02–M03_WP07.
 
 ---
 
@@ -55,7 +55,7 @@ The supplied source archive is evidence for inspection, not permission to skip r
 
 Do not assume that archive state is the current Git baseline.
 
-Before creating the WP0 branch:
+Before creating the M03_WP01 branch:
 
 1. Read `AGENTS.md` fully, especially its terminating milestone workflow.
 2. Confirm the current branch is `main`/`master`, clean, and synchronized with the remote.
@@ -66,7 +66,7 @@ Before creating the WP0 branch:
    - the M2 PR is merged;
    - the local default branch includes that merged result.
 4. Confirm there are no unrecorded source or documentation changes.
-5. If M2 is not fully merged and inventoried, **stop**. Report that M2 closure must be completed first. Do not combine M2 closure with WP0.
+5. If M2 is not fully merged and inventoried, **stop**. Report that M2 closure must be completed first. Do not combine M2 closure with M03_WP01.
 6. Do not start this package from an old M1 branch, the M2 implementation branch, an extracted archive without Git history, or a dirty working tree.
 
 Record the actual base commit SHA in the plan/report. Do not invent or reuse a SHA from this prompt.
@@ -94,9 +94,9 @@ Record the actual base commit SHA in the plan/report. Do not invent or reuse a S
 - The custom NestJS + PostgreSQL backend direction remains approved.
 - The provider-neutral Flutter `AuthState` and secure session boundary remain approved.
 - Phone-number OTP is the **only user-facing sign-in credential**.
-- The auth-method chooser is deprecated and must be removed in WP2.
-- Email/password login is deprecated and must be removed in WP2.
-- Password reset is deprecated and must be removed in WP2.
+- The auth-method chooser is deprecated and must be removed in M03_WP03.
+- Email/password login is deprecated and must be removed in M03_WP03.
+- Password reset is deprecated and must be removed in M03_WP03.
 - Email becomes optional profile/contact data only.
 - Email must not silently create a login credential.
 - The verified phone number is the account's primary login identity.
@@ -106,15 +106,15 @@ Record the actual base commit SHA in the plan/report. Do not invent or reuse a S
 
 ### C. Data-migration safety
 
-WP0 changes documentation only; it must not design a destructive shortcut.
+M03_WP01 changes documentation only; it must not design a destructive shortcut.
 
-Document these constraints for WP2:
+Document these constraints for M03_WP03:
 
 - Never reset or silently delete a database to remove email/password support.
 - Use committed forward Prisma migrations when schema changes are required.
 - Inspect the actual data model and test fixtures before deciding which credential fields/tables can be removed.
 - The project has not been approved for external real-account distribution, but that does not authorize silent data loss.
-- If any non-test account exists with only an email/password credential and no verified phone, WP2 must stop for an explicit owner migration decision rather than orphaning the account.
+- If any non-test account exists with only an email/password credential and no verified phone, M03_WP03 must stop for an explicit owner migration decision rather than orphaning the account.
 - Historical migrations remain immutable.
 
 ### D. Windows 11 / Fluent-inspired Laforika visual direction
@@ -215,8 +215,8 @@ The Home/module discovery header does not automatically appear on Chat, Profile,
 - Chat is a protected capability.
 - A guest tapping Chat is sent directly into the phone OTP flow with the Chat destination preserved.
 - After successful login, navigation resumes to Chat.
-- WP0 does not create a Chat feature, route, placeholder screen, backend, or messaging infrastructure.
-- If no real Chat route exists when WP3 is implemented, WP3 must not ship a dead dock action; it must stop for a scoped product decision or omit the unavailable action until its real destination exists.
+- M03_WP01 does not create a Chat feature, route, placeholder screen, backend, or messaging infrastructure.
+- If no real Chat route exists when M03_WP04 is implemented, M03_WP04 must not ship a dead dock action; it must stop for a scoped product decision or omit the unavailable action until its real destination exists.
 
 ### G. Profile, Settings, and Notifications
 
@@ -238,7 +238,7 @@ The Home/module discovery header does not automatically appear on Chat, Profile,
 - Show the verified phone number as read-only with a verification indicator.
 - Provide explicit save, validation, loading, error, and success states.
 - Keep Logout and account/security actions lower in the page hierarchy, not as the primary header action.
-- Validation lengths and backend profile-field constraints must be resolved from the real WP4 API/domain design; WP0 must not invent arbitrary limits.
+- Validation lengths and backend profile-field constraints must be resolved from the real M03_WP05 API/domain design; M03_WP01 must not invent arbitrary limits.
 
 #### Profile header
 
@@ -265,7 +265,7 @@ In RTL directional terms:
 - Guests enter phone OTP with Notifications preserved as the destination.
 - Initial implemented states will be loading, empty, error, and data when a real notification source exists.
 - O3 remains unresolved.
-- Do not add FCM, a regional push SDK, permissions, background handlers, tokens, or push-provider configuration in WP0 or WP5 unless O3 is separately resolved.
+- Do not add FCM, a regional push SDK, permissions, background handlers, tokens, or push-provider configuration in M03_WP01 or M03_WP06 unless O3 is separately resolved.
 
 For navigation-context selection, document Profile as the parent bottom-dock context for its subordinate Profile/Login/Settings/Notifications routes unless inspection reveals an existing route contract that makes this impossible. If there is a conflict, report it before finalizing rather than silently choosing a different rule.
 
@@ -420,7 +420,7 @@ Include:
     - no dummy cards or dead destinations;
     - no speculative registry/persistence;
     - feature route barrels remain the integration boundary;
-16. a clear distinction between approved behavior and implementation work deferred to WP1–WP6.
+16. a clear distinction between approved behavior and implementation work deferred to M03_WP02–M03_WP07.
 
 Use tables and simple text diagrams where they improve precision. Do not embed generated mockup images or external copyrighted assets in this package.
 
@@ -478,7 +478,7 @@ Reconcile at least these areas:
   - dock swipe and module-header state coverage;
 - roadmap:
   - preserve completed milestone history;
-  - document WP0–WP6 as the approved dependency-ordered transition plan;
+  - document M03_WP01–M03_WP07 as the approved dependency-ordered transition plan;
   - keep M3/M4 future-module direction after this transition;
 - owner decisions:
   - O1 remains resolved to custom NestJS/PostgreSQL, amended by ADR-0008 to phone OTP only;
@@ -489,9 +489,9 @@ Reconcile at least these areas:
 
 ### Controlled transition note
 
-Because WP0 changes the authoritative target before code packages implement it, add a concise, explicit transition note:
+Because M03_WP01 changes the authoritative target before code packages implement it, add a concise, explicit transition note:
 
-- current dual-auth/auth-gated/shell code may temporarily differ in the exact areas assigned to WP1–WP6;
+- current dual-auth/auth-gated/shell code may temporarily differ in the exact areas assigned to M03_WP02–M03_WP07;
 - this is a known, bounded migration gap, not permission for new code to continue the deprecated direction;
 - each follow-up package closes a named gap;
 - do not falsely claim the target behavior is already implemented.
@@ -545,7 +545,7 @@ Update root `README.md` for stable operator/contributor understanding:
 - describe Laforika as Persian-first, guest-explorable, with phone OTP required only for protected capabilities;
 - describe System/Light/Dark and the Fluent-inspired Laforika direction as the approved target, not necessarily fully implemented yet;
 - link `docs/design/UI_FOUNDATION.md` and `docs/design/APP_SHELL.md`;
-- update the roadmap to show the WP0–WP6 transition sequence and the exact next package after WP0;
+- update the roadmap to show the M03_WP01–M03_WP07 transition sequence and the exact next package after M03_WP01;
 - retain real-account controlled-testing/O8 warning;
 - retain route-registry boundaries;
 - make current implementation vs approved target explicit during the transition;
@@ -557,16 +557,16 @@ Do not edit prior versioned milestone prompts to make history look current. They
 
 ## WORK-PACKAGE ROADMAP TO DOCUMENT
 
-Document this dependency order consistently in architecture, README, and the WP0 prompt itself:
+Document this dependency order consistently in architecture, README, and the M03_WP01 prompt itself:
 
-### WP0 — Documentation and decision freeze
+### M03_WP01 — Documentation and decision freeze
 
 - ADR-0008 and ADR-0009;
 - architecture update;
 - UI foundation and shell specifications;
 - no implementation.
 
-### WP1 — Light/dark theme foundation
+### M03_WP02 — Light/dark theme foundation
 
 - semantic theme tokens;
 - Material 3 light and dark themes;
@@ -577,7 +577,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - light/dark RTL visual tests;
 - no routing/auth/shell redesign.
 
-### WP2 — Guest-first routing and phone-only authentication
+### M03_WP03 — Guest-first routing and phone-only authentication
 
 - Home/public routes available to guests;
 - direct phone OTP;
@@ -588,7 +588,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - forward, non-destructive migration;
 - no shell redesign.
 
-### WP3 — Adaptive application shell
+### M03_WP04 — Adaptive application shell
 
 - adaptive RTL module strip;
 - search row;
@@ -599,7 +599,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - real registered destinations only;
 - no dead Chat/module placeholder.
 
-### WP4 — Profile vertical slice
+### M03_WP05 — Profile vertical slice
 
 - guest direct-phone-login state;
 - authenticated profile;
@@ -609,7 +609,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - backend profile contract/endpoints as required;
 - save/error/loading/success/logout coverage.
 
-### WP5 — Settings and Notifications
+### M03_WP06 — Settings and Notifications
 
 - guest-accessible appearance settings;
 - System/Light/Dark selector;
@@ -617,7 +617,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - protected Notifications route and real states;
 - no push SDK while O3 is unresolved.
 
-### WP6 — Integration and visual hardening
+### M03_WP07 — Integration and visual hardening
 
 - complete guest/auth/public/protected route matrix;
 - return-destination coverage;
@@ -629,7 +629,7 @@ Document this dependency order consistently in architecture, README, and the WP0
 - expanded/compact module header;
 - documentation reconciliation.
 
-Exact next package after WP0: **WP1 — Light/dark theme foundation**.
+Exact next package after M03_WP01: **M03_WP02 — Light/dark theme foundation**.
 
 ---
 
@@ -646,7 +646,7 @@ Exact next package after WP0: **WP1 — Light/dark theme foundation**.
 - root `AGENTS.md`
 - root `README.md`
 - this exact prompt committed as:
-  - `docs/prompts/WP0_GUEST_FIRST_UI_FOUNDATION_DOCUMENTATION_PROMPT.md`
+  - `docs/prompts/M03_WP01_GUEST_FIRST_UI_FOUNDATION_DOCUMENTATION_PROMPT.md`
 - `docs/project_inventory.md` **only at the terminating inventory step after review and final green CI**
 
 ### Out of scope / do not touch
@@ -666,7 +666,7 @@ Exact next package after WP0: **WP1 — Light/dark theme foundation**.
 - historical project-inventory entries
 - version/build number
 - source-code formatting/refactoring
-- implementation of WP1–WP6
+- implementation of M03_WP02–M03_WP07
 - creation of dummy modules, Chat, Profile, Settings, Notifications, or Search features
 - new dependencies
 - Git history rewriting or destructive repository operations
@@ -757,7 +757,7 @@ Proceed without waiting unless a blocker above exists.
   - current implementation;
   - approved target behavior;
   - deferred implementation package.
-- Never claim WP1–WP6 behavior is implemented.
+- Never claim M03_WP02–M03_WP07 behavior is implemented.
 - Do not invent backend API details, validation limits, database migrations, feature names, or module content.
 - Do not use “left/right” in implementation rules where directional `start/end` is required; parenthetical visual clarification is allowed.
 - Do not edit generated files.
@@ -800,8 +800,8 @@ Do not create the terminating inventory commit until after archive review and fi
 - [ ] Authenticated Profile fields and directional header actions are documented.
 - [ ] README and AGENTS align with the new architecture target.
 - [ ] Prior milestone prompts and historical inventory entries remain untouched.
-- [ ] WP1–WP6 dependency order is documented consistently.
-- [ ] Exact next package is WP1 — Light/dark theme foundation.
+- [ ] M03_WP02–M03_WP07 dependency order is documented consistently.
+- [ ] Exact next package is M03_WP02 — Light/dark theme foundation.
 - [ ] All internal links resolve.
 - [ ] No stale non-historical statement presents authenticated-first or email/password as the approved target.
 - [ ] A bounded transition note prevents documentation from falsely claiming code already conforms.
@@ -857,7 +857,7 @@ Check-in mode: **branch + atomic commits + PR + reviewed archive**.
 - Push the branch and open/update one PR using the `AGENTS.md` PR body.
 - In the PR notes, state clearly:
   - documentation-only architecture change;
-  - WP1–WP6 are not implemented;
+  - M03_WP02–M03_WP07 are not implemented;
   - temporary known code-to-target gaps are documented;
   - no accepted historical ADR was rewritten.
 - Wait for CI.
@@ -876,7 +876,7 @@ After owner/external review fixes are complete and final applicable CI is green:
 1. Update `docs/project_inventory.md` exactly once on the same branch.
 2. Do not rewrite earlier entries.
 3. Add one completed-check-in entry for:
-   - **WP0 — Guest-first access and UI foundation documentation**;
+   - **M03_WP01 — Documentation and decision freeze**;
    - PR number;
    - final reviewed implementation-documentation commit SHA, meaning the last reviewed commit before the inventory update;
    - completed documentation scope;
@@ -884,8 +884,8 @@ After owner/external review fixes are complete and final applicable CI is green:
    - remaining decisions/limitations:
      - O2–O6 and O8 remain open unless actual approved repository state says otherwise;
      - O7 external brand assets remain deferred;
-     - WP1–WP6 implementation remains pending;
-   - exact next package: **WP1 — Light/dark theme foundation**.
+     - M03_WP02–M03_WP07 implementation remains pending;
+   - exact next package: **M03_WP02 — Light/dark theme foundation**.
 4. Do not record the inventory commit SHA, merge SHA, branch state, or “pending merge.”
 5. Commit the inventory update separately, push it, and rerun applicable CI.
 6. Merge only after green CI and explicit approval.
@@ -907,9 +907,9 @@ Return a concise report with:
 - CI status and PR link.
 - Clean review archive filename and exact commit SHA, when created.
 - Architecture/ADR impact.
-- Known temporary implementation gaps assigned to WP1–WP6.
+- Known temporary implementation gaps assigned to M03_WP02–M03_WP07.
 - Remaining owner decisions.
-- Exact next package: WP1 — Light/dark theme foundation.
+- Exact next package: M03_WP02 — Light/dark theme foundation.
 - Any blocker or approved deviation.
 
-Do not over-explain, do not claim implementation completion, and do not generate the WP1 coding prompt unless the owner explicitly requests it after WP0 review.
+Do not over-explain, do not claim implementation completion, and do not generate the M03_WP02 coding prompt unless the owner explicitly requests it after M03_WP01 review.

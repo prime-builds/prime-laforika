@@ -197,7 +197,7 @@ flutter run --flavor "$FLAVOR" \
 - Home and other public routes are guest-accessible after session restoration; authentication is required only for protected capabilities.
 - Protected capability redirects preserve validated internal return destinations and continue there after successful phone OTP login.
 - Validate preserved return destinations as registered internal routes and prevent redirect loops.
-- Approved shell selection rules (WP3): Home selected with no module/tabs; module selection clears bottom-dock selection and shows contextual internal tabs. See `docs/design/APP_SHELL.md`.
+- Approved shell selection rules (M03_WP04): Home selected with no module/tabs; module selection clears bottom-dock selection and shows contextual internal tabs. See `docs/design/APP_SHELL.md`.
 
 ## 10. Authentication
 
@@ -222,7 +222,7 @@ The Flutter client keeps the provider-neutral session boundary from ADR-0006.
 - Logout must revoke server sessions, clear Laforika-owned secrets, dispose the `{environment, accountId}` scope, and transition to unauthenticated.
 - Client guards are UX; NestJS authorization is authoritative.
 - Real authentication remains controlled-test-only until O8 is resolved.
-- WP2 migration work must use forward non-destructive Prisma migrations; never reset the database to drop deprecated credentials.
+- M03_WP03 migration work must use forward non-destructive Prisma migrations; never reset the database to drop deprecated credentials.
 
 ## 10a. Backend authentication service
 
@@ -274,8 +274,8 @@ Build storage infrastructure on demand only.
 - Format displayed numerals through `intl`; store and compute with Latin digits.
 - Dates are stored in Gregorian/UTC. Do not introduce Jalali display before O6 is resolved.
 - Use Vazirmatn and centralized semantic theme/type tokens; avoid ad-hoc styles and raw feature colors.
-- Appearance modes are System / Light / Dark with System default (WP1). Palette and foundation rules: `docs/design/UI_FOUNDATION.md`.
-- Adaptive RTL shell rules: `docs/design/APP_SHELL.md` (WP3).
+- Appearance modes are System / Light / Dark with System default (M03_WP02). Palette and foundation rules: `docs/design/UI_FOUNDATION.md`.
+- Adaptive RTL shell rules: `docs/design/APP_SHELL.md` (M03_WP04).
 - Minimum touch target: 48dp.
 - Add semantics for icon-only controls and meaningful images.
 - Respect text scaling and avoid fixed heights that clip content; verify at 2.0 text scale where shell/theme packages apply.

@@ -66,9 +66,9 @@ semantic tokens—not a Windows clone or a Fluent UI framework dependency.
 
 ## Consequences
 
-- Theme token and Material 3 light/dark implementation belongs to WP1.
-- Adaptive shell, dock, and selection-state implementation belongs to WP3.
-- Profile / Settings / Notifications vertical slices belong to WP4–WP5.
+- Theme token and Material 3 light/dark implementation belongs to M03_WP02.
+- Adaptive shell, dock, and selection-state implementation belongs to M03_WP04.
+- Profile / Settings / Notifications vertical slices belong to M03_WP05–M03_WP06.
 - Current placeholder light theme and authenticated Home shell may temporarily differ until those
   packages land; new work must follow the approved target, not extend the placeholder direction.
 - External brand assets remain an open O7 remainder and must not be invented in implementation

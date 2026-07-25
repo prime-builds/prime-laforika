@@ -10,11 +10,11 @@ document states the decisions and the rules that follow from them.
 > The repository's `FLUTTER_ARCHITECTURE_TEMPLATE.md` is a topic checklist only. It is not
 > authoritative and is superseded by this document.
 
-### Controlled transition (WP0 → WP6)
+### Controlled transition (M03_WP01 → M03_WP07)
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
 and the Fluent-inspired adaptive shell. The M2 code baseline may temporarily differ in the exact
-areas assigned to WP1–WP6 (authenticated-first Home redirects, dual-credential UI, placeholder
+areas assigned to M03_WP02–M03_WP07 (authenticated-first Home redirects, dual-credential UI, placeholder
 theme, absence of the adaptive shell). That gap is **known and bounded**: each follow-up package
 closes a named gap. It is **not** permission for new code to extend the deprecated direction.
 Architecture contradictions **outside** this approved transition remain defects.
@@ -356,7 +356,7 @@ may depend on it to open correctly from a cold start or deep link. Deep links ma
 table (one source of truth), enabling future push-notification and web deep-linking without
 rework.
 
-**Redirect contract (approved target; guest-first — WP2 implements):**
+**Redirect contract (approved target; guest-first — M03_WP03 implements):**
 
 | Session | Destination | Result |
 |---|---|---|
@@ -371,14 +371,14 @@ protected-capability boundaries (for example Chat and Notifications). A preserve
 resolve to a registered internal route; external, malformed, or unknown locations are discarded.
 Router tests cover the guest/authenticated/public/protected matrix and loop prevention.
 
-**Shell selection (approved target — WP3):** Home is selected after session restoration with no
+**Shell selection (approved target — M03_WP04):** Home is selected after session restoration with no
 module and no module-internal tabs active. Selecting a module clears bottom-dock selection,
 highlights the module strip item, and shows contextual internal tabs. Feature route barrels remain
 the module-integration boundary. Full shell rules:
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
 
 > **Transition note:** M2 code still gates unauthenticated users toward the auth-method chooser
-> before Home. That is a named WP2 gap, not the approved target.
+> before Home. That is a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -402,7 +402,7 @@ credential model to **phone OTP only**.
 - **Credentials (approved target):** phone-number OTP is the **only** user-facing sign-in method.
   Email is optional profile/contact data and must not silently create a login credential. The
   verified phone number is the account's primary login identity. The auth-method chooser,
-  email/password login, and password reset are deprecated and removed in WP2. Normalized phone
+  email/password login, and password reset are deprecated and removed in M03_WP03. Normalized phone
   identifiers remain globally unique.
 - **Tokens:** short-lived RS256 access JWTs (in memory on the client) and opaque rotating refresh
   tokens (environment-scoped in `flutter_secure_storage`). Refresh uses token families with reuse
@@ -424,13 +424,13 @@ credential model to **phone OTP only**.
   `authControllerProvider` through Riverpod and calls `notifyListeners()` when session state
   changes; it is supplied as `refreshListenable`. This re-runs redirects without reconstructing
   the router. Protected capabilities preserve the intended destination through phone OTP login.
-- **Migration safety (WP2):** never reset or silently delete a database to drop email/password
+- **Migration safety (M03_WP03):** never reset or silently delete a database to drop email/password
   support; use committed forward Prisma migrations; stop for an owner decision if a non-test
   account has only email/password and no verified phone. Historical migrations remain immutable.
 - **Authority:** client guards are UX; the NestJS API is authoritative for access control.
 
 > **Transition note:** M1/M2 code still exposes email/password and an auth-method chooser. That is
-> a named WP2 gap, not the approved target.
+> a named M03_WP03 gap, not the approved target.
 
 ---
 
@@ -519,14 +519,14 @@ until a module needs it** — but the choices are pre-decided so no one improvis
 - **Typography:** bundle **Vazirmatn** (open-source Persian font) in `assets/fonts/`, set as the
   default `fontFamily`. A type scale (display/title/body/label) lives in `core/theme/`; features
   use scale tokens, not ad-hoc `TextStyle`s.
-- **Theme (approved target — WP1):** Laforika-owned semantic light and dark palettes
+- **Theme (approved target — M03_WP02):** Laforika-owned semantic light and dark palettes
   ([ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md);
   [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md)). Appearance modes are `System`,
   `Light`, and `Dark` with **`System` default**. Implement via Material 3 `ThemeData` and semantic
   tokens — not a Fluent UI framework dependency. Motion ~180–250ms; respect reduced motion where
   Flutter exposes it. Translucency cannot reduce contrast below accessibility targets; blur is
   progressive enhancement only.
-- **Adaptive shell (approved target — WP3):** see
+- **Adaptive shell (approved target — M03_WP04):** see
   [`../design/APP_SHELL.md`](../design/APP_SHELL.md) for module strip, search scoping, contextual
   tabs, floating dock, and Profile/Settings/Notifications rules.
 - **Accessibility:** minimum 48dp touch targets; `Semantics`/`semanticLabel` on icon-only
@@ -537,8 +537,8 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
-> **Transition note:** Current theme tokens remain a neutral placeholder until WP1. The adaptive
-> shell is not yet implemented (WP3).
+> **Transition note:** Current theme tokens remain a neutral placeholder until M03_WP02. The adaptive
+> shell is not yet implemented (M03_WP04).
 
 ---
 
@@ -579,9 +579,9 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `Failure` mapping, config validation, HTTP redaction, and account scoping.
 - **Widget** — key screens' loading/error/empty/data states, critical interactions, and the M0
   `fa-IR`/RTL application-root assertion.
-- **Route matrix (from WP2/WP6):** guest/authenticated × public/protected destinations, including
+- **Route matrix (from M03_WP03/M03_WP07):** guest/authenticated × public/protected destinations, including
   validated return destinations and loop prevention.
-- **Shell / visual (from WP3/WP6):** dock swipe mapping; expanded/compact module-header states;
+- **Shell / visual (from M03_WP04/M03_WP07):** dock swipe mapping; expanded/compact module-header states;
   light/dark RTL goldens; **320dp** width and **2.0** text-scale checks; semantics for icon-only
   shell controls.
 - **Golden** — design-system components and at least one full screen **in RTL** (light and dark
@@ -650,32 +650,32 @@ before its milestone.**
 ### Approved transition packages (after M2)
 
 These close the gap between the M2 code baseline and the v1.4 target. **Do not implement them
-inside WP0.**
+inside M03_WP01.**
 
-- **WP0 — Documentation and decision freeze.** ADR-0008, ADR-0009, architecture v1.4, UI
+- **M03_WP01 — Documentation and decision freeze.** ADR-0008, ADR-0009, architecture v1.4, UI
   foundation and shell specifications, contributor/README alignment. _Exit:_ approved target is
   reviewable; no production code changes. ← **this package**
-- **WP1 — Light/dark theme foundation.** Semantic tokens, Material 3 light/dark, System/Light/Dark
+- **M03_WP02 — Light/dark theme foundation.** Semantic tokens, Material 3 light/dark, System/Light/Dark
   with System default and preferences persistence; typography/spacing/radius/elevation tokens;
   light/dark RTL visual tests. No routing/auth/shell redesign.
-- **WP2 — Guest-first routing and phone-only authentication.** Public Home for guests; direct
+- **M03_WP03 — Guest-first routing and phone-only authentication.** Public Home for guests; direct
   phone OTP; protected return destinations; remove method chooser, email/password login, and
   password reset; forward non-destructive backend/OpenAPI/Prisma migration as required; email
   becomes profile data. No shell redesign.
-- **WP3 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
+- **M03_WP04 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
   tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
   dead Chat/module placeholder.
-- **WP4 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
+- **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
   Settings/Notifications header actions; backend profile contract as required.
-- **WP5 — Settings and Notifications.** Guest-accessible appearance settings; About/account
+- **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
   sections; protected Notifications with real states; no push SDK while O3 is unresolved.
-- **WP6 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
+- **M03_WP07 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
 
-**Exact next package after WP0:** **WP1 — Light/dark theme foundation**.
+**Exact next package after M03_WP01:** **M03_WP02 — Light/dark theme foundation**.
 
-### Later product milestones (after the WP0–WP6 transition)
+### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
 - **M3 — First specialized module.** Pick **one** production module (owner chooses; recommended:
   a read-mostly module such as News/Events or Local Heritage) and introduce only the networking,
@@ -688,7 +688,7 @@ inside WP0.**
   isolation, transaction/outbox crash recovery, replay idempotency, purge behavior, and Android
   backup policy are verified without creating a speculative app-wide sync framework.
 
-M3's module choice depends on product priority and must not be invented during WP0–WP6. Connectivity
+M3's module choice depends on product priority and must not be invented during M03_WP01–M03_WP07. Connectivity
 and shared UI infrastructure beyond proven need are added only through the first real feature that
 requires them.
 
@@ -701,13 +701,13 @@ architect should not decide them unilaterally. Each has a safe default so work i
 
 | # | Decision | Why it needs the owner | Interim default (unblocks work) |
 |---|---|---|---|
-| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; RS256 access + opaque rotating refresh; monorepo `backend/`. User-facing credential amended by [ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) to **phone OTP only** (email is profile data). Backend ownership/token security remain [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1; credential/access product change lands in WP2. |
+| O1 | **Backend & identity provider** — **RESOLVED:** custom NestJS + PostgreSQL API; RS256 access + opaque rotating refresh; monorepo `backend/`. User-facing credential amended by [ADR-0008](./adr/0008-guest-first-access-and-phone-only-authentication.md) to **phone OTP only** (email is profile data). Backend ownership/token security remain [ADR-0007](./adr/0007-custom-authentication-backend-and-session-security.md). | — | Implemented in M1; credential/access product change lands in M03_WP03. |
 | O2 | **Maps provider** — Google Maps vs. Iranian providers (Neshan / Balad) | Google services are often unreliable/restricted in Iran; affects a core module + vendor keys/cost. | Defer; maps module not before provider chosen. |
 | O3 | **Push notifications** — FCM vs. local/regional service | FCM depends on Google Play services (unreliable in-market); vendor + privacy. | Defer; no push infra built yet. |
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
 | O5 | **Distribution channel** — Google Play vs. Cafe Bazaar / Myket vs. direct APK | Determines signing, update mechanism, store policies, CI publish step. | CI produces debug-signed, non-publishable APKs only. |
 | O6 | **Jalali (Persian) calendar** for user-facing dates | Product/UX behavior for a Persian audience. | Gregorian storage; display calendar TBD. |
-| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | WP1–WP3 implement the approved in-app system; do not invent external brand assets. |
+| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP04 implement the approved in-app system; do not invent external brand assets. |
 | O8 | **Legal/privacy** — privacy policy, terms, data retention, age policy | Legal obligation; gates telemetry and any real-account build leaving controlled testing. | Real auth remains test-only; no telemetry; account-data lifecycle must be approved before external distribution. |
 
 ---
@@ -720,8 +720,8 @@ dual-credential and authenticated-first product implications of ADR-0007; NestJS
 ownership, token security, session revocation, fixture delivery, and server authority from ADR-0007
 remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
 resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
-unresolved. O8 continues to gate external distribution of real-account builds. WP1–WP6 close the
-documented code-to-target gaps; WP0 itself changes documentation only.
+unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02–M03_WP07 close the
+documented code-to-target gaps; M03_WP01 itself changes documentation only.
 
 ---
 

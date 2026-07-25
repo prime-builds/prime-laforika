@@ -10,11 +10,11 @@ system. See [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and
 [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
 
 **Current implementation vs approved target:** M2 on `main` still uses an authenticated-first Home,
-dual-credential auth UI, and a neutral placeholder theme. WP0 freezes the target in documentation
-only. WP1–WP6 close those named gaps. Do not treat the M2 code behavior as the long-term product
+dual-credential auth UI, and a neutral placeholder theme. M03_WP01 freezes the target in documentation
+only. M03_WP02–M03_WP07 close those named gaps. Do not treat the M2 code behavior as the long-term product
 contract.
 
-Exact next work package after WP0: **WP1 — Light/dark theme foundation**.
+Exact next work package after M03_WP01: **M03_WP02 — Light/dark theme foundation**.
 
 ## Technical baseline
 
@@ -204,17 +204,17 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 
 ### Approved transition (architecture v1.4 target)
 
-- **WP0:** Guest-first / phone-only / UI-foundation documentation and decision freeze ← current package
-- **WP1:** Light/dark theme foundation ← **exact next package**
-- **WP2:** Guest-first routing and phone-only authentication
-- **WP3:** Adaptive application shell
-- **WP4:** Profile vertical slice
-- **WP5:** Settings and Notifications
-- **WP6:** Integration and visual hardening
+- **M03_WP01:** Guest-first / phone-only / UI-foundation documentation and decision freeze ← current package
+- **M03_WP02:** Light/dark theme foundation ← **exact next package**
+- **M03_WP03:** Guest-first routing and phone-only authentication
+- **M03_WP04:** Adaptive application shell
+- **M03_WP05:** Profile vertical slice
+- **M03_WP06:** Settings and Notifications
+- **M03_WP07:** Integration and visual hardening
 
 ### Later product milestones
 
-- **M3:** First specialized production module (owner chooses; do not invent during WP0–WP6)
+- **M3:** First specialized production module (owner chooses; do not invent during M03_WP01–M03_WP07)
 - **M4:** First justified complex/offline module
 
 Do not create future modules or infrastructure before a concrete milestone need. **O1** is resolved (custom NestJS/PostgreSQL; phone OTP only per ADR-0008). **O7** is partially resolved for the in-app visual system; external brand assets remain open. **O2–O6** and **O8** remain unresolved. Real-account builds remain controlled-test-only until **O8**.

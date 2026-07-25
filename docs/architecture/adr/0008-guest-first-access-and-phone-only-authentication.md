@@ -39,7 +39,7 @@ correct. Only the product access model and the dual-credential choice need to ch
 
 - Phone-number OTP is the only user-facing sign-in credential.
 - The auth-method chooser, email/password login, and password-reset flows are deprecated and
-  must be removed in the WP2 implementation package.
+  must be removed in the M03_WP03 implementation package.
 - Email becomes optional profile/contact data only and must not silently create a login
   credential.
 - The verified phone number is the account's primary login identity and is read-only in the
@@ -50,7 +50,7 @@ correct. Only the product access model and the dual-credential choice need to ch
   unchanged.
 - Real-account builds remain controlled-test-only until O8 is resolved.
 
-### Data-migration safety (for WP2)
+### Data-migration safety (for M03_WP03)
 
 - Never reset or silently delete a database to remove email/password support.
 - Use committed forward Prisma migrations when schema changes are required.
@@ -58,7 +58,7 @@ correct. Only the product access model and the dual-credential choice need to ch
   fields/tables can be removed.
 - Historical migrations remain immutable.
 - If any non-test account exists with only an email/password credential and no verified phone,
-  WP2 must stop for an explicit owner migration decision rather than orphaning the account.
+  M03_WP03 must stop for an explicit owner migration decision rather than orphaning the account.
 
 ## Relationship to prior ADRs
 
@@ -86,10 +86,10 @@ correct. Only the product access model and the dual-credential choice need to ch
 ## Consequences
 
 - Architecture, `AGENTS.md`, and design docs record guest-first / phone-only as the approved
-  target before WP1–WP6 implement the code changes.
+  target before M03_WP02–M03_WP07 implement the code changes.
 - Current M1/M2 code may temporarily retain authenticated-first redirects and dual-credential
-  UI until WP2 closes that named gap; new work must not extend the deprecated direction.
-- Backend/OpenAPI/Prisma changes required to drop email/password login belong to WP2 and must
+  UI until M03_WP03 closes that named gap; new work must not extend the deprecated direction.
+- Backend/OpenAPI/Prisma changes required to drop email/password login belong to M03_WP03 and must
   follow the migration guardrails above.
 - O8 continues to gate external distribution of real-account builds.
 
