@@ -35,12 +35,32 @@ class ProfileController extends AsyncNotifier<ProfileDto?> {
   }
 
   /// Persists editable fields. On failure, editor retains draft input.
+  ///
+  /// Stale successes after logout, account change, or disposal are ignored.
   Future<Result<ProfileDto>> save(PatchProfileRequest request) async {
+    final auth = ref.read(authControllerProvider);
+    if (auth is! AuthAuthenticated) {
+      return const FailureResult(AuthFailure(code: 'AUTH_REQUIRED'));
+    }
+    final initiatingAccountId = auth.principal.accountId;
+
     final result = await ref
         .read(profileRepositoryProvider)
         .patchProfile(request);
+
+    if (!ref.mounted) {
+      return result;
+    }
+
+    final currentAuth = ref.read(authControllerProvider);
+    final stillSameAccount =
+        currentAuth is AuthAuthenticated &&
+        currentAuth.principal.accountId == initiatingAccountId;
+
     if (result case Success(:final value)) {
-      state = AsyncData(value);
+      if (stillSameAccount && value.accountId == initiatingAccountId) {
+        state = AsyncData(value);
+      }
     }
     return result;
   }

@@ -199,4 +199,83 @@ describe('Profile e2e', () => {
     expect((blank.body as ProfileResponse).firstName).toBeNull();
     expect((blank.body as ProfileResponse).lastName).toBeNull();
   });
+
+  it('serializes concurrent same-account email updates without divergence', async () => {
+    const a = await signInPhone('09123330006');
+
+    await request(app.getHttpServer())
+      .patch('/v1/account/profile')
+      .set('Authorization', `Bearer ${a.accessToken}`)
+      .send({ email: 'Verified.User@Example.com' })
+      .expect(HttpStatus.OK);
+
+    await prisma.user.update({
+      where: { id: a.accountId },
+      data: { emailVerifiedAt: new Date('2026-03-01T00:00:00.000Z') },
+    });
+
+    const [changeRes, displayRes] = await Promise.all([
+      request(app.getHttpServer())
+        .patch('/v1/account/profile')
+        .set('Authorization', `Bearer ${a.accessToken}`)
+        .send({ email: 'Changed.User@Example.com' }),
+      request(app.getHttpServer())
+        .patch('/v1/account/profile')
+        .set('Authorization', `Bearer ${a.accessToken}`)
+        .send({ email: '  verified.user@example.com  ' }),
+    ]);
+
+    expect(changeRes.status).toBe(HttpStatus.OK);
+    expect(displayRes.status).toBe(HttpStatus.OK);
+
+    const stored = await prisma.user.findUniqueOrThrow({
+      where: { id: a.accountId },
+    });
+
+    // Display and normalized cannot diverge after concurrent writes.
+    expect(stored.emailNormalized).not.toBeNull();
+    expect(stored.emailDisplay).not.toBeNull();
+    expect(stored.emailNormalized).toBe(
+      stored.emailDisplay!.trim().toLowerCase(),
+    );
+    expect(['changed.user@example.com', 'verified.user@example.com']).toContain(
+      stored.emailNormalized,
+    );
+
+    // An actual email change always clears verification.
+    if (stored.emailNormalized === 'changed.user@example.com') {
+      expect(stored.emailDisplay).toBe('Changed.User@Example.com');
+      expect(stored.emailVerifiedAt).toBeNull();
+    }
+
+    // Re-seed verified email, then prove display-only preserve vs change clear.
+    await prisma.user.update({
+      where: { id: a.accountId },
+      data: {
+        emailNormalized: 'stable.user@example.com',
+        emailDisplay: 'Stable.User@Example.com',
+        emailVerifiedAt: new Date('2026-03-02T00:00:00.000Z'),
+      },
+    });
+
+    const preserved = await request(app.getHttpServer())
+      .patch('/v1/account/profile')
+      .set('Authorization', `Bearer ${a.accessToken}`)
+      .send({ email: '  stable.user@example.com  ' })
+      .expect(HttpStatus.OK);
+    expect((preserved.body as ProfileResponse).email).toBe(
+      'stable.user@example.com',
+    );
+    expect((preserved.body as ProfileResponse).emailVerified).toBe(true);
+
+    const changed = await request(app.getHttpServer())
+      .patch('/v1/account/profile')
+      .set('Authorization', `Bearer ${a.accessToken}`)
+      .send({ email: 'Other.User@Example.com' })
+      .expect(HttpStatus.OK);
+    expect((changed.body as ProfileResponse).email).toBe(
+      'Other.User@Example.com',
+    );
+    expect((changed.body as ProfileResponse).emailVerified).toBe(false);
+  });
 });

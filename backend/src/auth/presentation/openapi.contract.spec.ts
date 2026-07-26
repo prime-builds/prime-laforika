@@ -132,10 +132,67 @@ describe('OpenAPI contract', () => {
     expect(patch).toBeDefined();
     expect(get?.security?.length ?? 0).toBeGreaterThan(0);
     expect(patch?.security?.length ?? 0).toBeGreaterThan(0);
-    const profileSchema = doc.components?.schemas?.ProfileViewDto?.properties;
-    expect(profileSchema?.firstName).toBeDefined();
-    expect(profileSchema?.email).toBeDefined();
-    expect(profileSchema?.phone).toBeDefined();
+  });
+
+  it('documents complete ProfileViewDto as required nullable fields', () => {
+    const schema = doc.components?.schemas?.ProfileViewDto as
+      | {
+          properties?: Record<
+            string,
+            {
+              nullable?: boolean;
+              maxLength?: number;
+              format?: string;
+              type?: string;
+            }
+          >;
+          required?: string[];
+        }
+      | undefined;
+    expect(schema).toBeDefined();
+    const required = schema?.required ?? [];
+    for (const field of [
+      'accountId',
+      'phone',
+      'phoneVerified',
+      'firstName',
+      'lastName',
+      'email',
+      'emailVerified',
+    ]) {
+      expect(required).toContain(field);
+      expect(schema?.properties?.[field]).toBeDefined();
+    }
+    expect(schema?.properties?.firstName?.nullable).toBe(true);
+    expect(schema?.properties?.firstName?.maxLength).toBe(100);
+    expect(schema?.properties?.lastName?.nullable).toBe(true);
+    expect(schema?.properties?.lastName?.maxLength).toBe(100);
+    expect(schema?.properties?.email?.nullable).toBe(true);
+    expect(schema?.properties?.email?.maxLength).toBe(254);
+    expect(schema?.properties?.email?.format).toBe('email');
+    expect(schema?.properties?.phoneVerified?.type).toBe('boolean');
+    expect(schema?.properties?.emailVerified?.type).toBe('boolean');
+  });
+
+  it('documents PatchProfileDto fields as optional with constraints', () => {
+    const schema = doc.components?.schemas?.PatchProfileDto as
+      | {
+          properties?: Record<
+            string,
+            { nullable?: boolean; maxLength?: number; format?: string }
+          >;
+          required?: string[];
+        }
+      | undefined;
+    expect(schema).toBeDefined();
+    expect(schema?.required ?? []).toEqual([]);
+    expect(schema?.properties?.firstName?.nullable).toBe(true);
+    expect(schema?.properties?.firstName?.maxLength).toBe(100);
+    expect(schema?.properties?.lastName?.nullable).toBe(true);
+    expect(schema?.properties?.lastName?.maxLength).toBe(100);
+    expect(schema?.properties?.email?.nullable).toBe(true);
+    expect(schema?.properties?.email?.maxLength).toBe(254);
+    expect(schema?.properties?.email?.format).toBe('email');
   });
 
   it('documents exact error status matrix with ErrorResponseDto', () => {

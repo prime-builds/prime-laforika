@@ -24,51 +24,69 @@ export class ProfileService {
     accountId: string,
     body: PatchProfileDto,
   ): Promise<ProfileViewDto> {
-    await this.requireActiveUser(accountId);
-
-    const data: Prisma.UserUpdateInput = {};
-
-    if (Object.prototype.hasOwnProperty.call(body, 'firstName')) {
-      data.firstName = this.normalizeName(body.firstName, 'firstName');
-    }
-    if (Object.prototype.hasOwnProperty.call(body, 'lastName')) {
-      data.lastName = this.normalizeName(body.lastName, 'lastName');
-    }
-    if (Object.prototype.hasOwnProperty.call(body, 'email')) {
-      const emailPatch = this.normalizeContactEmail(body.email);
-      const current = await this.prisma.user.findUniqueOrThrow({
-        where: { id: accountId },
-      });
-      if (emailPatch.normalized !== (current.emailNormalized ?? null)) {
-        data.emailNormalized = emailPatch.normalized;
-        data.emailDisplay = emailPatch.display;
-        data.emailVerifiedAt = null;
-      } else if (
-        emailPatch.normalized !== null &&
-        emailPatch.display !== current.emailDisplay
-      ) {
-        // Display-form cleanup without clearing verification.
-        data.emailDisplay = emailPatch.display;
-      } else if (emailPatch.normalized === null) {
-        data.emailNormalized = null;
-        data.emailDisplay = null;
-        data.emailVerifiedAt = null;
-      }
-    }
-
-    if (Object.keys(data).length === 0) {
-      const unchanged = await this.prisma.user.findUniqueOrThrow({
-        where: { id: accountId },
-      });
-      return this.toView(unchanged);
-    }
+    // Validate/normalize request payload before locking the row.
+    const firstNamePatch = Object.prototype.hasOwnProperty.call(
+      body,
+      'firstName',
+    )
+      ? this.normalizeName(body.firstName, 'firstName')
+      : undefined;
+    const lastNamePatch = Object.prototype.hasOwnProperty.call(body, 'lastName')
+      ? this.normalizeName(body.lastName, 'lastName')
+      : undefined;
+    const emailPatch = Object.prototype.hasOwnProperty.call(body, 'email')
+      ? this.normalizeContactEmail(body.email)
+      : undefined;
 
     try {
-      const updated = await this.prisma.user.update({
-        where: { id: accountId },
-        data,
+      return await this.prisma.$transaction(async (tx) => {
+        // Serialize same-account profile mutations so email display/normalized
+        // and verification cannot diverge under concurrent PATCHes.
+        await tx.$executeRaw`
+          SELECT id FROM users WHERE id = ${accountId}::uuid FOR UPDATE
+        `;
+
+        const current = await tx.user.findUnique({ where: { id: accountId } });
+        if (!current || current.disabledAt) {
+          throw new AppError('AUTH_ACCOUNT_UNAVAILABLE', 401);
+        }
+
+        const data: Prisma.UserUpdateInput = {};
+
+        if (firstNamePatch !== undefined) {
+          data.firstName = firstNamePatch;
+        }
+        if (lastNamePatch !== undefined) {
+          data.lastName = lastNamePatch;
+        }
+        if (emailPatch !== undefined) {
+          if (emailPatch.normalized !== (current.emailNormalized ?? null)) {
+            data.emailNormalized = emailPatch.normalized;
+            data.emailDisplay = emailPatch.display;
+            data.emailVerifiedAt = null;
+          } else if (
+            emailPatch.normalized !== null &&
+            emailPatch.display !== current.emailDisplay
+          ) {
+            // Display-form cleanup without clearing verification.
+            data.emailDisplay = emailPatch.display;
+          } else if (emailPatch.normalized === null) {
+            data.emailNormalized = null;
+            data.emailDisplay = null;
+            data.emailVerifiedAt = null;
+          }
+        }
+
+        if (Object.keys(data).length === 0) {
+          return this.toView(current);
+        }
+
+        const updated = await tx.user.update({
+          where: { id: accountId },
+          data,
+        });
+        return this.toView(updated);
       });
-      return this.toView(updated);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

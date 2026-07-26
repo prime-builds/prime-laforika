@@ -139,6 +139,125 @@ void main() {
     );
   });
 
+  test('ignores delayed save after logout without throwing', () async {
+    final repo = FakeProfileRepository()
+      ..getResult = const Success(_profile)
+      ..patchDelay = const Duration(milliseconds: 80)
+      ..patchResult = const Success(
+        ProfileDto(
+          accountId: 'acc-1',
+          phone: '+989121234567',
+          phoneVerified: true,
+          firstName: 'رضا',
+          lastName: null,
+          email: null,
+          emailVerified: false,
+        ),
+      );
+    final gateway = _Gateway(
+      const AuthAuthenticated(AuthPrincipal(accountId: 'acc-1')),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authSessionGatewayProvider.overrideWithValue(gateway),
+        profileRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+    addTearDown(container.dispose);
+    final keepAlive = container.listen(profileControllerProvider, (_, _) {});
+    addTearDown(keepAlive.close);
+
+    await container.read(authControllerProvider.notifier).hydrate();
+    await container.read(profileControllerProvider.future);
+
+    final saveFuture = container
+        .read(profileControllerProvider.notifier)
+        .save(
+          const PatchProfileRequest(firstName: 'رضا', includeFirstName: true),
+        );
+    await container.read(authControllerProvider.notifier).logout();
+    final result = await saveFuture;
+
+    expect(result.isSuccess, isTrue);
+    expect(await container.read(profileControllerProvider.future), isNull);
+    expect(container.read(profileControllerProvider).asData?.value, isNull);
+  });
+
+  test('ignores account A save after transition to account B', () async {
+    final repo = FakeProfileRepository()
+      ..getResult = const Success(_profile)
+      ..patchDelay = const Duration(milliseconds: 80)
+      ..patchResult = const Success(
+        ProfileDto(
+          accountId: 'acc-1',
+          phone: '+989121234567',
+          phoneVerified: true,
+          firstName: 'از-الف',
+          lastName: null,
+          email: null,
+          emailVerified: false,
+        ),
+      );
+    final gateway = _Gateway(
+      const AuthAuthenticated(AuthPrincipal(accountId: 'acc-1')),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authSessionGatewayProvider.overrideWithValue(gateway),
+        profileRepositoryProvider.overrideWithValue(repo),
+      ],
+    );
+    addTearDown(container.dispose);
+    final keepAlive = container.listen(profileControllerProvider, (_, _) {});
+    addTearDown(keepAlive.close);
+
+    await container.read(authControllerProvider.notifier).hydrate();
+    await container.read(profileControllerProvider.future);
+
+    final saveFuture = container
+        .read(profileControllerProvider.notifier)
+        .save(
+          const PatchProfileRequest(
+            firstName: 'از-الف',
+            includeFirstName: true,
+          ),
+        );
+
+    repo.getResult = const Success(
+      ProfileDto(
+        accountId: 'acc-2',
+        phone: '+989121234568',
+        phoneVerified: true,
+        firstName: 'مریم',
+        lastName: null,
+        email: null,
+        emailVerified: false,
+      ),
+    );
+    await container
+        .read(authControllerProvider.notifier)
+        .onCredentialsAccepted(
+          accessToken: 'access-2',
+          refreshToken: 'refresh-2',
+          principal: const AuthPrincipal(accountId: 'acc-2'),
+        );
+
+    final next = await container.read(profileControllerProvider.future);
+    expect(next?.accountId, 'acc-2');
+    expect(next?.firstName, 'مریم');
+
+    final stale = await saveFuture;
+    expect(stale.isSuccess, isTrue);
+    expect(
+      container.read(profileControllerProvider).asData?.value?.accountId,
+      'acc-2',
+    );
+    expect(
+      container.read(profileControllerProvider).asData?.value?.firstName,
+      'مریم',
+    );
+  });
+
   test('account change triggers fresh account-scoped load', () async {
     final repo = FakeProfileRepository()..getResult = const Success(_profile);
     final gateway = _Gateway(

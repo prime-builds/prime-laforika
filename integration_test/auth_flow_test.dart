@@ -134,13 +134,14 @@ void main() {
       );
 
       // Re-enter Profile and verify persisted values came from GET.
-      await tester.tap(find.byKey(const Key('shell_dock_home')));
+      // Prefer router go() — stacked shells can leave duplicate dock keys.
+      container.read(goRouterProvider).go('/');
       await _pumpUntilFound(
         tester,
         find.byType(HomeScreen),
         timeout: const Duration(seconds: 10),
       );
-      await tester.tap(find.byKey(const Key('shell_dock_profile')));
+      container.read(goRouterProvider).go(profileRoutePath);
       await _pumpUntilFound(
         tester,
         find.byKey(const Key('profile_first_name')),
@@ -202,7 +203,7 @@ void main() {
         isA<AuthUnauthenticated>(),
       );
 
-      await tester.tap(find.byKey(const Key('shell_dock_home')));
+      container.read(goRouterProvider).go('/');
       await _pumpUntilFound(
         tester,
         find.byType(HomeScreen),

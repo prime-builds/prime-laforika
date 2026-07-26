@@ -9,12 +9,13 @@ targets System / Light / Dark (System default) with a Fluent-inspired but Lafori
 system. See [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and
 [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
 
-**Current implementation vs approved target:** M03_WP04 delivers the adaptive application shell
-(Home-only production dock, local Home search, staged module strip/tabs via fixtures only). M03_WP03
-guest-first routing and phone-only authentication remain in place. Remaining transition gaps are
-Profile / Settings / Notifications / visual hardening (M03_WP05–M03_WP07).
+**Current implementation vs approved target:** M03_WP05 delivers the guest-first Profile
+vertical slice (production dock Profile + Home, phone OTP on guest Profile, authenticated
+names/contact email editor). M03_WP03 guest-first routing / phone-only authentication and
+M03_WP04 adaptive shell remain in place. Remaining transition gaps are Settings /
+Notifications / visual hardening (M03_WP06–M03_WP07).
 
-Exact next work package: **M03_WP05 — Profile vertical slice**.
+Exact next work package: **M03_WP06 — Settings and Notifications**.
 
 ## Technical baseline
 
@@ -208,8 +209,8 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 - **M03_WP02:** Light/dark theme foundation ✅
 - **M03_WP03:** Guest-first routing and phone-only authentication ✅
 - **M03_WP04:** Adaptive application shell ✅
-- **M03_WP05:** Profile vertical slice ← **exact next package**
-- **M03_WP06:** Settings and Notifications
+- **M03_WP05:** Profile vertical slice ✅
+- **M03_WP06:** Settings and Notifications ← **exact next package**
 - **M03_WP07:** Integration and visual hardening
 
 ### Later product milestones

@@ -747,6 +747,9 @@
           "accountId",
           "phone",
           "phoneVerified",
+          "firstName",
+          "lastName",
+          "email",
           "emailVerified"
         ]
       },

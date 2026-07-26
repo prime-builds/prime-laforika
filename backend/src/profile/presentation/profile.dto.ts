@@ -30,15 +30,26 @@ export class ProfileViewDto {
   @ApiProperty({ type: Boolean })
   phoneVerified!: boolean;
 
-  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 100 })
-  firstName!: string | null;
-
-  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 100 })
-  lastName!: string | null;
-
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: String,
     nullable: true,
+    required: true,
+    maxLength: 100,
+  })
+  firstName!: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    required: true,
+    maxLength: 100,
+  })
+  lastName!: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    required: true,
     maxLength: 254,
     format: 'email',
   })

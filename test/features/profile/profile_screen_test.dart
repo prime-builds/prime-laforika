@@ -12,6 +12,7 @@ import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/error/failure.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
+import 'package:laforika/features/home/home.dart';
 import 'package:laforika/features/profile/profile.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
@@ -311,6 +312,113 @@ void main() {
     expect(find.text(l10n.profileErrorEmailInUse), findsOneWidget);
     expect(find.text('taken@example.test'), findsOneWidget);
     expect(profileRepo.patchCalls, 1);
+  });
+
+  testWidgets('disables logout and Account Security while save is in flight', (
+    tester,
+  ) async {
+    final profileRepo = FakeProfileRepository()
+      ..getResult = const Success(_profile)
+      ..patchDelay = const Duration(milliseconds: 300)
+      ..patchResult = const Success(
+        ProfileDto(
+          accountId: 'acc-profile',
+          phone: '+989121234567',
+          phoneVerified: true,
+          firstName: 'رضا',
+          lastName: 'محمدی',
+          email: 'Contact@Example.com',
+          emailVerified: true,
+        ),
+      );
+    final container = await _pumpApp(
+      tester,
+      hydrate: const AuthAuthenticated(_principal),
+      profileRepository: profileRepo,
+    );
+    container.read(goRouterProvider).go(profileRoutePath);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('profile_first_name')), 'رضا');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('profile_save')));
+    await tester.pump();
+
+    final editorList = find.ancestor(
+      of: find.byKey(const Key('profile_save')),
+      matching: find.byType(ListView),
+    );
+    await tester.drag(editorList, const Offset(0, -500));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.byKey(const Key('profile_account_security')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<TextButton>(find.byKey(const Key('profile_logout')))
+          .onPressed,
+      isNull,
+    );
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    expect(find.byKey(const Key('profile_screen')), findsOneWidget);
+    expect(
+      tester
+          .widget<TextButton>(find.byKey(const Key('profile_logout')))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('navigating away during save does not throw on completion', (
+    tester,
+  ) async {
+    final profileRepo = FakeProfileRepository()
+      ..getResult = const Success(_profile)
+      ..patchDelay = const Duration(milliseconds: 200)
+      ..patchResult = const Success(
+        ProfileDto(
+          accountId: 'acc-profile',
+          phone: '+989121234567',
+          phoneVerified: true,
+          firstName: 'رضا',
+          lastName: 'محمدی',
+          email: 'Contact@Example.com',
+          emailVerified: true,
+        ),
+      );
+    final container = await _pumpApp(
+      tester,
+      hydrate: const AuthAuthenticated(_principal),
+      profileRepository: profileRepo,
+    );
+    container.read(goRouterProvider).go(profileRoutePath);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('profile_first_name')), 'رضا');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('profile_save')));
+    await tester.pump();
+
+    // Dock Home remains available while save is in flight.
+    await tester.tap(find.byKey(const Key('shell_dock_home')));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
   });
 
   test('profile barrel constants', () {

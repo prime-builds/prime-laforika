@@ -392,7 +392,7 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
           const SizedBox(height: AppTokens.spaceXl),
           OutlinedButton(
             key: const Key('profile_account_security'),
-            onPressed: _logoutPending
+            onPressed: (_logoutPending || _saving)
                 ? null
                 : () => context.go(accountSecurityRoutePath),
             child: Text(l10n.accountSecurityAction),
@@ -400,7 +400,7 @@ class _ProfileEditorState extends ConsumerState<_ProfileEditor> {
           const SizedBox(height: AppTokens.spaceMd),
           TextButton(
             key: const Key('profile_logout'),
-            onPressed: _logoutPending ? null : _logout,
+            onPressed: (_logoutPending || _saving) ? null : _logout,
             child: Text(l10n.authLogout),
           ),
         ],

@@ -19,21 +19,28 @@ describe('ProfileService', () => {
 
   function buildService(overrides: {
     findUnique?: jest.Mock;
-    findUniqueOrThrow?: jest.Mock;
     update?: jest.Mock;
+    executeRaw?: jest.Mock;
   }) {
+    const tx = {
+      $executeRaw: overrides.executeRaw ?? jest.fn().mockResolvedValue(0),
+      user: {
+        findUnique:
+          overrides.findUnique ?? jest.fn().mockResolvedValue(baseUser),
+        update: overrides.update ?? jest.fn().mockResolvedValue(baseUser),
+      },
+    };
     const prisma = {
       user: {
         findUnique:
           overrides.findUnique ?? jest.fn().mockResolvedValue(baseUser),
-        findUniqueOrThrow:
-          overrides.findUniqueOrThrow ?? jest.fn().mockResolvedValue(baseUser),
-        update: overrides.update ?? jest.fn().mockResolvedValue(baseUser),
       },
+      $transaction: jest.fn((fn: (client: typeof tx) => unknown) => fn(tx)),
     };
     return {
       service: new ProfileService(prisma as never),
       prisma,
+      tx,
     };
   }
 
@@ -60,29 +67,33 @@ describe('ProfileService', () => {
     });
   });
 
-  it('PATCH trims names and blank becomes null', async () => {
+  it('PATCH runs inside a locked transaction', async () => {
     const update = jest.fn().mockResolvedValue({
       ...baseUser,
       firstName: 'علی',
       lastName: null,
     });
-    const { service } = buildService({ update });
+    const executeRaw = jest.fn().mockResolvedValue(0);
+    const { service, prisma, tx } = buildService({ update, executeRaw });
     await service.patchProfile(accountId, {
       firstName: '  علی  ',
       lastName: '   ',
     });
-    expect(update).toHaveBeenCalledWith({
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(executeRaw).toHaveBeenCalled();
+    expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: accountId },
       data: { firstName: 'علی', lastName: null },
     });
   });
 
-  it('PATCH rejects overlong Unicode names', async () => {
-    const { service } = buildService({});
+  it('PATCH rejects overlong Unicode names before locking', async () => {
+    const { service, prisma } = buildService({});
     const long = 'ن'.repeat(101);
     await expect(
       service.patchProfile(accountId, { firstName: long }),
     ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', status: 400 });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('PATCH email change clears verification', async () => {
@@ -100,7 +111,6 @@ describe('ProfileService', () => {
     });
     const { service } = buildService({
       findUnique: jest.fn().mockResolvedValue(current),
-      findUniqueOrThrow: jest.fn().mockResolvedValue(current),
       update,
     });
     await service.patchProfile(accountId, { email: 'New@Example.com' });
@@ -128,7 +138,6 @@ describe('ProfileService', () => {
     });
     const { service } = buildService({
       findUnique: jest.fn().mockResolvedValue(current),
-      findUniqueOrThrow: jest.fn().mockResolvedValue(current),
       update,
     });
     await service.patchProfile(accountId, { email: '  ali@example.com  ' });
@@ -147,7 +156,6 @@ describe('ProfileService', () => {
     );
     const { service } = buildService({
       findUnique: jest.fn().mockResolvedValue(baseUser),
-      findUniqueOrThrow: jest.fn().mockResolvedValue(baseUser),
       update,
     });
     await expect(
@@ -155,7 +163,22 @@ describe('ProfileService', () => {
     ).rejects.toEqual(new AppError('PROFILE_EMAIL_IN_USE', 409, ['email']));
   });
 
-  it('rejects disabled accounts', async () => {
+  it('rejects disabled accounts inside the transaction', async () => {
+    const { service } = buildService({
+      findUnique: jest.fn().mockResolvedValue({
+        ...baseUser,
+        disabledAt: new Date(),
+      }),
+    });
+    await expect(
+      service.patchProfile(accountId, { firstName: 'Ali' }),
+    ).rejects.toMatchObject({
+      code: 'AUTH_ACCOUNT_UNAVAILABLE',
+      status: 401,
+    });
+  });
+
+  it('rejects disabled accounts on GET', async () => {
     const { service } = buildService({
       findUnique: jest.fn().mockResolvedValue({
         ...baseUser,

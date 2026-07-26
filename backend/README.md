@@ -39,6 +39,6 @@ npm run openapi:export
 ## Notes
 
 - Fixture inbox (`/v1/dev/fixtures/...`) is registered only when `APP_ENVIRONMENT` is `dev` or `test`, `FIXTURE_DELIVERY_ENABLED=true`, and `DELIVERY_MODE=fixture`. Codes are kept in a process-local inbox — never PostgreSQL.
-- Staging/prod require `DELIVERY_MODE=unavailable` (fail closed until a real SMS/email adapter exists).
+- Staging/prod require `DELIVERY_MODE=unavailable` (fail closed until a real SMS delivery adapter exists).
 - E2E tests require `APP_ENVIRONMENT=test`, `TEST_DATABASE_NAME` ending in `_test`, and a matching `DATABASE_URL` database name (no silent rewrite).
 - Never commit `.env`, `secrets/`, PEM files, or database dumps.
