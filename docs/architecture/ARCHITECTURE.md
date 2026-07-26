@@ -14,10 +14,10 @@ document states the decisions and the rules that follow from them.
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
 and the Fluent-inspired adaptive shell. M03_WP02 (theme), M03_WP03 (guest-first routing and
-phone-only authentication), and M03_WP04 (adaptive application shell) are implemented. Remaining
-gaps are **known and bounded** to M03_WP05–M03_WP07 (Profile, Settings/Notifications, visual
-hardening). It is **not** permission for new code to extend a deprecated direction. Architecture
-contradictions **outside** this approved transition remain defects.
+phone-only authentication), M03_WP04 (adaptive application shell), and M03_WP05 (Profile vertical
+slice) are implemented. Remaining gaps are **known and bounded** to M03_WP06–M03_WP07
+(Settings/Notifications, visual hardening). It is **not** permission for new code to extend a
+deprecated direction. Architecture contradictions **outside** this approved transition remain defects.
 
 Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
@@ -372,11 +372,11 @@ A preserved destination must resolve to a registered internal **path only** (que
 fragments are rejected). External, malformed, or unknown locations fall back to Home. Router tests
 cover the guest/authenticated/public/protected matrix and loop prevention.
 
-**Shell selection (implemented in M03_WP04; destinations staged):** Home is selected after session
+**Shell selection (implemented in M03_WP04; Profile added in M03_WP05):** Home is selected after session
 restoration with no module and no module-internal tabs active. Selecting a module clears bottom-dock
 selection, highlights the module strip item, and shows contextual internal tabs. Production currently
-ships a Home-only dock and omits unavailable Chat/Profile/module destinations (no dead placeholders).
-Feature route barrels remain the module-integration boundary. Full shell rules:
+ships Profile and Home dock destinations and omits unavailable Chat/module destinations (no dead
+placeholders). Feature route barrels remain the module-integration boundary. Full shell rules:
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
 
 ---
@@ -535,9 +535,9 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
-> **Transition note:** Theme foundation (M03_WP02), guest-first / phone-only auth (M03_WP03), and
-> adaptive shell (M03_WP04) are implemented. Profile/Settings/Notifications (M03_WP05–M03_WP06) and
-> full visual hardening (M03_WP07) remain pending.
+> **Transition note:** Theme foundation (M03_WP02), guest-first / phone-only auth (M03_WP03),
+> adaptive shell (M03_WP04), and Profile (M03_WP05) are implemented. Settings/Notifications
+> (M03_WP06) and full visual hardening (M03_WP07) remain pending.
 
 ---
 
@@ -663,14 +663,15 @@ These close the gap between the M2 code baseline and the v1.4 target.
   tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
   dead Chat/module placeholder. ✅
 - **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
-  Settings/Notifications header actions; backend profile contract as required. ← **exact next package**
+  staged Settings/Notifications header contract; backend profile contract as required. ✅
 - **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
   sections; protected Notifications with real states; no push SDK while O3 is unresolved.
+  ← **exact next package**
 - **M03_WP07 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
 
-**Exact next package after M03_WP04:** **M03_WP05 — Profile vertical slice**.
+**Exact next package after M03_WP05:** **M03_WP06 — Settings and Notifications**.
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
@@ -708,7 +709,7 @@ architect should not decide them unilaterally. Each has a safe default so work i
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
 | O5 | **Distribution channel** — Google Play vs. Cafe Bazaar / Myket vs. direct APK | Determines signing, update mechanism, store policies, CI publish step. | CI produces debug-signed, non-publishable APKs only. |
 | O6 | **Jalali (Persian) calendar** for user-facing dates | Product/UX behavior for a Persian audience. | Gregorian storage; display calendar TBD. |
-| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP04 implement the approved in-app system; do not invent external brand assets. |
+| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP05 implement the approved in-app system; do not invent external brand assets. |
 | O8 | **Legal/privacy** — privacy policy, terms, data retention, age policy | Legal obligation; gates telemetry and any real-account build leaving controlled testing. | Real auth remains test-only; no telemetry; account-data lifecycle must be approved before external distribution. |
 
 ---
@@ -722,8 +723,8 @@ ownership, token security, session revocation, fixture delivery, and server auth
 remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
 resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
 unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02,
-M03_WP03, and M03_WP04 are implemented; M03_WP05–M03_WP07 close the remaining documented
-code-to-target gaps. M03_WP01 itself changed documentation only.
+M03_WP03, M03_WP04, and M03_WP05 are implemented; M03_WP06–M03_WP07 close the remaining
+documented code-to-target gaps. M03_WP01 itself changed documentation only.
 
 ---
 
