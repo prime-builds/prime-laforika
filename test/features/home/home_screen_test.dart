@@ -12,6 +12,7 @@ import 'package:laforika/core/error/failure.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/home/home.dart';
+import 'package:laforika/features/shell/shell.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../../support/fake_auth_repository.dart';
@@ -141,8 +142,13 @@ void main() {
     expect(find.byKey(const Key('home_account_security')), findsOneWidget);
     expect(find.byKey(const Key('home_logout')), findsNothing);
     expect(find.byKey(const Key('home_account_status')), findsNothing);
+    expect(find.byKey(const Key('home_search_field')), findsOneWidget);
+    expect(find.byType(FloatingBottomDock), findsOneWidget);
     expect(find.textContaining('ایمیل'), findsNothing);
     expect(find.textContaining('acc-home-secret'), findsNothing);
+    // Production dock: Home only — no Chat/Profile chrome.
+    expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
+    expect(find.byIcon(Icons.person_outline), findsNothing);
   });
 
   testWidgets('authenticated home shows logout without credential status', (
@@ -248,6 +254,24 @@ void main() {
     expect(destination.properties.label, l10n.homeOpenAccountSecurity);
     expect(destination.properties.button, isTrue);
     expect(find.byTooltip(l10n.homeLogoutTooltip), findsOneWidget);
+  });
+
+  testWidgets('home search filters discovery and clears', (tester) async {
+    await _pumpHome(tester, hydrate: const AuthUnauthenticated());
+    final l10n = await _l10n();
+
+    await tester.enterText(find.byKey(const Key('home_search_field')), 'چت');
+    await tester.pump();
+    expect(find.byKey(const Key('home_account_security')), findsNothing);
+    expect(find.text(l10n.shellSearchNoResults), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('home_search_clear')));
+    await tester.pump();
+    expect(find.byKey(const Key('home_account_security')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('home_search_field')), 'امنیت');
+    await tester.pump();
+    expect(find.byKey(const Key('home_account_security')), findsOneWidget);
   });
 
   test('home barrel route constants remain stable', () {

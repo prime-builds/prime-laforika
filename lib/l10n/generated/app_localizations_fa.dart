@@ -35,6 +35,21 @@ class AppLocalizationsFa extends AppLocalizations {
   String get homeLogoutTooltip => 'خروج از حساب';
 
   @override
+  String get shellHomeLabel => 'خانه';
+
+  @override
+  String get shellSearchLabel => 'جستجو';
+
+  @override
+  String get shellSearchHint => 'جستجو در بخش‌های خانه';
+
+  @override
+  String get shellSearchClear => 'پاک کردن جستجو';
+
+  @override
+  String get shellSearchNoResults => 'موردی یافت نشد.';
+
+  @override
   String get fatalStartupTitle => 'راه‌اندازی ناموفق';
 
   @override

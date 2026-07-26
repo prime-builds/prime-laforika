@@ -32,6 +32,26 @@
   "@homeLogoutTooltip": {
     "description": "Home logout icon tooltip and semantic label"
   },
+  "shellHomeLabel": "خانه",
+  "@shellHomeLabel": {
+    "description": "Bottom dock semantic label for Home"
+  },
+  "shellSearchLabel": "جستجو",
+  "@shellSearchLabel": {
+    "description": "Accessible label for the Home search field"
+  },
+  "shellSearchHint": "جستجو در بخش‌های خانه",
+  "@shellSearchHint": {
+    "description": "Hint text for the Home discovery search field"
+  },
+  "shellSearchClear": "پاک کردن جستجو",
+  "@shellSearchClear": {
+    "description": "Semantic label for clearing the Home search field"
+  },
+  "shellSearchNoResults": "موردی یافت نشد.",
+  "@shellSearchNoResults": {
+    "description": "Empty state when Home search matches no discovery entries"
+  },
   "fatalStartupTitle": "راه‌اندازی ناموفق",
   "@fatalStartupTitle": {
     "description": "Fatal startup failure title"

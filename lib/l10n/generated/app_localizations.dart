@@ -142,6 +142,36 @@ abstract class AppLocalizations {
   /// **'خروج از حساب'**
   String get homeLogoutTooltip;
 
+  /// Bottom dock semantic label for Home
+  ///
+  /// In fa, this message translates to:
+  /// **'خانه'**
+  String get shellHomeLabel;
+
+  /// Accessible label for the Home search field
+  ///
+  /// In fa, this message translates to:
+  /// **'جستجو'**
+  String get shellSearchLabel;
+
+  /// Hint text for the Home discovery search field
+  ///
+  /// In fa, this message translates to:
+  /// **'جستجو در بخش‌های خانه'**
+  String get shellSearchHint;
+
+  /// Semantic label for clearing the Home search field
+  ///
+  /// In fa, this message translates to:
+  /// **'پاک کردن جستجو'**
+  String get shellSearchClear;
+
+  /// Empty state when Home search matches no discovery entries
+  ///
+  /// In fa, this message translates to:
+  /// **'موردی یافت نشد.'**
+  String get shellSearchNoResults;
+
   /// Fatal startup failure title
   ///
   /// In fa, this message translates to:

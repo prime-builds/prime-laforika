@@ -2,8 +2,14 @@
 
 **Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening)
 
-This document freezes adaptive shell behavior. It is **not** implemented by M03_WP01. Diagrams use
-generic labels only (`Module 1`, `Item 1`). Do not invent production modules or dummy content.
+**Current implementation (M03_WP04):** Shell primitives live under `lib/features/shell/` and are
+composed on Home. Production ships a **Home-only** floating dock and local Home search. Module
+strip and contextual tabs are omitted when no real modules are available. Chat/Profile dock
+destinations are **not** faked — full three-item dock, modules, and tabs are covered via test
+fixtures only. Profile/Settings/Notifications destinations remain M03_WP05–M03_WP06.
+
+This document freezes adaptive shell behavior. Diagrams use generic labels only (`Module 1`,
+`Item 1`). Do not invent production modules or dummy content.
 
 Authority: [`../architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md),
 [ADR-0009](../architecture/adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md),

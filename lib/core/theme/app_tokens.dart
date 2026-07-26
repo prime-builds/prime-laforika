@@ -17,7 +17,7 @@ abstract final class AppTokens {
   static const double radiusSm = 12;
   static const double radiusMd = 16;
 
-  /// Reserved for the future floating dock (M03_WP04); no dock widget here.
+  /// Reserved for the floating dock capsule radius (M03_WP04).
   static const double radiusDock = 28;
 
   static const double borderWidth = 1;
