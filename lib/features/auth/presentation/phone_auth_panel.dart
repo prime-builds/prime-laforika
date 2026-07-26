@@ -53,16 +53,16 @@ class _PhoneAuthPanelState extends ConsumerState<PhoneAuthPanel> {
       _loading = true;
       _error = null;
     });
+    final l10n = AppLocalizations.of(context);
     final repo = ref.read(authRepositoryProvider);
     final result = await repo.requestPhoneChallenge(
       phone: _phoneController.text,
     );
     if (!mounted) return;
-    setState(() => _loading = false);
-    final l10n = AppLocalizations.of(context);
     result.when(
       success: (value) {
         setState(() {
+          _loading = false;
           _challengeId = value.challengeId;
           _masked = value.maskedDestination;
           _error = null;
@@ -71,7 +71,10 @@ class _PhoneAuthPanelState extends ConsumerState<PhoneAuthPanel> {
         _resendCooldown.update(DateTime.tryParse(value.resendAvailableAt));
       },
       failure: (failure) {
-        setState(() => _error = mapAuthFailure(l10n, failure));
+        setState(() {
+          _loading = false;
+          _error = mapAuthFailure(l10n, failure);
+        });
       },
     );
   }

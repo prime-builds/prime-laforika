@@ -86,7 +86,7 @@ class _GuestProfileBody extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: AppTokens.spaceLg),
-            const PhoneAuthPanel(),
+            const PhoneAuthPanel(key: Key('profile_phone_auth_panel')),
           ],
         ),
       ),

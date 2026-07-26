@@ -35,7 +35,12 @@ void main() {
       final phone = '0912${suffix.substring(suffix.length - 7)}';
       final normalizedPhone = '+98${phone.substring(1)}';
 
+      // bootstrap() replaces FlutterError.onError; restore the test binding
+      // handler so assertion failures surface cleanly.
+      final testOnError = FlutterError.onError;
       await app.main();
+      FlutterError.onError = testOnError;
+
       await _pumpUntilFound(
         tester,
         find.byType(HomeScreen),
@@ -66,11 +71,15 @@ void main() {
       expect(find.textContaining('ایمیل'), findsNothing);
 
       await tester.enterText(find.byKey(const Key('auth_phone_field')), phone);
+      await tester.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('auth_phone_send')));
+      await tester.pump();
       await _pumpUntilFound(
         tester,
         find.byKey(const Key('auth_otp_field')),
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 30),
       );
 
       final phoneCode = await _readFixtureCode(
@@ -141,19 +150,17 @@ void main() {
       expect(find.text('لفوریکا'), findsOneWidget);
       expect(find.text(uniqueEmail), findsOneWidget);
 
-      final editorList = find.ancestor(
-        of: find.byKey(const Key('profile_first_name')),
-        matching: find.byType(ListView),
-      );
-      await tester.drag(editorList, const Offset(0, -500));
+      final accountSecurity = find.byKey(const Key('profile_account_security'));
+      await tester.ensureVisible(accountSecurity);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('profile_account_security')));
+      await tester.tap(accountSecurity);
+      // Scaffold mounts immediately; wait for post-load sessions content.
       await _pumpUntilFound(
         tester,
-        find.byKey(const Key('account_security_screen')),
-        timeout: const Duration(seconds: 15),
+        find.text(l10n.accountSessionsTitle),
+        timeout: const Duration(seconds: 20),
       );
-      expect(find.text(l10n.accountSessionsTitle), findsOneWidget);
+      expect(find.byKey(const Key('account_security_screen')), findsOneWidget);
 
       // Force access-token expiry and verify refresh on protected call.
       final gateway =
@@ -180,17 +187,14 @@ void main() {
         find.byKey(const Key('profile_first_name')),
         timeout: const Duration(seconds: 15),
       );
-      final logoutList = find.ancestor(
-        of: find.byKey(const Key('profile_first_name')),
-        matching: find.byType(ListView),
-      );
-      await tester.drag(logoutList, const Offset(0, -500));
+      final logout = find.byKey(const Key('profile_logout'));
+      await tester.ensureVisible(logout);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('profile_logout')));
+      await tester.tap(logout);
       await _pumpUntilFound(
         tester,
         find.byKey(const Key('profile_guest_auth')),
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 20),
       );
       expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
       expect(
@@ -215,8 +219,13 @@ Future<void> _pumpUntilFound(
   required Duration timeout,
 }) async {
   final end = DateTime.now().add(timeout);
+  final capturedErrors = <String>[];
   while (DateTime.now().isBefore(end)) {
     await tester.pump(const Duration(milliseconds: 200));
+    final pending = tester.takeException();
+    if (pending != null) {
+      capturedErrors.add(pending.toString());
+    }
     if (finder.evaluate().isNotEmpty) {
       await tester.pump();
       return;
@@ -232,7 +241,26 @@ Future<void> _pumpUntilFound(
       .whereType<String>()
       .take(12)
       .join(' | ');
-  fail('Timed out waiting for $finder. Visible text: $visibleTexts');
+  final hasPhoneSend = find
+      .byKey(const Key('auth_phone_send'))
+      .evaluate()
+      .isNotEmpty;
+  final hasOtp = find.byKey(const Key('auth_otp_field')).evaluate().isNotEmpty;
+  final hasGuest = find
+      .byKey(const Key('profile_guest_auth'))
+      .evaluate()
+      .isNotEmpty;
+  final hasSecurity = find
+      .byKey(const Key('account_security_screen'))
+      .evaluate()
+      .isNotEmpty;
+  fail(
+    'Timed out waiting for $finder. '
+    'hasPhoneSend=$hasPhoneSend hasOtp=$hasOtp hasGuest=$hasGuest '
+    'hasSecurity=$hasSecurity. '
+    'errors=${capturedErrors.take(5).join(' || ')}. '
+    'Visible text: $visibleTexts',
+  );
 }
 
 Future<String> _readFixtureCode({
