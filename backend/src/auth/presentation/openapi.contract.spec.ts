@@ -50,6 +50,8 @@ describe('OpenAPI contract', () => {
     },
     { path: '/auth/refresh', method: 'post', statuses: [400, 401] },
     { path: '/account/me', method: 'get', statuses: [401] },
+    { path: '/account/profile', method: 'get', statuses: [401] },
+    { path: '/account/profile', method: 'patch', statuses: [400, 401, 409] },
     { path: '/auth/sessions', method: 'get', statuses: [401] },
     {
       path: '/auth/sessions/{sessionId}',
@@ -91,6 +93,8 @@ describe('OpenAPI contract', () => {
       'ChallengeResponseDto',
       'TokenResponseDto',
       'AccountViewDto',
+      'ProfileViewDto',
+      'PatchProfileDto',
       'ErrorResponseDto',
     ]) {
       const schema = schemas[name];
@@ -121,6 +125,76 @@ describe('OpenAPI contract', () => {
     expect(me?.security?.length ?? 0).toBeGreaterThan(0);
   });
 
+  it('protects account/profile GET/PATCH with bearer security', () => {
+    const get = pathOf('/account/profile')?.get;
+    const patch = pathOf('/account/profile')?.patch;
+    expect(get).toBeDefined();
+    expect(patch).toBeDefined();
+    expect(get?.security?.length ?? 0).toBeGreaterThan(0);
+    expect(patch?.security?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it('documents complete ProfileViewDto as required nullable fields', () => {
+    const schema = doc.components?.schemas?.ProfileViewDto as
+      | {
+          properties?: Record<
+            string,
+            {
+              nullable?: boolean;
+              maxLength?: number;
+              format?: string;
+              type?: string;
+            }
+          >;
+          required?: string[];
+        }
+      | undefined;
+    expect(schema).toBeDefined();
+    const required = schema?.required ?? [];
+    for (const field of [
+      'accountId',
+      'phone',
+      'phoneVerified',
+      'firstName',
+      'lastName',
+      'email',
+      'emailVerified',
+    ]) {
+      expect(required).toContain(field);
+      expect(schema?.properties?.[field]).toBeDefined();
+    }
+    expect(schema?.properties?.firstName?.nullable).toBe(true);
+    expect(schema?.properties?.firstName?.maxLength).toBe(100);
+    expect(schema?.properties?.lastName?.nullable).toBe(true);
+    expect(schema?.properties?.lastName?.maxLength).toBe(100);
+    expect(schema?.properties?.email?.nullable).toBe(true);
+    expect(schema?.properties?.email?.maxLength).toBe(254);
+    expect(schema?.properties?.email?.format).toBe('email');
+    expect(schema?.properties?.phoneVerified?.type).toBe('boolean');
+    expect(schema?.properties?.emailVerified?.type).toBe('boolean');
+  });
+
+  it('documents PatchProfileDto fields as optional with constraints', () => {
+    const schema = doc.components?.schemas?.PatchProfileDto as
+      | {
+          properties?: Record<
+            string,
+            { nullable?: boolean; maxLength?: number; format?: string }
+          >;
+          required?: string[];
+        }
+      | undefined;
+    expect(schema).toBeDefined();
+    expect(schema?.required ?? []).toEqual([]);
+    expect(schema?.properties?.firstName?.nullable).toBe(true);
+    expect(schema?.properties?.firstName?.maxLength).toBe(100);
+    expect(schema?.properties?.lastName?.nullable).toBe(true);
+    expect(schema?.properties?.lastName?.maxLength).toBe(100);
+    expect(schema?.properties?.email?.nullable).toBe(true);
+    expect(schema?.properties?.email?.maxLength).toBe(254);
+    expect(schema?.properties?.email?.format).toBe('email');
+  });
+
   it('documents exact error status matrix with ErrorResponseDto', () => {
     for (const entry of ERROR_STATUS_MATRIX) {
       const op = pathOf(entry.path)?.[entry.method];
@@ -141,6 +215,8 @@ describe('OpenAPI contract', () => {
       { path: '/auth/phone/challenges/{challengeId}/verify', method: 'post' },
       { path: '/auth/refresh', method: 'post' },
       { path: '/account/me', method: 'get' },
+      { path: '/account/profile', method: 'get' },
+      { path: '/account/profile', method: 'patch' },
     ];
     for (const entry of criticalSuccess) {
       const op = pathOf(entry.path)?.[entry.method];

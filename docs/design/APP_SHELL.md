@@ -2,11 +2,11 @@
 
 **Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening)
 
-**Current implementation (M03_WP04):** Shell primitives live under `lib/features/shell/` and are
-composed on Home. Production ships a **Home-only** floating dock and local Home search. Module
-strip and contextual tabs are omitted when no real modules are available. Chat/Profile dock
-destinations are **not** faked — full three-item dock, modules, and tabs are covered via test
-fixtures only. Profile/Settings/Notifications destinations remain M03_WP05–M03_WP06.
+**Current implementation (M03_WP04 + M03_WP05):** Shell primitives live under `lib/features/shell/`
+and are composed on Home and Profile. Production ships a **Profile + Home** floating dock and
+local Home search. Module strip and contextual tabs are omitted when no real modules are
+available. Chat is **not** faked — the three-item dock with Chat, plus modules/tabs, remains
+test-fixture coverage only. Settings/Notifications destinations remain M03_WP06.
 
 This document freezes adaptive shell behavior. Diagrams use generic labels only (`Module 1`,
 `Item 1`). Do not invent production modules or dummy content.
@@ -181,6 +181,9 @@ stop for a scoped product decision or omit the unavailable action until a real d
 | Settings | `start` | top-right |
 | Notifications | `end` | top-left |
 
+Production omits an action until its real route exists (M03_WP05 ships the reusable header
+contract without dead Settings/Notifications controls; M03_WP06 wires the real destinations).
+
 Notifications may show an unread badge when real notification data exists.
 
 ---
@@ -306,13 +309,14 @@ Documentation-only ASCII states. Production must not ship dummy content.
 
 - Profile dock selected.
 - Direct phone OTP UI.
-- Settings still reachable.
+- Settings remains reachable when the Settings route exists (M03_WP06).
 
 ### Profile — authenticated
 
 - Profile dock selected.
 - Editable profile fields + read-only verified phone.
-- Settings (`start`) and Notifications (`end`) header actions.
+- Settings (`start`) and Notifications (`end`) header actions when those routes exist
+  (omitted in production until M03_WP06).
 
 ---
 

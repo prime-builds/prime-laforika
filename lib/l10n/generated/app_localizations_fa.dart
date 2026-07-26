@@ -38,6 +38,72 @@ class AppLocalizationsFa extends AppLocalizations {
   String get shellHomeLabel => 'خانه';
 
   @override
+  String get shellProfileLabel => 'پروفایل';
+
+  @override
+  String get profileTitle => 'پروفایل';
+
+  @override
+  String get profileGuestIntro =>
+      'برای مدیریت پروفایل با شماره موبایل وارد شوید.';
+
+  @override
+  String get profileAvatarSemantic => 'تصویر نمایه';
+
+  @override
+  String get profileFirstNameLabel => 'نام';
+
+  @override
+  String get profileLastNameLabel => 'نام خانوادگی';
+
+  @override
+  String get profilePhoneLabel => 'شماره موبایل تأییدشده';
+
+  @override
+  String get profilePhoneVerified => 'تأییدشده';
+
+  @override
+  String get profileEmailLabel => 'ایمیل تماس (اختیاری)';
+
+  @override
+  String get profileEmailVerified => 'ایمیل تأیید شده است';
+
+  @override
+  String get profileEmailUnverified => 'ایمیل تماس تأیید نشده است';
+
+  @override
+  String get profileSave => 'ذخیره';
+
+  @override
+  String get profileSaving => 'در حال ذخیره…';
+
+  @override
+  String get profileSaved => 'پروفایل ذخیره شد.';
+
+  @override
+  String get profileRetry => 'تلاش دوباره';
+
+  @override
+  String get profileErrorEmailInUse => 'این ایمیل برای حساب دیگری ثبت شده است.';
+
+  @override
+  String get profileErrorValidation => 'اطلاعات پروفایل معتبر نیست.';
+
+  @override
+  String get profileErrorNetwork =>
+      'ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.';
+
+  @override
+  String get profileErrorGeneric =>
+      'ذخیره پروفایل ممکن نشد. لطفاً دوباره تلاش کنید.';
+
+  @override
+  String get profileSettingsTooltip => 'تنظیمات';
+
+  @override
+  String get profileNotificationsTooltip => 'اعلان‌ها';
+
+  @override
   String get shellSearchLabel => 'جستجو';
 
   @override

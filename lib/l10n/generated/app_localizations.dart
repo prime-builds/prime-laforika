@@ -148,6 +148,132 @@ abstract class AppLocalizations {
   /// **'خانه'**
   String get shellHomeLabel;
 
+  /// Bottom dock semantic label for Profile
+  ///
+  /// In fa, this message translates to:
+  /// **'پروفایل'**
+  String get shellProfileLabel;
+
+  /// Profile screen title
+  ///
+  /// In fa, this message translates to:
+  /// **'پروفایل'**
+  String get profileTitle;
+
+  /// Guest Profile introduction above direct phone OTP
+  ///
+  /// In fa, this message translates to:
+  /// **'برای مدیریت پروفایل با شماره موبایل وارد شوید.'**
+  String get profileGuestIntro;
+
+  /// Semantic label for non-interactive avatar placeholder
+  ///
+  /// In fa, this message translates to:
+  /// **'تصویر نمایه'**
+  String get profileAvatarSemantic;
+
+  /// First name field label
+  ///
+  /// In fa, this message translates to:
+  /// **'نام'**
+  String get profileFirstNameLabel;
+
+  /// Last name field label
+  ///
+  /// In fa, this message translates to:
+  /// **'نام خانوادگی'**
+  String get profileLastNameLabel;
+
+  /// Read-only verified phone label
+  ///
+  /// In fa, this message translates to:
+  /// **'شماره موبایل تأییدشده'**
+  String get profilePhoneLabel;
+
+  /// Verified phone indicator semantic label
+  ///
+  /// In fa, this message translates to:
+  /// **'تأییدشده'**
+  String get profilePhoneVerified;
+
+  /// Optional contact email field label
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل تماس (اختیاری)'**
+  String get profileEmailLabel;
+
+  /// Contact email verification status when verified
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل تأیید شده است'**
+  String get profileEmailVerified;
+
+  /// Contact email verification status when unverified
+  ///
+  /// In fa, this message translates to:
+  /// **'ایمیل تماس تأیید نشده است'**
+  String get profileEmailUnverified;
+
+  /// Profile save button label
+  ///
+  /// In fa, this message translates to:
+  /// **'ذخیره'**
+  String get profileSave;
+
+  /// Profile save in-progress label
+  ///
+  /// In fa, this message translates to:
+  /// **'در حال ذخیره…'**
+  String get profileSaving;
+
+  /// Profile save success feedback
+  ///
+  /// In fa, this message translates to:
+  /// **'پروفایل ذخیره شد.'**
+  String get profileSaved;
+
+  /// Retry after profile load failure
+  ///
+  /// In fa, this message translates to:
+  /// **'تلاش دوباره'**
+  String get profileRetry;
+
+  /// Duplicate contact email conflict
+  ///
+  /// In fa, this message translates to:
+  /// **'این ایمیل برای حساب دیگری ثبت شده است.'**
+  String get profileErrorEmailInUse;
+
+  /// Profile validation failure
+  ///
+  /// In fa, this message translates to:
+  /// **'اطلاعات پروفایل معتبر نیست.'**
+  String get profileErrorValidation;
+
+  /// Profile network failure
+  ///
+  /// In fa, this message translates to:
+  /// **'ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.'**
+  String get profileErrorNetwork;
+
+  /// Generic profile failure
+  ///
+  /// In fa, this message translates to:
+  /// **'ذخیره پروفایل ممکن نشد. لطفاً دوباره تلاش کنید.'**
+  String get profileErrorGeneric;
+
+  /// Profile header Settings action tooltip (fixture/tests)
+  ///
+  /// In fa, this message translates to:
+  /// **'تنظیمات'**
+  String get profileSettingsTooltip;
+
+  /// Profile header Notifications action tooltip (fixture/tests)
+  ///
+  /// In fa, this message translates to:
+  /// **'اعلان‌ها'**
+  String get profileNotificationsTooltip;
+
   /// Accessible label for the Home search field
   ///
   /// In fa, this message translates to:

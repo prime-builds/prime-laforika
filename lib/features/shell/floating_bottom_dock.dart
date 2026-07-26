@@ -135,6 +135,7 @@ class _DockButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = selected ? (item.selectedIcon ?? item.icon) : item.icon;
     return Semantics(
+      key: Key('shell_dock_${item.id}'),
       button: true,
       selected: selected,
       label: item.semanticLabel,
