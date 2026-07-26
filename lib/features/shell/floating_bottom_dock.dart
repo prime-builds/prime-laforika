@@ -14,7 +14,9 @@ class FloatingBottomDock extends StatefulWidget {
     required this.onSelected,
   });
 
-  /// Items in **visual RTL paint order**: Profile → Chat → Home when all exist.
+  /// Items in **visual left-to-right order**: Profile → Chat → Home when all exist
+  /// (Profile leftmost, Home rightmost). The dock lays out with an LTR row so this
+  /// order is preserved under an ambient RTL [Directionality].
   final List<ShellDockItem> items;
 
   /// Selected destination id, or `null` when no dock item is selected (module).
@@ -65,17 +67,21 @@ class _FloatingBottomDockState extends State<FloatingBottomDock> {
               horizontal: AppTokens.spaceSm,
               vertical: AppTokens.spaceSm / 2,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final item in widget.items)
-                  _DockButton(
-                    item: item,
-                    selected: widget.selectedId == item.id,
-                    colors: colors,
-                    onTap: () => widget.onSelected(item.id),
-                  ),
-              ],
+            // Force LTR so visual-order items stay Profile…Home under ambient RTL.
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final item in widget.items)
+                    _DockButton(
+                      item: item,
+                      selected: widget.selectedId == item.id,
+                      colors: colors,
+                      onTap: () => widget.onSelected(item.id),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

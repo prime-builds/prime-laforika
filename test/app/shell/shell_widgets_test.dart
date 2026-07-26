@@ -8,6 +8,19 @@ import 'package:laforika/features/shell/shell.dart';
 import 'shell_test_harness.dart';
 
 void main() {
+  testWidgets('dock fixture visual LTR positions Profile < Chat < Home', (
+    tester,
+  ) async {
+    await tester.pumpWidget(shellHarness(child: const ShellFixtureHost()));
+    await tester.pump();
+
+    final profileX = tester.getCenter(find.byIcon(Icons.person_outline)).dx;
+    final chatX = tester.getCenter(find.byIcon(Icons.chat_bubble_outline)).dx;
+    final homeX = tester.getCenter(find.byIcon(Icons.home)).dx;
+    expect(profileX, lessThan(chatX));
+    expect(chatX, lessThan(homeX));
+  });
+
   testWidgets('dock fixture RTL order and taps', (tester) async {
     await tester.pumpWidget(shellHarness(child: const ShellFixtureHost()));
     await tester.pump();
@@ -28,10 +41,12 @@ void main() {
     await tester.pump();
     expect(state.dockSelectedId, ShellDockIds.chat);
     expect(state.selections, [ShellDockIds.chat]);
+    expect(find.byIcon(Icons.chat_bubble), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.person_outline));
     await tester.pump();
     expect(state.dockSelectedId, ShellDockIds.profile);
+    expect(find.byIcon(Icons.person), findsOneWidget);
   });
 
   testWidgets('dock swipe visual-left and visual-right without wrap', (
@@ -95,6 +110,23 @@ void main() {
     expect(selected, ShellDockIds.home);
   });
 
+  testWidgets('dock targets meet minimum 48dp touch size', (tester) async {
+    await tester.pumpWidget(shellHarness(child: const ShellFixtureHost()));
+    await tester.pump();
+
+    for (final icon in [
+      Icons.person_outline,
+      Icons.chat_bubble_outline,
+      Icons.home,
+    ]) {
+      final size = tester.getSize(
+        find.ancestor(of: find.byIcon(icon), matching: find.byType(InkWell)),
+      );
+      expect(size.width, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+      expect(size.height, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    }
+  });
+
   testWidgets('module fixture expands then clears dock selection', (
     tester,
   ) async {
@@ -118,28 +150,89 @@ void main() {
     expect(find.text('زبانه ۲'), findsOneWidget);
   });
 
-  testWidgets('compact strip keeps selection and drops icons', (tester) async {
+  testWidgets(
+    'vertical body scroll compacts strip and preserves horizontal offset',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 740));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(shellHarness(child: const ShellFixtureHost()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ماژول ۲'));
+      await tester.pumpAndSettle();
+
+      final state = tester.state<ShellFixtureHostState>(
+        find.byType(ShellFixtureHost),
+      );
+      expect(state.moduleId, 'm2');
+      expect(state.tabId, 't1');
+      expect(state.dockSelectedId, isNull);
+      expect(state.compact, isFalse);
+      expect(find.byIcon(Icons.extension), findsOneWidget);
+      expect(find.text('زبانه ۱'), findsOneWidget);
+
+      // Scroll the module strip horizontally so there is a non-zero offset.
+      expect(state.stripController.position.maxScrollExtent, greaterThan(0));
+      state.stripController.jumpTo(48);
+      await tester.pumpAndSettle();
+      final offsetBefore = state.stripController.offset;
+      expect(offsetBefore, greaterThan(0));
+
+      // Real vertical body scroll past the compact threshold.
+      await tester.drag(
+        find.byKey(const Key('fixture_body')),
+        const Offset(0, -80),
+      );
+      await tester.pump();
+      await tester.pump(AppTokens.motionStandard);
+      await tester.pump();
+
+      expect(state.compact, isTrue);
+      expect(state.moduleId, 'm2');
+      expect(state.tabId, 't1');
+      expect(state.dockSelectedId, isNull);
+      expect(find.text('ماژول ۲'), findsOneWidget);
+      expect(find.byIcon(Icons.extension), findsNothing);
+      expect(find.text('زبانه ۱'), findsOneWidget);
+      expect(state.stripController.offset, offsetBefore);
+      expect(
+        state.bodyController.offset,
+        greaterThanOrEqualTo(AppShellScaffold.moduleStripCompactThreshold),
+      );
+    },
+  );
+
+  testWidgets('module fixture at text scale 2.0 remains usable', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 740));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(
-      shellHarness(child: const ShellFixtureHost(compact: false)),
+      shellHarness(textScale: 2.0, child: const ShellFixtureHost()),
     );
-    await tester.pump();
-    await tester.tap(find.text('ماژول ۲'));
-    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ماژول ۱'));
+    await tester.pumpAndSettle();
 
     final state = tester.state<ShellFixtureHostState>(
       find.byType(ShellFixtureHost),
     );
-    expect(state.moduleId, 'm2');
-    expect(find.byIcon(Icons.extension), findsOneWidget);
-
-    state.setCompact(true);
-    await tester.pump(AppTokens.motionStandard);
-    await tester.pump();
-
-    expect(state.moduleId, 'm2');
-    expect(find.text('ماژول ۲'), findsOneWidget);
-    expect(find.byIcon(Icons.extension), findsNothing);
+    expect(state.moduleId, 'm1');
+    expect(state.tabId, 't1');
     expect(find.text('زبانه ۱'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.drag(
+      find.byKey(const Key('fixture_body')),
+      const Offset(0, -80),
+    );
+    await tester.pump();
+    await tester.pump(AppTokens.motionStandard);
+    expect(state.compact, isTrue);
+    expect(find.text('ماژول ۱'), findsOneWidget);
   });
 
   testWidgets('empty modules omit strip; invalid tab falls back to first', (

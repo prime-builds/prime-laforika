@@ -144,11 +144,23 @@ void main() {
     expect(find.byKey(const Key('home_account_status')), findsNothing);
     expect(find.byKey(const Key('home_search_field')), findsOneWidget);
     expect(find.byType(FloatingBottomDock), findsOneWidget);
+    expect(find.byType(AdaptiveModuleStrip), findsNothing);
+    expect(find.byType(ContextualTabStrip), findsNothing);
     expect(find.textContaining('ایمیل'), findsNothing);
     expect(find.textContaining('acc-home-secret'), findsNothing);
     // Production dock: Home only — no Chat/Profile chrome.
     expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
     expect(find.byIcon(Icons.person_outline), findsNothing);
+
+    final searchSemantics = tester.widget<Semantics>(
+      find.ancestor(
+        of: find.byKey(const Key('home_search_field')),
+        matching: find.byWidgetPredicate(
+          (w) => w is Semantics && w.properties.textField == true,
+        ),
+      ),
+    );
+    expect(searchSemantics.properties.label, l10n.shellSearchLabel);
   });
 
   testWidgets('authenticated home shows logout without credential status', (
@@ -264,6 +276,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('home_account_security')), findsNothing);
     expect(find.text(l10n.shellSearchNoResults), findsOneWidget);
+    expect(find.byTooltip(l10n.shellSearchClear), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('home_search_clear')));
     await tester.pump();

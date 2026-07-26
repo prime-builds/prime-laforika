@@ -26,6 +26,9 @@ class AppShellScaffold extends StatelessWidget {
     this.scaffoldKey,
   });
 
+  /// Vertical body scroll offset (logical px) at which the module strip compacts.
+  static const double moduleStripCompactThreshold = 24;
+
   final Widget body;
   final List<ShellDockItem> dockItems;
   final String? dockSelectedId;
@@ -46,6 +49,7 @@ class AppShellScaffold extends StatelessWidget {
 
   final Key? scaffoldKey;
 
+  /// Reserved bottom padding so body content clears the floating dock.
   static const double dockBottomInset =
       AppTokens.spaceLg + AppTokens.minTouchTarget + AppTokens.spaceMd;
 

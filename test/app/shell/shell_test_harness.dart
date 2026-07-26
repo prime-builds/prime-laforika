@@ -9,16 +9,20 @@ Widget shellHarness({
   required Widget child,
   ThemeData? theme,
   TextDirection textDirection = TextDirection.rtl,
+  double textScale = 1.0,
 }) {
-  return MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: theme ?? buildLightTheme(),
-    locale: const Locale('fa', 'IR'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Directionality(
-      textDirection: textDirection,
-      child: Scaffold(body: child),
+  return MediaQuery(
+    data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: theme ?? buildLightTheme(),
+      locale: const Locale('fa', 'IR'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Directionality(
+        textDirection: textDirection,
+        child: Scaffold(body: child),
+      ),
     ),
   );
 }
@@ -44,9 +48,14 @@ List<ShellDockItem> threeDockItems() => const [
   ),
 ];
 
+/// Enough modules that the strip must scroll horizontally on a phone width.
 List<ShellModuleItem> fixtureModules() => const [
   ShellModuleItem(id: 'm1', label: 'ماژول ۱', icon: Icons.apps),
   ShellModuleItem(id: 'm2', label: 'ماژول ۲', icon: Icons.extension),
+  ShellModuleItem(id: 'm3', label: 'ماژول ۳', icon: Icons.dashboard_outlined),
+  ShellModuleItem(id: 'm4', label: 'ماژول ۴', icon: Icons.inventory_2_outlined),
+  ShellModuleItem(id: 'm5', label: 'ماژول ۵', icon: Icons.layers_outlined),
+  ShellModuleItem(id: 'm6', label: 'ماژول ۶', icon: Icons.view_module_outlined),
 ];
 
 List<ShellTabItem> fixtureTabs() => const [
@@ -55,16 +64,17 @@ List<ShellTabItem> fixtureTabs() => const [
 ];
 
 /// Test-only shell host that exercises module/tab/dock contracts.
+///
+/// Vertical body scroll drives compaction using
+/// [AppShellScaffold.moduleStripCompactThreshold], matching production Home.
 class ShellFixtureHost extends StatefulWidget {
   const ShellFixtureHost({
     super.key,
     this.initialDockId = ShellDockIds.home,
-    this.compact = false,
     this.withModules = true,
   });
 
   final String? initialDockId;
-  final bool compact;
   final bool withModules;
 
   @override
@@ -75,18 +85,30 @@ class ShellFixtureHostState extends State<ShellFixtureHost> {
   late String? dockSelectedId = widget.initialDockId;
   String? moduleId;
   String? tabId;
-  late bool compact = widget.compact;
+  bool compact = false;
   final stripController = ScrollController();
   final bodyController = ScrollController();
 
   final selections = <String>[];
 
-  void setCompact(bool value) {
-    setState(() => compact = value);
+  @override
+  void initState() {
+    super.initState();
+    bodyController.addListener(_onBodyScroll);
+  }
+
+  void _onBodyScroll() {
+    final nextCompact =
+        bodyController.hasClients &&
+        bodyController.offset >= AppShellScaffold.moduleStripCompactThreshold;
+    if (nextCompact != compact) {
+      setState(() => compact = nextCompact);
+    }
   }
 
   @override
   void dispose() {
+    bodyController.removeListener(_onBodyScroll);
     stripController.dispose();
     bodyController.dispose();
     super.dispose();
@@ -136,7 +158,7 @@ class ShellFixtureHostState extends State<ShellFixtureHost> {
         ),
         children: [
           Text(moduleId == null ? 'خانه' : 'ماژول:$moduleId تب:$tabId'),
-          const SizedBox(height: 800, child: Placeholder()),
+          const SizedBox(height: 1200, child: Placeholder()),
         ],
       ),
     );

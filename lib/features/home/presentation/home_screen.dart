@@ -13,9 +13,6 @@ import 'package:laforika/l10n/generated/app_localizations.dart';
 /// Maximum content width for tablet/wide Home layouts.
 const double _homeMaxContentWidth = 720;
 
-/// Vertical scroll offset (logical px) that compactsthe module strip.
-const double _moduleStripCompactThreshold = 24;
-
 /// Guest-first Home / discovery shell with adaptive application chrome.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -49,7 +46,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _onBodyScroll() {
     final compact =
         _bodyScrollController.hasClients &&
-        _bodyScrollController.offset >= _moduleStripCompactThreshold;
+        _bodyScrollController.offset >=
+            AppShellScaffold.moduleStripCompactThreshold;
     if (compact != _moduleStripCompact) {
       setState(() => _moduleStripCompact = compact);
     }
