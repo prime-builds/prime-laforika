@@ -13,11 +13,11 @@ document states the decisions and the rules that follow from them.
 ### Controlled transition (M03_WP01 → M03_WP07)
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
-and the Fluent-inspired adaptive shell. M03_WP02 (theme) and M03_WP03 (guest-first routing and
-phone-only authentication) are implemented. Remaining gaps are **known and bounded** to
-M03_WP04–M03_WP07 (adaptive shell, Profile, Settings/Notifications, visual hardening). It is
-**not** permission for new code to extend a deprecated direction. Architecture contradictions
-**outside** this approved transition remain defects.
+and the Fluent-inspired adaptive shell. M03_WP02 (theme), M03_WP03 (guest-first routing and
+phone-only authentication), and M03_WP04 (adaptive application shell) are implemented. Remaining
+gaps are **known and bounded** to M03_WP05–M03_WP07 (Profile, Settings/Notifications, visual
+hardening). It is **not** permission for new code to extend a deprecated direction. Architecture
+contradictions **outside** this approved transition remain defects.
 
 Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
@@ -372,10 +372,11 @@ A preserved destination must resolve to a registered internal **path only** (que
 fragments are rejected). External, malformed, or unknown locations fall back to Home. Router tests
 cover the guest/authenticated/public/protected matrix and loop prevention.
 
-**Shell selection (approved target — M03_WP04):** Home is selected after session restoration with no
-module and no module-internal tabs active. Selecting a module clears bottom-dock selection,
-highlights the module strip item, and shows contextual internal tabs. Feature route barrels remain
-the module-integration boundary. Full shell rules:
+**Shell selection (implemented in M03_WP04; destinations staged):** Home is selected after session
+restoration with no module and no module-internal tabs active. Selecting a module clears bottom-dock
+selection, highlights the module strip item, and shows contextual internal tabs. Production currently
+ships a Home-only dock and omits unavailable Chat/Profile/module destinations (no dead placeholders).
+Feature route barrels remain the module-integration boundary. Full shell rules:
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
 
 ---
@@ -522,9 +523,10 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   respect reduced motion where Flutter exposes it. Translucency cannot reduce contrast below
   accessibility targets; blur is progressive enhancement only. Broader visual hardening remains
   M03_WP07.
-- **Adaptive shell (approved target — M03_WP04):** see
+- **Adaptive shell (implemented in M03_WP04):** see
   [`../design/APP_SHELL.md`](../design/APP_SHELL.md) for module strip, search scoping, contextual
-  tabs, floating dock, and Profile/Settings/Notifications rules.
+  tabs, floating dock, and Profile/Settings/Notifications rules. Unavailable destinations are
+  omitted until real routes exist; fixture coverage exercises full shell chrome in tests only.
 - **Accessibility:** minimum 48dp touch targets; `Semantics`/`semanticLabel` on icon-only
   controls and images; respect system text scaling (no fixed heights that clip scaled text);
   verify at **2.0** text scale; target WCAG AA contrast in theme tokens. Screen-reader pass on
@@ -533,8 +535,8 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   `core/theme/` (e.g. compact / medium / expanded) via `LayoutBuilder`/`MediaQuery`; no heavy
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
-> **Transition note:** Theme foundation (M03_WP02) and guest-first / phone-only auth (M03_WP03) are
-> implemented. Adaptive shell (M03_WP04), Profile/Settings/Notifications (M03_WP05–M03_WP06), and
+> **Transition note:** Theme foundation (M03_WP02), guest-first / phone-only auth (M03_WP03), and
+> adaptive shell (M03_WP04) are implemented. Profile/Settings/Notifications (M03_WP05–M03_WP06) and
 > full visual hardening (M03_WP07) remain pending.
 
 ---
@@ -659,16 +661,16 @@ These close the gap between the M2 code baseline and the v1.4 target.
   becomes profile data. No shell redesign. ✅
 - **M03_WP04 — Adaptive application shell.** Adaptive RTL module strip, search row, contextual internal
   tabs, floating bottom dock, selection and swipe rules; real registered destinations only; no
-  dead Chat/module placeholder. ← **exact next package**
+  dead Chat/module placeholder. ✅
 - **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
-  Settings/Notifications header actions; backend profile contract as required.
+  Settings/Notifications header actions; backend profile contract as required. ← **exact next package**
 - **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
   sections; protected Notifications with real states; no push SDK while O3 is unresolved.
 - **M03_WP07 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
 
-**Exact next package after M03_WP03:** **M03_WP04 — Adaptive application shell**.
+**Exact next package after M03_WP04:** **M03_WP05 — Profile vertical slice**.
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
@@ -719,9 +721,9 @@ dual-credential and authenticated-first product implications of ADR-0007; NestJS
 ownership, token security, session revocation, fixture delivery, and server authority from ADR-0007
 remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
 resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
-unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02 and
-M03_WP03 are implemented; M03_WP04–M03_WP07 close the remaining documented code-to-target gaps.
-M03_WP01 itself changed documentation only.
+unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02,
+M03_WP03, and M03_WP04 are implemented; M03_WP05–M03_WP07 close the remaining documented
+code-to-target gaps. M03_WP01 itself changed documentation only.
 
 ---
 

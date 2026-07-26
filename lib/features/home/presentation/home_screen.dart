@@ -6,12 +6,14 @@ import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/auth/auth.dart';
+import 'package:laforika/features/home/presentation/home_search.dart';
+import 'package:laforika/features/shell/shell.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 /// Maximum content width for tablet/wide Home layouts.
 const double _homeMaxContentWidth = 720;
 
-/// Guest-first Home / discovery shell.
+/// Guest-first Home / discovery shell with adaptive application chrome.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,6 +23,35 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _logoutPending = false;
+  final _searchController = TextEditingController();
+  final _bodyScrollController = ScrollController();
+  final _moduleStripScrollController = ScrollController();
+  bool _moduleStripCompact = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+    _bodyScrollController.addListener(_onBodyScroll);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _bodyScrollController.dispose();
+    _moduleStripScrollController.dispose();
+    super.dispose();
+  }
+
+  void _onBodyScroll() {
+    final compact =
+        _bodyScrollController.hasClients &&
+        _bodyScrollController.offset >=
+            AppShellScaffold.moduleStripCompactThreshold;
+    if (compact != _moduleStripCompact) {
+      setState(() => _moduleStripCompact = compact);
+    }
+  }
 
   Future<void> _logout() async {
     if (_logoutPending) {
@@ -43,65 +74,152 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authControllerProvider);
     final authenticated = auth is AuthAuthenticated;
 
-    final iconStyle = IconButton.styleFrom(
-      minimumSize: const Size(
-        AppTokens.minTouchTarget,
-        AppTokens.minTouchTarget,
-      ),
-      tapTargetSize: MaterialTapTargetSize.padded,
+    final showAccountSecurity = homeSearchMatches(
+      query: _searchController.text,
+      haystackParts: [
+        l10n.homeAccountSecurityTitle,
+        l10n.homeAccountSecurityDescription,
+        l10n.homeOpenAccountSecurity,
+        l10n.accountSecurityAction,
+      ],
     );
 
-    return Scaffold(
-      key: const Key('home_discovery_shell'),
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          IconButton(
-            key: const Key('home_account_security_action'),
-            tooltip: l10n.accountSecurityAction,
-            style: iconStyle,
-            onPressed: _logoutPending
-                ? null
-                : () => context.go(accountSecurityRoutePath),
-            icon: const Icon(Icons.security),
-          ),
-          if (authenticated)
-            IconButton(
-              key: const Key('home_logout'),
-              tooltip: l10n.homeLogoutTooltip,
-              style: iconStyle,
-              onPressed: _logoutPending ? null : _logout,
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+    return AppShellScaffold(
+      scaffoldKey: const Key('home_discovery_shell'),
+      dockItems: [
+        ShellDockItem(
+          id: ShellDockIds.home,
+          semanticLabel: l10n.shellHomeLabel,
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+        ),
+      ],
+      dockSelectedId: ShellDockIds.home,
+      onDockSelected: (_) {
+        // Already on Home; keep selection.
+      },
+      moduleStripCompact: _moduleStripCompact,
+      moduleStripScrollController: _moduleStripScrollController,
+      search: _HomeSearchField(
+        controller: _searchController,
+        l10n: l10n,
+        enabled: !_logoutPending,
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Align(
-              alignment: AlignmentDirectional.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: _homeMaxContentWidth,
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsetsDirectional.all(AppTokens.spaceLg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _HomeWelcome(l10n: l10n, theme: theme),
-                      const SizedBox(height: AppTokens.spaceLg),
-                      _HomeDestinationCard(
-                        l10n: l10n,
-                        theme: theme,
-                        enabled: !_logoutPending,
+      body: Align(
+        alignment: AlignmentDirectional.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _homeMaxContentWidth),
+          child: ListView(
+            controller: _bodyScrollController,
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              AppTokens.spaceLg,
+              AppTokens.spaceMd,
+              AppTokens.spaceLg,
+              AppShellScaffold.dockBottomInset + AppTokens.spaceLg,
+            ),
+            children: [
+              _HomeWelcome(l10n: l10n, theme: theme),
+              const SizedBox(height: AppTokens.spaceLg),
+              if (authenticated)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: IconButton(
+                    key: const Key('home_logout'),
+                    tooltip: l10n.homeLogoutTooltip,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(
+                        AppTokens.minTouchTarget,
+                        AppTokens.minTouchTarget,
                       ),
-                    ],
+                      tapTargetSize: MaterialTapTargetSize.padded,
+                    ),
+                    onPressed: _logoutPending ? null : _logout,
+                    icon: const Icon(Icons.logout),
                   ),
                 ),
+              if (authenticated) const SizedBox(height: AppTokens.spaceSm),
+              // Keep AppBar-era security action available for integration tests.
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: IconButton(
+                  key: const Key('home_account_security_action'),
+                  tooltip: l10n.accountSecurityAction,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(
+                      AppTokens.minTouchTarget,
+                      AppTokens.minTouchTarget,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                  ),
+                  onPressed: _logoutPending
+                      ? null
+                      : () => context.go(accountSecurityRoutePath),
+                  icon: const Icon(Icons.security),
+                ),
               ),
-            );
-          },
+              const SizedBox(height: AppTokens.spaceMd),
+              if (showAccountSecurity)
+                _HomeDestinationCard(
+                  l10n: l10n,
+                  theme: theme,
+                  enabled: !_logoutPending,
+                )
+              else
+                Semantics(
+                  liveRegion: true,
+                  label: l10n.shellSearchNoResults,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.all(AppTokens.spaceMd),
+                    child: Text(
+                      l10n.shellSearchNoResults,
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeSearchField extends StatelessWidget {
+  const _HomeSearchField({
+    required this.controller,
+    required this.l10n,
+    required this.enabled,
+  });
+
+  final TextEditingController controller;
+  final AppLocalizations l10n;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      textField: true,
+      label: l10n.shellSearchLabel,
+      child: TextField(
+        key: const Key('home_search_field'),
+        controller: controller,
+        enabled: enabled,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: l10n.shellSearchHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  key: const Key('home_search_clear'),
+                  tooltip: l10n.shellSearchClear,
+                  onPressed: enabled ? controller.clear : null,
+                  icon: const Icon(Icons.clear),
+                ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          ),
         ),
       ),
     );

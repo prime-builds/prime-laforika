@@ -17,7 +17,11 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 
 ## Current merged baseline
 
-M03_WP03 guest-first routing and phone-only authentication on top of the M03_WP02 theme foundation, M03_WP01 documentation freeze, M2 Home / discovery shell, and M1 custom authentication vertical slice (ADR-0007 / O1, amended by ADR-0008). Architecture v1.4 records guest-first access, phone-only authentication, and the Fluent-inspired adaptive-shell target; M03_WP04–M03_WP07 implement the remaining named code-to-target gaps.
+M03_WP04 adaptive application shell on top of M03_WP03 guest-first / phone-only auth, the
+M03_WP02 theme foundation, M03_WP01 documentation freeze, M2 Home / discovery shell, and M1
+custom authentication (ADR-0007 / O1, amended by ADR-0008). Architecture v1.4 records the
+guest-first, phone-only, Fluent-inspired adaptive-shell target; M03_WP05–M03_WP07 implement
+the remaining named code-to-target gaps.
 
 ## Completed check-ins
 
@@ -117,9 +121,21 @@ M03_WP03 guest-first routing and phone-only authentication on top of the M03_WP0
 | Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP04–M03_WP07 pending; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
 | Exact next work package | M03_WP04 — Adaptive application shell |
 
+### M03_WP04 — Adaptive application shell — PR [#11](https://github.com/prime-builds/prime-laforika/pull/11)
+
+| Field | Value |
+|---|---|
+| Work package | M03_WP04 — Adaptive application shell |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/11 |
+| Final reviewed implementation commit | `681f0dcad0befa17bd4ab859cd834b38e3ead47d` |
+| Completed scope | Adaptive shell under `lib/features/shell/` (public barrel); Home-only production floating dock with correct visual Profile·Chat·Home order under fixtures; local Home discovery search; staged module strip/tabs via test fixtures only (no Chat/Profile/module routes); scroll-driven strip compaction with preserved horizontal offset; Material-icon production Home light/dark goldens; package prompt under `docs/prompts/` |
+| Verification | Local: Flutter format/analyze/tests/import boundaries; Android debug APKs `dev`/`staging`/`prod`; emulator `integration_test/auth_flow_test.dart` against real local Nest backend; CI green on PR #11 (`backend` + `quality`); WP02 theme goldens unchanged; delivery packaging correction removed unapproved handoff-instructions file and shipped full `git archive` of PR head `a874ec9b…` |
+| Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP05–M03_WP07 pending; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
+| Exact next work package | M03_WP05 — Profile vertical slice |
+
 ## Current milestone
 
-**M03_WP03 — Guest-first routing and phone-only authentication** delivered in PR #10. Exact next work package: **M03_WP04 — Adaptive application shell**.
+**M03_WP04 — Adaptive application shell** delivered in PR #11. Exact next work package: **M03_WP05 — Profile vertical slice**.
 
 ## Implemented capabilities
 
@@ -138,13 +154,14 @@ M03_WP03 guest-first routing and phone-only authentication on top of the M03_WP0
 - Import-boundary enforcement tool and CI quality gates
 - Custom authentication vertical slice (NestJS API + Flutter client; phone OTP only)
 - Guest-first Home / discovery shell with protected Account Security and path-only return destinations
-- Documented adaptive-shell / Profile / Settings / Notifications / visual-hardening target (remaining implementation in M03_WP04–M03_WP07)
+- Adaptive application shell (Home-only production dock, local Home search, fixture-covered full dock/modules/tabs)
+- Documented Profile / Settings / Notifications / visual-hardening target (remaining implementation in M03_WP05–M03_WP07)
 
 ## Deferred capabilities and owner decisions
 
 Deferred until later milestones or owner input (see architecture §14–§15):
 
-- M03_WP04–M03_WP07 implementation of adaptive shell, Profile, Settings, Notifications, and visual hardening
+- M03_WP05–M03_WP07 implementation of Profile, Settings, Notifications, and visual hardening
 - Networking beyond auth, persistence, telemetry, maps, push, Jalali display, external brand assets, signing/distribution, privacy/account-data lifecycle (O2–O6, O7 remainder, O8, and later milestones M04+)
 
 ## Verification evidence
@@ -157,6 +174,7 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 - PR [#8](https://github.com/prime-builds/prime-laforika/pull/8): final reviewed implementation commit `129fc62e430e3627288c4e3e593f58c8eac5c9a1`
 - PR [#9](https://github.com/prime-builds/prime-laforika/pull/9): final reviewed implementation commit `98729a6f0f3953448db40706e78322bc46c3b1d5`
 - PR [#10](https://github.com/prime-builds/prime-laforika/pull/10): final reviewed implementation commit `ba8cd8fc404e1e5d6389de0697a37832bd70382f`
+- PR [#11](https://github.com/prime-builds/prime-laforika/pull/11): final reviewed implementation commit `681f0dcad0befa17bd4ab859cd834b38e3ead47d`
 
 ## Known limitations / risks
 
@@ -168,4 +186,4 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 
 ## Exact next step
 
-Begin **M03_WP04 — Adaptive application shell**; do not start M04 until the M03 transition packages are complete and the owner selects the module.
+Begin **M03_WP05 — Profile vertical slice**; do not start M04 until the M03 transition packages are complete and the owner selects the module.
