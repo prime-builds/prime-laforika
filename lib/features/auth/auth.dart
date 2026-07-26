@@ -11,6 +11,8 @@ import 'package:laforika/features/auth/presentation/session_startup_screen.dart'
 
 export 'package:laforika/features/auth/data/custom_api_auth_gateway.dart';
 export 'package:laforika/features/auth/data/auth_repository.dart';
+export 'package:laforika/features/auth/presentation/phone_auth_panel.dart'
+    show PhoneAuthPanel;
 
 const authStartupRouteName = 'authStartup';
 const authStartupRoutePath = '/startup';

@@ -36,6 +36,90 @@
   "@shellHomeLabel": {
     "description": "Bottom dock semantic label for Home"
   },
+  "shellProfileLabel": "پروفایل",
+  "@shellProfileLabel": {
+    "description": "Bottom dock semantic label for Profile"
+  },
+  "profileTitle": "پروفایل",
+  "@profileTitle": {
+    "description": "Profile screen title"
+  },
+  "profileGuestIntro": "برای مدیریت پروفایل با شماره موبایل وارد شوید.",
+  "@profileGuestIntro": {
+    "description": "Guest Profile introduction above direct phone OTP"
+  },
+  "profileAvatarSemantic": "تصویر نمایه",
+  "@profileAvatarSemantic": {
+    "description": "Semantic label for non-interactive avatar placeholder"
+  },
+  "profileFirstNameLabel": "نام",
+  "@profileFirstNameLabel": {
+    "description": "First name field label"
+  },
+  "profileLastNameLabel": "نام خانوادگی",
+  "@profileLastNameLabel": {
+    "description": "Last name field label"
+  },
+  "profilePhoneLabel": "شماره موبایل تأییدشده",
+  "@profilePhoneLabel": {
+    "description": "Read-only verified phone label"
+  },
+  "profilePhoneVerified": "تأییدشده",
+  "@profilePhoneVerified": {
+    "description": "Verified phone indicator semantic label"
+  },
+  "profileEmailLabel": "ایمیل تماس (اختیاری)",
+  "@profileEmailLabel": {
+    "description": "Optional contact email field label"
+  },
+  "profileEmailVerified": "ایمیل تأیید شده است",
+  "@profileEmailVerified": {
+    "description": "Contact email verification status when verified"
+  },
+  "profileEmailUnverified": "ایمیل تماس تأیید نشده است",
+  "@profileEmailUnverified": {
+    "description": "Contact email verification status when unverified"
+  },
+  "profileSave": "ذخیره",
+  "@profileSave": {
+    "description": "Profile save button label"
+  },
+  "profileSaving": "در حال ذخیره…",
+  "@profileSaving": {
+    "description": "Profile save in-progress label"
+  },
+  "profileSaved": "پروفایل ذخیره شد.",
+  "@profileSaved": {
+    "description": "Profile save success feedback"
+  },
+  "profileRetry": "تلاش دوباره",
+  "@profileRetry": {
+    "description": "Retry after profile load failure"
+  },
+  "profileErrorEmailInUse": "این ایمیل برای حساب دیگری ثبت شده است.",
+  "@profileErrorEmailInUse": {
+    "description": "Duplicate contact email conflict"
+  },
+  "profileErrorValidation": "اطلاعات پروفایل معتبر نیست.",
+  "@profileErrorValidation": {
+    "description": "Profile validation failure"
+  },
+  "profileErrorNetwork": "ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.",
+  "@profileErrorNetwork": {
+    "description": "Profile network failure"
+  },
+  "profileErrorGeneric": "ذخیره پروفایل ممکن نشد. لطفاً دوباره تلاش کنید.",
+  "@profileErrorGeneric": {
+    "description": "Generic profile failure"
+  },
+  "profileSettingsTooltip": "تنظیمات",
+  "@profileSettingsTooltip": {
+    "description": "Profile header Settings action tooltip (fixture/tests)"
+  },
+  "profileNotificationsTooltip": "اعلان‌ها",
+  "@profileNotificationsTooltip": {
+    "description": "Profile header Notifications action tooltip (fixture/tests)"
+  },
   "shellSearchLabel": "جستجو",
   "@shellSearchLabel": {
     "description": "Accessible label for the Home search field"

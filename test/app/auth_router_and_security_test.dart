@@ -19,6 +19,7 @@ import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/auth/presentation/account_security_screen.dart';
 import 'package:laforika/features/home/home.dart';
+import 'package:laforika/features/profile/profile.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../support/fake_auth_repository.dart';
@@ -135,7 +136,7 @@ void main() {
 
     final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
     expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
-    expect(find.byKey(const Key('home_logout')), findsOneWidget);
+    expect(find.byKey(const Key('home_logout')), findsNothing);
     expect(find.text(l10n.authPhoneTitle), findsNothing);
   });
 
@@ -330,16 +331,20 @@ void main() {
     expect(find.textContaining('ایمیل'), findsNothing);
   });
 
-  test('appRoutes and path registries aggregate auth and home', () {
+  test('appRoutes and path registries aggregate auth, home, and profile', () {
     final routes = appRoutes();
     expect(routes, isNotEmpty);
     expect(appRegisteredPaths, contains(homeRoutePath));
+    expect(appRegisteredPaths, contains(profileRoutePath));
     expect(appRegisteredPaths, contains(authRoutePath));
     expect(appRegisteredPaths, contains(accountSecurityRoutePath));
     expect(appPublicPaths, contains(homeRoutePath));
+    expect(appPublicPaths, contains(profileRoutePath));
     expect(appProtectedPaths, contains(accountSecurityRoutePath));
     expect(appPublicPaths, isNot(contains(accountSecurityRoutePath)));
     expect(authOnlyPaths, equals(<String>{authRoutePath}));
+    expect(appProtectedPaths, isNot(contains(profileRoutePath)));
+    expect(authOnlyPaths, isNot(contains(profileRoutePath)));
 
     final names = <String>[];
     final paths = <String>[];
@@ -361,7 +366,9 @@ void main() {
     expect(names.toSet().length, names.length);
     expect(paths.toSet().length, paths.length);
     expect(names, contains(homeRouteName));
+    expect(names, contains(profileRouteName));
     expect(paths, contains(homeRoutePath));
+    expect(paths, contains(profileRoutePath));
     expect(paths, isNot(contains('/auth/phone')));
     expect(paths, isNot(contains('/auth/email')));
     expect(paths, isNot(contains('/auth/password-reset')));
@@ -376,6 +383,15 @@ void main() {
         startupPath: authStartupRoutePath,
       ),
       homeRoutePath,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        profileRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      profileRoutePath,
     );
     expect(
       canonicalizeReturnDestination(

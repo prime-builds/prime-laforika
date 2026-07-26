@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:laforika/app/app.dart';
+import 'package:laforika/app/router/app_router.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_session_gateway.dart';
 import 'package:laforika/core/auth/auth_state.dart';
@@ -14,9 +15,11 @@ import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/error/failure.dart';
 import 'package:laforika/core/theme/app_theme.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
+import 'package:laforika/features/profile/profile.dart';
 import 'package:laforika/features/shell/shell.dart';
 
 import '../../core/theme/tolerant_golden_comparator.dart';
+import '../../support/fake_profile_repository.dart';
 import '../../support/test_prefs.dart';
 import 'shell_test_harness.dart';
 
@@ -100,6 +103,16 @@ const _config = AppConfig(
   featureFlags: <String, bool>{},
 );
 
+const _goldenProfile = ProfileDto(
+  accountId: 'golden-account',
+  phone: '+989121234567',
+  phoneVerified: true,
+  firstName: 'سارا',
+  lastName: 'احمدی',
+  email: 'contact@example.test',
+  emailVerified: true,
+);
+
 Future<void> _pumpProductionHome(
   WidgetTester tester, {
   required ThemeMode themeMode,
@@ -143,6 +156,50 @@ Future<void> _pumpProductionHome(
   }
 }
 
+Future<void> _pumpProductionProfile(
+  WidgetTester tester, {
+  required ThemeMode themeMode,
+}) async {
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  tester.view.devicePixelRatio = 1.0;
+  late ProviderContainer container;
+  final repository = FakeProfileRepository()
+    ..getResult = const Success(_goldenProfile);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConfigProvider.overrideWithValue(_config),
+        authSessionGatewayProvider.overrideWithValue(
+          _GoldenGateway(
+            const AuthAuthenticated(AuthPrincipal(accountId: 'golden-account')),
+          ),
+        ),
+        profileRepositoryProvider.overrideWithValue(repository),
+        testPrefsOverride(),
+      ],
+      child: Consumer(
+        builder: (context, ref, _) {
+          container = ProviderScope.containerOf(context);
+          return const LaforikaApp();
+        },
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpAndSettle();
+  container.read(goRouterProvider).go(profileRoutePath);
+  if (themeMode == ThemeMode.dark) {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  } else {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+  }
+  addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -171,6 +228,26 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/home_shell_dark_rtl.png'),
+    );
+  });
+
+  testWidgets('authenticated Profile golden light RTL', (tester) async {
+    await _pumpProductionProfile(tester, themeMode: ThemeMode.light);
+    expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
+    expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/profile_light_rtl.png'),
+    );
+  });
+
+  testWidgets('authenticated Profile golden dark RTL', (tester) async {
+    await _pumpProductionProfile(tester, themeMode: ThemeMode.dark);
+    expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
+    expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/profile_dark_rtl.png'),
     );
   });
 

@@ -19,10 +19,9 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/test_prefs.dart';
 
 class _RecordingGateway implements AuthSessionGateway {
-  _RecordingGateway(this._hydrate, {this.logoutDelay = Duration.zero});
+  _RecordingGateway(this._hydrate);
 
   final AuthState _hydrate;
-  final Duration logoutDelay;
   int logoutCurrentCalls = 0;
   String? _accessToken;
 
@@ -53,9 +52,6 @@ class _RecordingGateway implements AuthSessionGateway {
   @override
   Future<Result<void>> logoutCurrent() async {
     logoutCurrentCalls += 1;
-    if (logoutDelay > Duration.zero) {
-      await Future<void>.delayed(logoutDelay);
-    }
     return const Success(null);
   }
 
@@ -148,9 +144,11 @@ void main() {
     expect(find.byType(ContextualTabStrip), findsNothing);
     expect(find.textContaining('ایمیل'), findsNothing);
     expect(find.textContaining('acc-home-secret'), findsNothing);
-    // Production dock: Home only — no Chat/Profile chrome.
+    // Production dock: Profile + Home — no Chat.
     expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
-    expect(find.byIcon(Icons.person_outline), findsNothing);
+    expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    expect(find.byIcon(Icons.home_outlined), findsNothing);
+    expect(find.byIcon(Icons.home), findsOneWidget);
 
     final searchSemantics = tester.widget<Semantics>(
       find.ancestor(
@@ -163,18 +161,19 @@ void main() {
     expect(searchSemantics.properties.label, l10n.shellSearchLabel);
   });
 
-  testWidgets('authenticated home shows logout without credential status', (
+  testWidgets('authenticated home has no logout; Profile dock available', (
     tester,
   ) async {
     await _pumpHome(tester, hydrate: const AuthAuthenticated(_principal));
     final l10n = await _l10n();
 
-    expect(find.byKey(const Key('home_logout')), findsOneWidget);
+    expect(find.byKey(const Key('home_logout')), findsNothing);
     expect(find.byKey(const Key('home_account_security')), findsOneWidget);
     expect(find.text(l10n.homeAccountSecurityTitle), findsOneWidget);
     expect(find.byKey(const Key('home_account_status')), findsNothing);
     expect(find.textContaining('acc-home-secret'), findsNothing);
     expect(find.textContaining('رمز'), findsNothing);
+    expect(find.byIcon(Icons.person_outline), findsOneWidget);
   });
 
   testWidgets('account security destination navigates via public path', (
@@ -196,36 +195,18 @@ void main() {
     expect(find.text(l10n.accountSecurityTitle), findsOneWidget);
   });
 
-  testWidgets('logout returns to guest Home not login', (tester) async {
-    final gateway = _RecordingGateway(
-      const AuthAuthenticated(_principal),
-      logoutDelay: const Duration(milliseconds: 200),
-    );
-    final container = await _pumpHome(
-      tester,
-      hydrate: const AuthAuthenticated(_principal),
-      gateway: gateway,
-    );
+  testWidgets('dock Profile navigates to guest Profile route', (tester) async {
+    await _pumpHome(tester, hydrate: const AuthUnauthenticated());
     final l10n = await _l10n();
 
-    await tester.tap(find.byKey(const Key('home_logout')));
-    await tester.pump();
-
-    final pendingDestination = tester.widget<Semantics>(
-      find.byKey(const Key('home_account_security')),
-    );
-    expect(pendingDestination.properties.enabled, isFalse);
-
-    await tester.tap(find.byKey(const Key('home_logout')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
+    await tester.tap(find.byIcon(Icons.person_outline));
     await tester.pumpAndSettle();
 
-    expect(gateway.logoutCurrentCalls, 1);
-    expect(container.read(authControllerProvider), isA<AuthUnauthenticated>());
-    expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
-    expect(find.byKey(const Key('home_logout')), findsNothing);
-    expect(find.text(l10n.authPhoneTitle), findsNothing);
+    expect(find.byKey(const Key('profile_screen')), findsOneWidget);
+    expect(find.byKey(const Key('profile_guest_auth')), findsOneWidget);
+    expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+    expect(find.text(l10n.profileGuestIntro), findsOneWidget);
+    expect(find.byKey(const Key('profile_logout')), findsNothing);
   });
 
   testWidgets('narrow short layout does not overflow', (tester) async {
@@ -254,9 +235,7 @@ void main() {
     expect(find.byType(Scrollable), findsWidgets);
   });
 
-  testWidgets('logout and account-security expose localized semantics', (
-    tester,
-  ) async {
+  testWidgets('account-security exposes localized semantics', (tester) async {
     await _pumpHome(tester, hydrate: const AuthAuthenticated(_principal));
     final l10n = await _l10n();
 
@@ -265,7 +244,7 @@ void main() {
     );
     expect(destination.properties.label, l10n.homeOpenAccountSecurity);
     expect(destination.properties.button, isTrue);
-    expect(find.byTooltip(l10n.homeLogoutTooltip), findsOneWidget);
+    expect(find.byTooltip(l10n.homeLogoutTooltip), findsNothing);
   });
 
   testWidgets('home search filters discovery and clears', (tester) async {
@@ -292,6 +271,12 @@ void main() {
     expect(homeRoutePath, '/');
     expect(homeRegisteredPaths, <String>{homeRoutePath});
     expect(homePublicPaths, <String>{homeRoutePath});
-    expect(homeRoutes(), isNotEmpty);
+    expect(
+      homeRoutes(
+        dockItems: (_) => const <ShellDockItem>[],
+        onDockSelected: (_, _) {},
+      ),
+      isNotEmpty,
+    );
   });
 }
