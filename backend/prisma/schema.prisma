@@ -18,6 +18,8 @@ enum DestinationType {
 model User {
   id              String    @id @default(uuid()) @db.Uuid
   phoneE164       String    @unique @map("phone_e164")
+  firstName       String?   @map("first_name") @db.VarChar(100)
+  lastName        String?   @map("last_name") @db.VarChar(100)
   emailNormalized String?   @unique @map("email_normalized")
   emailDisplay    String?   @map("email_display")
   emailVerifiedAt DateTime? @map("email_verified_at")

@@ -32,7 +32,43 @@ function isFixtureDeliveryMode(env: {
   return enabled && mode === 'fixture';
 }
 
-@Module({})
+const smsDeliveryProvider = {
+  provide: SMS_DELIVERY_PORT,
+  inject: [ConfigService, FixtureInbox],
+  useFactory: (config: ConfigService, inbox: FixtureInbox) => {
+    if (
+      isFixtureDeliveryMode({
+        APP_ENVIRONMENT: config.get<string>('APP_ENVIRONMENT'),
+        FIXTURE_DELIVERY_ENABLED: config.get<boolean>(
+          'FIXTURE_DELIVERY_ENABLED',
+        ),
+        DELIVERY_MODE: config.get<string>('DELIVERY_MODE'),
+      })
+    ) {
+      return new FixtureSmsDelivery(inbox);
+    }
+    return new UnavailableSmsDelivery();
+  },
+};
+
+@Module({
+  providers: [
+    AuthService,
+    ChallengeService,
+    SessionService,
+    TokenService,
+    AccessTokenGuard,
+    FixtureInbox,
+    smsDeliveryProvider,
+  ],
+  exports: [
+    TokenService,
+    SessionService,
+    AuthService,
+    FixtureInbox,
+    AccessTokenGuard,
+  ],
+})
 export class AuthModule implements OnModuleInit {
   constructor(private readonly tokens: TokenService) {}
 
@@ -46,33 +82,6 @@ export class AuthModule implements OnModuleInit {
     return {
       module: AuthModule,
       controllers,
-      providers: [
-        AuthService,
-        ChallengeService,
-        SessionService,
-        TokenService,
-        AccessTokenGuard,
-        FixtureInbox,
-        {
-          provide: SMS_DELIVERY_PORT,
-          inject: [ConfigService, FixtureInbox],
-          useFactory: (config: ConfigService, inbox: FixtureInbox) => {
-            if (
-              isFixtureDeliveryMode({
-                APP_ENVIRONMENT: config.get<string>('APP_ENVIRONMENT'),
-                FIXTURE_DELIVERY_ENABLED: config.get<boolean>(
-                  'FIXTURE_DELIVERY_ENABLED',
-                ),
-                DELIVERY_MODE: config.get<string>('DELIVERY_MODE'),
-              })
-            ) {
-              return new FixtureSmsDelivery(inbox);
-            }
-            return new UnavailableSmsDelivery();
-          },
-        },
-      ],
-      exports: [TokenService, SessionService, AuthService, FixtureInbox],
     };
   }
 

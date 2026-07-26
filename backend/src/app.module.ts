@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './database/prisma.module';
+import { ProfileModule } from './profile/profile.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -12,6 +13,7 @@ import { validateEnv } from './config/env.validation';
     }),
     PrismaModule,
     AuthModule.forRoot(),
+    ProfileModule,
   ],
 })
 export class AppModule {}

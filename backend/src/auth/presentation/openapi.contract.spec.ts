@@ -50,6 +50,8 @@ describe('OpenAPI contract', () => {
     },
     { path: '/auth/refresh', method: 'post', statuses: [400, 401] },
     { path: '/account/me', method: 'get', statuses: [401] },
+    { path: '/account/profile', method: 'get', statuses: [401] },
+    { path: '/account/profile', method: 'patch', statuses: [400, 401, 409] },
     { path: '/auth/sessions', method: 'get', statuses: [401] },
     {
       path: '/auth/sessions/{sessionId}',
@@ -91,6 +93,8 @@ describe('OpenAPI contract', () => {
       'ChallengeResponseDto',
       'TokenResponseDto',
       'AccountViewDto',
+      'ProfileViewDto',
+      'PatchProfileDto',
       'ErrorResponseDto',
     ]) {
       const schema = schemas[name];
@@ -121,6 +125,19 @@ describe('OpenAPI contract', () => {
     expect(me?.security?.length ?? 0).toBeGreaterThan(0);
   });
 
+  it('protects account/profile GET/PATCH with bearer security', () => {
+    const get = pathOf('/account/profile')?.get;
+    const patch = pathOf('/account/profile')?.patch;
+    expect(get).toBeDefined();
+    expect(patch).toBeDefined();
+    expect(get?.security?.length ?? 0).toBeGreaterThan(0);
+    expect(patch?.security?.length ?? 0).toBeGreaterThan(0);
+    const profileSchema = doc.components?.schemas?.ProfileViewDto?.properties;
+    expect(profileSchema?.firstName).toBeDefined();
+    expect(profileSchema?.email).toBeDefined();
+    expect(profileSchema?.phone).toBeDefined();
+  });
+
   it('documents exact error status matrix with ErrorResponseDto', () => {
     for (const entry of ERROR_STATUS_MATRIX) {
       const op = pathOf(entry.path)?.[entry.method];
@@ -141,6 +158,8 @@ describe('OpenAPI contract', () => {
       { path: '/auth/phone/challenges/{challengeId}/verify', method: 'post' },
       { path: '/auth/refresh', method: 'post' },
       { path: '/account/me', method: 'get' },
+      { path: '/account/profile', method: 'get' },
+      { path: '/account/profile', method: 'patch' },
     ];
     for (const entry of criticalSuccess) {
       const op = pathOf(entry.path)?.[entry.method];
