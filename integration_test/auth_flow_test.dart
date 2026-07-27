@@ -6,9 +6,13 @@ import 'package:integration_test/integration_test.dart';
 import 'package:laforika/app/router/app_router.dart';
 import 'package:laforika/core/auth/auth_controller.dart';
 import 'package:laforika/core/auth/auth_state.dart';
+import 'package:laforika/core/theme/app_appearance.dart';
+import 'package:laforika/core/theme/app_appearance_controller.dart';
 import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/home/home.dart';
+import 'package:laforika/features/notifications/notifications.dart';
 import 'package:laforika/features/profile/profile.dart';
+import 'package:laforika/features/settings/settings.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 import 'package:laforika/main.dart' as app;
 
@@ -126,12 +130,17 @@ void main() {
         find.byKey(const Key('profile_email')),
         uniqueEmail,
       );
-      await tester.tap(find.byKey(const Key('profile_save')));
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      final saveButton = find.byKey(const Key('profile_save'));
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
       await _pumpUntilFound(
         tester,
-        find.text(l10n.profileSaved),
+        find.text(l10n.profileSaved, skipOffstage: false),
         timeout: const Duration(seconds: 15),
       );
+      expect(find.text(l10n.profileSaved, skipOffstage: false), findsOneWidget);
 
       // Re-enter Profile and verify persisted values came from GET.
       // Prefer router go() — stacked shells can leave duplicate dock keys.
@@ -210,6 +219,195 @@ void main() {
         timeout: const Duration(seconds: 15),
       );
       expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'guest Settings → Notifications OTP resume → Settings logout stays public',
+    (tester) async {
+      expect(
+        fixtureKey,
+        isNotEmpty,
+        reason: 'FIXTURE_INBOX_KEY dart-define is required for this flow',
+      );
+
+      final suffix = DateTime.now().millisecondsSinceEpoch.toString();
+      final phone = '0913${suffix.substring(suffix.length - 7)}';
+      final normalizedPhone = '+98${phone.substring(1)}';
+
+      final testOnError = FlutterError.onError;
+      await app.main();
+      FlutterError.onError = testOnError;
+
+      await _pumpUntilFound(
+        tester,
+        find.byType(HomeScreen),
+        timeout: const Duration(seconds: 20),
+      );
+
+      final l10n = await AppLocalizations.delegate.load(
+        const Locale('fa', 'IR'),
+      );
+
+      await tester.tap(find.byKey(const Key('shell_dock_profile')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('profile_guest_auth')),
+        timeout: const Duration(seconds: 15),
+      );
+
+      // Guest Settings from Profile header — no authentication required.
+      await tester.tap(find.byKey(const Key('profile_header_settings')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('settings_screen')),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(find.byKey(const Key('settings_account_section')), findsNothing);
+      expect(find.byKey(const Key('settings_about')), findsOneWidget);
+
+      final settingsElement = tester.element(
+        find.byKey(const Key('settings_screen')),
+      );
+      final container = ProviderScope.containerOf(settingsElement);
+      expect(
+        container.read(appAppearanceControllerProvider),
+        AppAppearance.system,
+      );
+      await tester.tap(find.byKey(const Key('settings_appearance_dark')));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(appAppearanceControllerProvider),
+        AppAppearance.dark,
+      );
+
+      await tester.tap(find.byKey(const Key('settings_back')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('profile_guest_auth')),
+        timeout: const Duration(seconds: 15),
+      );
+
+      // Guest Notifications → direct phone OTP with resume.
+      await tester.tap(find.byKey(const Key('profile_header_notifications')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('auth_phone_field')),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(
+        container.read(goRouterProvider).state.uri.queryParameters['from'],
+        notificationsRoutePath,
+      );
+
+      final phoneField = find
+          .byKey(const Key('auth_phone_field'))
+          .hitTestable();
+      expect(phoneField, findsOneWidget);
+      await tester.enterText(phoneField, phone);
+      await tester.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('auth_phone_send')).hitTestable());
+      await tester.pump();
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('auth_otp_field')).hitTestable(),
+        timeout: const Duration(seconds: 30),
+      );
+
+      final phoneCode = await _readFixtureCode(
+        destination: normalizedPhone,
+        purpose: 'PHONE_SIGN_IN',
+        fixtureKey: fixtureKey,
+      );
+      await tester.enterText(
+        find.byKey(const Key('auth_otp_field')).hitTestable(),
+        phoneCode,
+      );
+      await tester.tap(find.byKey(const Key('auth_otp_verify')).hitTestable());
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('notifications_empty')),
+        timeout: const Duration(seconds: 20),
+      );
+      expect(find.byKey(const Key('notifications_screen')), findsOneWidget);
+      expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+
+      container.read(goRouterProvider).go(settingsRoutePath);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('settings_account_section')),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(find.byKey(const Key('settings_logout')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('settings_account_security')));
+      await _pumpUntilFound(
+        tester,
+        find.text(l10n.accountSessionsTitle),
+        timeout: const Duration(seconds: 20),
+      );
+      expect(find.byKey(const Key('account_security_screen')), findsOneWidget);
+
+      final gateway =
+          container.read(authSessionGatewayProvider) as CustomApiAuthGateway;
+      gateway.expireAccessTokenInMemory();
+      final meResult = await container.read(authRepositoryProvider).me();
+      expect(meResult.isSuccess, isTrue);
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+
+      container.read(goRouterProvider).go(settingsRoutePath);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('settings_logout')),
+        timeout: const Duration(seconds: 15),
+      );
+      await tester.ensureVisible(find.byKey(const Key('settings_logout')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings_logout')));
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('settings_about')),
+        timeout: const Duration(seconds: 20),
+      );
+      expect(
+        container.read(goRouterProvider).state.uri.path,
+        settingsRoutePath,
+      );
+      expect(
+        container.read(authControllerProvider),
+        isA<AuthUnauthenticated>(),
+      );
+      expect(find.byKey(const Key('settings_account_section')), findsNothing);
+      expect(find.text(l10n.settingsAppearanceSection), findsOneWidget);
+
+      container.read(goRouterProvider).go(profileRoutePath);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('profile_guest_auth')),
+        timeout: const Duration(seconds: 15),
+      );
+      container.read(goRouterProvider).go('/');
+      await _pumpUntilFound(
+        tester,
+        find.byType(HomeScreen),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(find.text(l10n.homeWelcomeTitle), findsOneWidget);
+
+      // Notifications remains protected after logout.
+      container.read(goRouterProvider).go(notificationsRoutePath);
+      await _pumpUntilFound(
+        tester,
+        find.byKey(const Key('auth_phone_field')),
+        timeout: const Duration(seconds: 15),
+      );
+      expect(
+        container.read(goRouterProvider).state.uri.queryParameters['from'],
+        notificationsRoutePath,
+      );
     },
   );
 }

@@ -11,7 +11,11 @@ export 'package:laforika/features/profile/presentation/profile_controller.dart';
 export 'package:laforika/features/profile/presentation/profile_error_mapper.dart';
 export 'package:laforika/features/profile/presentation/profile_header.dart';
 export 'package:laforika/features/profile/presentation/profile_screen.dart'
-    show ProfileScreen, ProfileDockItemsBuilder, ProfileDockSelected;
+    show
+        ProfileScreen,
+        ProfileDockItemsBuilder,
+        ProfileDockSelected,
+        ProfileHeaderAction;
 export 'package:laforika/features/profile/presentation/profile_validation.dart';
 
 /// Public Profile route name constant.
@@ -30,6 +34,8 @@ Set<String> get profilePublicPaths => <String>{profileRoutePath};
 List<RouteBase> profileRoutes({
   required List<ShellDockItem> Function(AppLocalizations l10n) dockItems,
   required void Function(BuildContext context, String dockId) onDockSelected,
+  required ProfileHeaderAction onSettings,
+  required ProfileHeaderAction onNotifications,
 }) {
   return <RouteBase>[
     GoRoute(
@@ -39,6 +45,8 @@ List<RouteBase> profileRoutes({
         return ProfileScreen(
           dockItems: dockItems,
           onDockSelected: onDockSelected,
+          onSettings: onSettings,
+          onNotifications: onNotifications,
         );
       },
     ),

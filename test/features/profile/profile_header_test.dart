@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/profile/presentation/profile_header.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
@@ -40,13 +41,39 @@ void main() {
         .dx;
     expect(settingsX, greaterThan(notificationsX));
 
+    final settingsButton = tester.widget<IconButton>(
+      find.byKey(const Key('profile_header_settings')),
+    );
+    final notificationsButton = tester.widget<IconButton>(
+      find.byKey(const Key('profile_header_notifications')),
+    );
+    expect(settingsButton.tooltip, l10n.profileSettingsTooltip);
+    expect(notificationsButton.tooltip, l10n.profileNotificationsTooltip);
+
+    final settingsSize = tester.getSize(
+      find.byKey(const Key('profile_header_settings')),
+    );
+    final notificationsSize = tester.getSize(
+      find.byKey(const Key('profile_header_notifications')),
+    );
+    expect(settingsSize.width, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(settingsSize.height, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(
+      notificationsSize.width,
+      greaterThanOrEqualTo(AppTokens.minTouchTarget),
+    );
+    expect(
+      notificationsSize.height,
+      greaterThanOrEqualTo(AppTokens.minTouchTarget),
+    );
+
     await tester.tap(find.byKey(const Key('profile_header_settings')));
     await tester.tap(find.byKey(const Key('profile_header_notifications')));
     expect(settingsTaps, 1);
     expect(notificationsTaps, 1);
   });
 
-  testWidgets('production header omits dead Settings/Notifications', (
+  testWidgets('header without callbacks keeps title spacing spacers', (
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
@@ -60,5 +87,6 @@ void main() {
     );
     expect(find.byKey(const Key('profile_header_settings')), findsNothing);
     expect(find.byKey(const Key('profile_header_notifications')), findsNothing);
+    expect(find.text(l10n.profileTitle), findsOneWidget);
   });
 }

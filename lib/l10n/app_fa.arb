@@ -196,5 +196,69 @@
   "authErrorSessionRevoked": "نشست شما پایان یافته است. دوباره وارد شوید.",
   "authErrorValidation": "اطلاعات واردشده معتبر نیست.",
   "authErrorNetwork": "ارتباط برقرار نشد. اتصال اینترنت را بررسی کنید.",
-  "authErrorGeneric": "خطایی رخ داد. لطفاً دوباره تلاش کنید."
+  "authErrorGeneric": "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+  "settingsTitle": "تنظیمات",
+  "@settingsTitle": {
+    "description": "Settings screen title"
+  },
+  "settingsBack": "بازگشت به پروفایل",
+  "@settingsBack": {
+    "description": "Semantic label for Settings back/up to Profile"
+  },
+  "settingsAppearanceSection": "ظاهر",
+  "@settingsAppearanceSection": {
+    "description": "Settings Appearance section heading"
+  },
+  "settingsAppearanceSystem": "سیستم",
+  "@settingsAppearanceSystem": {
+    "description": "System appearance mode label"
+  },
+  "settingsAppearanceLight": "روشن",
+  "@settingsAppearanceLight": {
+    "description": "Light appearance mode label"
+  },
+  "settingsAppearanceDark": "تیره",
+  "@settingsAppearanceDark": {
+    "description": "Dark appearance mode label"
+  },
+  "settingsAboutSection": "درباره",
+  "@settingsAboutSection": {
+    "description": "Settings About section heading"
+  },
+  "settingsAboutDescription": "لفوریکا یک برنامه فارسی‌محور برای کشف و استفاده از خدمات در دسترس شماست.",
+  "@settingsAboutDescription": {
+    "description": "Concise About description for Laforika"
+  },
+  "settingsAccountSection": "حساب",
+  "@settingsAccountSection": {
+    "description": "Authenticated Settings account section heading"
+  },
+  "notificationsTitle": "اعلان‌ها",
+  "@notificationsTitle": {
+    "description": "Notifications screen title"
+  },
+  "notificationsBack": "بازگشت به پروفایل",
+  "@notificationsBack": {
+    "description": "Semantic label for Notifications back/up to Profile"
+  },
+  "notificationsLoading": "در حال بارگذاری اعلان‌ها…",
+  "@notificationsLoading": {
+    "description": "Notifications loading state label"
+  },
+  "notificationsEmptyTitle": "اعلانی نیست",
+  "@notificationsEmptyTitle": {
+    "description": "Notifications empty-state title"
+  },
+  "notificationsEmptyBody": "وقتی اعلان جدیدی داشته باشید، اینجا نمایش داده می‌شود.",
+  "@notificationsEmptyBody": {
+    "description": "Notifications empty-state body"
+  },
+  "notificationsError": "بارگذاری اعلان‌ها ممکن نشد. دوباره تلاش کنید.",
+  "@notificationsError": {
+    "description": "Safe Notifications load failure message"
+  },
+  "notificationsRetry": "تلاش دوباره",
+  "@notificationsRetry": {
+    "description": "Retry action for Notifications load failure"
+  }
 }

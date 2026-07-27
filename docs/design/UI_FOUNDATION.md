@@ -82,8 +82,8 @@ raw hex literals.
 | `Dark` | Force dark semantic palette |
 
 Persistence uses the approved preferences facade (`PrefsFacade` / `shared_preferences`). Language
-switching is not introduced; `fa-IR` remains the only configured locale. A production Settings
-selector lands in M03_WP06; M03_WP02 exposes the state/API only.
+switching is not introduced; `fa-IR` remains the only configured locale. Production Settings
+(M03_WP06) exposes the System/Light/Dark selector bound to the M03_WP02 appearance controller.
 
 ## 7. Typography
 
@@ -170,4 +170,5 @@ Implementations and visual tests should cover, where applicable:
 |---|---|
 | M03_WP02 | Semantic tokens, Material 3 light/dark, System/Light/Dark + persistence |
 | M03_WP04 | Shell geometry consuming these tokens |
+| M03_WP06 | Settings appearance selector + Settings/Notifications surfaces |
 | M03_WP07 | Goldens, 320dp, 2.0 text scale, contrast hardening |

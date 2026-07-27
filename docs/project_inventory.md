@@ -17,11 +17,11 @@ Recording rules (see [`AGENTS.md`](../AGENTS.md) §19): each completed check-in 
 
 ## Current merged baseline
 
-M03_WP05 Profile vertical slice on top of M03_WP04 adaptive application shell, M03_WP03
-guest-first / phone-only auth, the M03_WP02 theme foundation, M03_WP01 documentation freeze,
-M2 Home / discovery shell, and M1 custom authentication (ADR-0007 / O1, amended by ADR-0008).
-Architecture v1.4 records the guest-first, phone-only, Fluent-inspired adaptive-shell target;
-M03_WP06–M03_WP07 implement the remaining named code-to-target gaps.
+M03_WP06 Settings and Notifications on top of M03_WP05 Profile, M03_WP04 adaptive application
+shell, M03_WP03 guest-first / phone-only auth, the M03_WP02 theme foundation, M03_WP01
+documentation freeze, M2 Home / discovery shell, and M1 custom authentication (ADR-0007 / O1,
+amended by ADR-0008). Architecture v1.4 records the guest-first, phone-only, Fluent-inspired
+adaptive-shell target; M03_WP07 remains the final named code-to-target gap.
 
 ## Completed check-ins
 
@@ -145,9 +145,21 @@ M03_WP06–M03_WP07 implement the remaining named code-to-target gaps.
 | Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP06–M03_WP07 pending; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
 | Exact next work package | M03_WP06 — Settings and Notifications |
 
+### M03_WP06 — Settings and Notifications — PR [#13](https://github.com/prime-builds/prime-laforika/pull/13)
+
+| Field | Value |
+|---|---|
+| Work package | M03_WP06 — Settings and Notifications |
+| Delivery PR | https://github.com/prime-builds/prime-laforika/pull/13 |
+| Final reviewed implementation commit | `393756fa5260c196f09321f1ead36181f8b13895` |
+| Completed scope | Public `/settings` (Appearance System/Light/Dark, About, authenticated Account Security + Logout); protected `/notifications` empty inbox with feature-owned loader/Retry; Profile header wiring; cold-start deep-link hydration resume for Settings/Notifications; Settings/Notifications light/dark RTL goldens; package prompt under `docs/prompts/`; no push SDK and no backend/OpenAPI/Prisma changes |
+| Verification | Local: Flutter format/analyze/tests/import boundaries; Android debug APKs `dev`/`staging`/`prod`; emulator `integration_test/auth_flow_test.dart` against real local Nest backend. GitHub Actions `backend`/`quality` did not execute steps (hosted-runner free usage exhausted); owner approved temporary local verification in lieu of green hosted CI |
+| Remaining decisions / limitations | O2–O6 and O8 unresolved; O7 external brand assets remain deferred; M03_WP07 pending; local Android builds may require TUN + user Gradle mirror and `kotlin.incremental=false` when Pub cache and project are on different drive roots |
+| Exact next work package | M03_WP07 — Integration and visual hardening |
+
 ## Current milestone
 
-**M03_WP05 — Profile vertical slice** delivered in PR #12. Exact next work package: **M03_WP06 — Settings and Notifications**.
+**M03_WP06 — Settings and Notifications** delivered in PR #13. Exact next work package: **M03_WP07 — Integration and visual hardening**.
 
 ## Implemented capabilities
 
@@ -168,13 +180,14 @@ M03_WP06–M03_WP07 implement the remaining named code-to-target gaps.
 - Guest-first Home / discovery shell with protected Account Security and path-only return destinations
 - Adaptive application shell with production dock Profile + Home, local Home search, and fixture-covered full dock/modules/tabs
 - Guest-first Profile vertical slice (phone OTP, names/contact email, account profile API)
-- Documented Settings / Notifications / visual-hardening target (remaining implementation in M03_WP06–M03_WP07)
+- Settings (public) and Notifications (protected empty inbox) destinations with Profile header entry points
+- Documented visual-hardening target (remaining implementation in M03_WP07)
 
 ## Deferred capabilities and owner decisions
 
 Deferred until later milestones or owner input (see architecture §14–§15):
 
-- M03_WP06–M03_WP07 implementation of Settings, Notifications, and visual hardening
+- M03_WP07 integration and visual hardening
 - Networking beyond auth, persistence, telemetry, maps, push, Jalali display, external brand assets, signing/distribution, privacy/account-data lifecycle (O2–O6, O7 remainder, O8, and later milestones M04+)
 
 ## Verification evidence
@@ -189,15 +202,17 @@ Deferred until later milestones or owner input (see architecture §14–§15):
 - PR [#10](https://github.com/prime-builds/prime-laforika/pull/10): final reviewed implementation commit `ba8cd8fc404e1e5d6389de0697a37832bd70382f`
 - PR [#11](https://github.com/prime-builds/prime-laforika/pull/11): final reviewed implementation commit `681f0dcad0befa17bd4ab859cd834b38e3ead47d`
 - PR [#12](https://github.com/prime-builds/prime-laforika/pull/12): final reviewed implementation commit `b25ce702c7a8d3b0bb7b1c74be95c31f98917186`
+- PR [#13](https://github.com/prime-builds/prime-laforika/pull/13): final reviewed implementation commit `393756fa5260c196f09321f1ead36181f8b13895` (local gates + APK matrix + emulator integration; hosted Actions unavailable)
 
 ## Known limitations / risks
 
 - iOS flavor configuration is committed and list membership corrected; iOS build/run was not executed on the delivery host (non-macOS)
 - Owner decisions O2–O6 and O8 remain open; O7 external brand assets remain deferred
 - CI no longer runs Android emulator integration or the three-flavor debug APK matrix (owner-approved quota deviation); local emulator verification was performed on the delivery host
+- M03_WP06 delivery used owner-approved temporary local verification because GitHub-hosted runner free usage was exhausted (Actions jobs reported empty runners / zero executed steps)
 - M2 runtime historically used authenticated-first Home and dual-credential auth UI; M03_WP03 closes that gap
 - M04 specialized-module selection is an owner decision; do not invent a specialized module early
 
 ## Exact next step
 
-Begin **M03_WP06 — Settings and Notifications**; do not start M04 until the M03 transition packages are complete and the owner selects the module.
+Begin **M03_WP07 — Integration and visual hardening**; do not start M04 until the M03 transition packages are complete and the owner selects the module.

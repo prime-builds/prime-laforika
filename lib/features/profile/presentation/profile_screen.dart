@@ -19,6 +19,7 @@ typedef ProfileDockItemsBuilder =
     List<ShellDockItem> Function(AppLocalizations l10n);
 typedef ProfileDockSelected =
     void Function(BuildContext context, String dockId);
+typedef ProfileHeaderAction = void Function(BuildContext context);
 
 /// Guest-first Profile: direct phone OTP when unauthenticated; editor when signed in.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -26,10 +27,14 @@ class ProfileScreen extends ConsumerStatefulWidget {
     super.key,
     required this.dockItems,
     required this.onDockSelected,
+    required this.onSettings,
+    required this.onNotifications,
   });
 
   final ProfileDockItemsBuilder dockItems;
   final ProfileDockSelected onDockSelected;
+  final ProfileHeaderAction onSettings;
+  final ProfileHeaderAction onNotifications;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -50,7 +55,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ProfileHeader(title: l10n.profileTitle),
+          ProfileHeader(
+            title: l10n.profileTitle,
+            settingsTooltip: l10n.profileSettingsTooltip,
+            notificationsTooltip: l10n.profileNotificationsTooltip,
+            onSettings: () => widget.onSettings(context),
+            onNotifications: () => widget.onNotifications(context),
+          ),
           Expanded(
             child: authenticated
                 ? const _AuthenticatedProfileBody()

@@ -495,6 +495,102 @@ abstract class AppLocalizations {
   /// In fa, this message translates to:
   /// **'خطایی رخ داد. لطفاً دوباره تلاش کنید.'**
   String get authErrorGeneric;
+
+  /// Settings screen title
+  ///
+  /// In fa, this message translates to:
+  /// **'تنظیمات'**
+  String get settingsTitle;
+
+  /// Semantic label for Settings back/up to Profile
+  ///
+  /// In fa, this message translates to:
+  /// **'بازگشت به پروفایل'**
+  String get settingsBack;
+
+  /// Settings Appearance section heading
+  ///
+  /// In fa, this message translates to:
+  /// **'ظاهر'**
+  String get settingsAppearanceSection;
+
+  /// System appearance mode label
+  ///
+  /// In fa, this message translates to:
+  /// **'سیستم'**
+  String get settingsAppearanceSystem;
+
+  /// Light appearance mode label
+  ///
+  /// In fa, this message translates to:
+  /// **'روشن'**
+  String get settingsAppearanceLight;
+
+  /// Dark appearance mode label
+  ///
+  /// In fa, this message translates to:
+  /// **'تیره'**
+  String get settingsAppearanceDark;
+
+  /// Settings About section heading
+  ///
+  /// In fa, this message translates to:
+  /// **'درباره'**
+  String get settingsAboutSection;
+
+  /// Concise About description for Laforika
+  ///
+  /// In fa, this message translates to:
+  /// **'لفوریکا یک برنامه فارسی‌محور برای کشف و استفاده از خدمات در دسترس شماست.'**
+  String get settingsAboutDescription;
+
+  /// Authenticated Settings account section heading
+  ///
+  /// In fa, this message translates to:
+  /// **'حساب'**
+  String get settingsAccountSection;
+
+  /// Notifications screen title
+  ///
+  /// In fa, this message translates to:
+  /// **'اعلان‌ها'**
+  String get notificationsTitle;
+
+  /// Semantic label for Notifications back/up to Profile
+  ///
+  /// In fa, this message translates to:
+  /// **'بازگشت به پروفایل'**
+  String get notificationsBack;
+
+  /// Notifications loading state label
+  ///
+  /// In fa, this message translates to:
+  /// **'در حال بارگذاری اعلان‌ها…'**
+  String get notificationsLoading;
+
+  /// Notifications empty-state title
+  ///
+  /// In fa, this message translates to:
+  /// **'اعلانی نیست'**
+  String get notificationsEmptyTitle;
+
+  /// Notifications empty-state body
+  ///
+  /// In fa, this message translates to:
+  /// **'وقتی اعلان جدیدی داشته باشید، اینجا نمایش داده می‌شود.'**
+  String get notificationsEmptyBody;
+
+  /// Safe Notifications load failure message
+  ///
+  /// In fa, this message translates to:
+  /// **'بارگذاری اعلان‌ها ممکن نشد. دوباره تلاش کنید.'**
+  String get notificationsError;
+
+  /// Retry action for Notifications load failure
+  ///
+  /// In fa, this message translates to:
+  /// **'تلاش دوباره'**
+  String get notificationsRetry;
 }
 
 class _AppLocalizationsDelegate

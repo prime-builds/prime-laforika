@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +21,9 @@ import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/auth/presentation/account_security_screen.dart';
 import 'package:laforika/features/home/home.dart';
+import 'package:laforika/features/notifications/notifications.dart';
 import 'package:laforika/features/profile/profile.dart';
+import 'package:laforika/features/settings/settings.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../support/fake_auth_repository.dart';
@@ -50,6 +54,51 @@ class _ControllableGateway implements AuthSessionGateway {
 
   @override
   Future<AuthState> hydrate() async => _hydrate;
+
+  @override
+  Future<Result<void>> logoutAll() async => const Success(null);
+
+  @override
+  Future<Result<void>> logoutCurrent() async => const Success(null);
+
+  @override
+  Future<Result<String>> refreshAccessToken() async =>
+      const FailureResult(AuthFailure(code: 'AUTH_NO_REFRESH'));
+}
+
+/// Hydration stays pending until [complete] is called.
+class _DelayedHydrationGateway implements AuthSessionGateway {
+  _DelayedHydrationGateway();
+
+  final Completer<AuthState> _hydrate = Completer<AuthState>();
+  String? _accessToken;
+
+  void complete(AuthState state) {
+    if (!_hydrate.isCompleted) {
+      _hydrate.complete(state);
+    }
+  }
+
+  @override
+  String? get accessToken => _accessToken;
+
+  @override
+  Future<AuthPrincipal> acceptCredentials({
+    required String accessToken,
+    required String refreshToken,
+    required AuthPrincipal principal,
+  }) async {
+    _accessToken = accessToken;
+    return principal;
+  }
+
+  @override
+  Future<void> clearLocalSession() async {
+    _accessToken = null;
+  }
+
+  @override
+  Future<AuthState> hydrate() => _hydrate.future;
 
   @override
   Future<Result<void>> logoutAll() async => const Success(null);
@@ -95,6 +144,121 @@ void main() {
     expect(find.text(l10n.authPhoneTitle), findsNothing);
     expect(find.text(l10n.homeWelcomeTitle), findsNothing);
   });
+
+  testWidgets('cold-start /settings resumes after delayed guest hydration', (
+    tester,
+  ) async {
+    final gateway = _DelayedHydrationGateway();
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
+          routerInitialLocationProvider.overrideWithValue(settingsRoutePath),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final router = container.read(goRouterProvider);
+    expect(router.state.uri.path, authStartupRoutePath);
+    expect(router.state.uri.queryParameters['from'], settingsRoutePath);
+    expect(container.read(authControllerProvider), isA<AuthUnknown>());
+
+    gateway.complete(const AuthUnauthenticated());
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, settingsRoutePath);
+    expect(find.byKey(const Key('settings_screen')), findsOneWidget);
+  });
+
+  testWidgets(
+    'cold-start /notifications resumes OTP after delayed guest hydration',
+    (tester) async {
+      final gateway = _DelayedHydrationGateway();
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+            routerInitialLocationProvider.overrideWithValue(
+              notificationsRoutePath,
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final router = container.read(goRouterProvider);
+      expect(router.state.uri.path, authStartupRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+
+      gateway.complete(const AuthUnauthenticated());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, authRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'cold-start query-bearing destination falls back to Home after hydration',
+    (tester) async {
+      final gateway = _DelayedHydrationGateway();
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+            routerInitialLocationProvider.overrideWithValue(
+              '$settingsRoutePath?x=1',
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final router = container.read(goRouterProvider);
+      expect(router.state.uri.path, authStartupRoutePath);
+      expect(router.state.uri.queryParameters.containsKey('from'), isFalse);
+
+      gateway.complete(const AuthUnauthenticated());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, homeRoutePath);
+    },
+  );
 
   testWidgets('unauthenticated hydration lands on guest Home', (tester) async {
     final gateway = _ControllableGateway(const AuthUnauthenticated());
@@ -172,6 +336,119 @@ void main() {
     expect(router.state.uri.queryParameters['from'], accountSecurityRoutePath);
     expect(find.text(l10n.authPhoneTitle), findsOneWidget);
   });
+
+  testWidgets(
+    'guest Settings is public; guest Notifications redirects to OTP',
+    (tester) async {
+      final gateway = _ControllableGateway(const AuthUnauthenticated());
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final router = container.read(goRouterProvider);
+      router.go(settingsRoutePath);
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, settingsRoutePath);
+      expect(find.byKey(const Key('settings_screen')), findsOneWidget);
+
+      router.go(notificationsRoutePath);
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, authRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+    },
+  );
+
+  testWidgets('OTP acceptance resumes protected Notifications', (tester) async {
+    final gateway = _ControllableGateway(const AuthUnauthenticated());
+    final repository = FakeAuthRepository()
+      ..meResult = const Success(AccountMeDto(accountId: 'acc-secure'))
+      ..sessionsResult = const Success(<SessionDto>[]);
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
+          authRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final router = container.read(goRouterProvider);
+    router.go(
+      '$authRoutePath?from=${Uri.encodeComponent(notificationsRoutePath)}',
+    );
+    await tester.pumpAndSettle();
+
+    await container
+        .read(authControllerProvider.notifier)
+        .onCredentialsAccepted(
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          principal: _principal,
+        );
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, notificationsRoutePath);
+    expect(find.byKey(const Key('notifications_screen')), findsOneWidget);
+  });
+
+  testWidgets(
+    'authenticated /auth with notifications from resumes Notifications',
+    (tester) async {
+      final gateway = _ControllableGateway(const AuthAuthenticated(_principal));
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final router = container.read(goRouterProvider);
+      router.go(
+        '$authRoutePath?from=${Uri.encodeComponent(notificationsRoutePath)}',
+      );
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, notificationsRoutePath);
+    },
+  );
 
   testWidgets('canonical /auth shows phone OTP directly', (tester) async {
     final gateway = _ControllableGateway(const AuthUnauthenticated());
@@ -331,48 +608,61 @@ void main() {
     expect(find.textContaining('ایمیل'), findsNothing);
   });
 
-  test('appRoutes and path registries aggregate auth, home, and profile', () {
-    final routes = appRoutes();
-    expect(routes, isNotEmpty);
-    expect(appRegisteredPaths, contains(homeRoutePath));
-    expect(appRegisteredPaths, contains(profileRoutePath));
-    expect(appRegisteredPaths, contains(authRoutePath));
-    expect(appRegisteredPaths, contains(accountSecurityRoutePath));
-    expect(appPublicPaths, contains(homeRoutePath));
-    expect(appPublicPaths, contains(profileRoutePath));
-    expect(appProtectedPaths, contains(accountSecurityRoutePath));
-    expect(appPublicPaths, isNot(contains(accountSecurityRoutePath)));
-    expect(authOnlyPaths, equals(<String>{authRoutePath}));
-    expect(appProtectedPaths, isNot(contains(profileRoutePath)));
-    expect(authOnlyPaths, isNot(contains(profileRoutePath)));
+  test(
+    'appRoutes and path registries aggregate auth, home, profile, settings, notifications',
+    () {
+      final routes = appRoutes();
+      expect(routes, isNotEmpty);
+      expect(appRegisteredPaths, contains(homeRoutePath));
+      expect(appRegisteredPaths, contains(profileRoutePath));
+      expect(appRegisteredPaths, contains(settingsRoutePath));
+      expect(appRegisteredPaths, contains(notificationsRoutePath));
+      expect(appRegisteredPaths, contains(authRoutePath));
+      expect(appRegisteredPaths, contains(accountSecurityRoutePath));
+      expect(appPublicPaths, contains(homeRoutePath));
+      expect(appPublicPaths, contains(profileRoutePath));
+      expect(appPublicPaths, contains(settingsRoutePath));
+      expect(appPublicPaths, isNot(contains(notificationsRoutePath)));
+      expect(appProtectedPaths, contains(accountSecurityRoutePath));
+      expect(appProtectedPaths, contains(notificationsRoutePath));
+      expect(appPublicPaths, isNot(contains(accountSecurityRoutePath)));
+      expect(authOnlyPaths, equals(<String>{authRoutePath}));
+      expect(appProtectedPaths, isNot(contains(profileRoutePath)));
+      expect(authOnlyPaths, isNot(contains(profileRoutePath)));
 
-    final names = <String>[];
-    final paths = <String>[];
-    void walk(List<RouteBase> bases) {
-      for (final route in bases) {
-        if (route is GoRoute) {
-          if (route.name != null) {
-            names.add(route.name!);
+      final names = <String>[];
+      final paths = <String>[];
+      void walk(List<RouteBase> bases) {
+        for (final route in bases) {
+          if (route is GoRoute) {
+            if (route.name != null) {
+              names.add(route.name!);
+            }
+            paths.add(route.path);
+            walk(route.routes);
+          } else if (route is ShellRoute) {
+            walk(route.routes);
           }
-          paths.add(route.path);
-          walk(route.routes);
-        } else if (route is ShellRoute) {
-          walk(route.routes);
         }
       }
-    }
 
-    walk(routes);
-    expect(names.toSet().length, names.length);
-    expect(paths.toSet().length, paths.length);
-    expect(names, contains(homeRouteName));
-    expect(names, contains(profileRouteName));
-    expect(paths, contains(homeRoutePath));
-    expect(paths, contains(profileRoutePath));
-    expect(paths, isNot(contains('/auth/phone')));
-    expect(paths, isNot(contains('/auth/email')));
-    expect(paths, isNot(contains('/auth/password-reset')));
-  });
+      walk(routes);
+      expect(names.toSet().length, names.length);
+      expect(paths.toSet().length, paths.length);
+      expect(names, contains(homeRouteName));
+      expect(names, contains(profileRouteName));
+      expect(names, contains(settingsRouteName));
+      expect(names, contains(notificationsRouteName));
+      expect(paths, contains(homeRoutePath));
+      expect(paths, contains(profileRoutePath));
+      expect(paths, contains(settingsRoutePath));
+      expect(paths, contains(notificationsRoutePath));
+      expect(paths, isNot(contains('/auth/phone')));
+      expect(paths, isNot(contains('/auth/email')));
+      expect(paths, isNot(contains('/auth/password-reset')));
+      expect(paths, isNot(contains('/chat')));
+    },
+  );
 
   test('return destinations accept public/protected and reject unsafe', () {
     expect(
@@ -392,6 +682,24 @@ void main() {
         startupPath: authStartupRoutePath,
       ),
       profileRoutePath,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        settingsRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      settingsRoutePath,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        notificationsRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      notificationsRoutePath,
     );
     expect(
       canonicalizeReturnDestination(

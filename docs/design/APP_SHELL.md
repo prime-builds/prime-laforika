@@ -2,11 +2,12 @@
 
 **Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening)
 
-**Current implementation (M03_WP04 + M03_WP05):** Shell primitives live under `lib/features/shell/`
-and are composed on Home and Profile. Production ships a **Profile + Home** floating dock and
-local Home search. Module strip and contextual tabs are omitted when no real modules are
-available. Chat is **not** faked — the three-item dock with Chat, plus modules/tabs, remains
-test-fixture coverage only. Settings/Notifications destinations remain M03_WP06.
+**Current implementation (M03_WP04–M03_WP06):** Shell primitives live under `lib/features/shell/`
+and are composed on Home, Profile, Settings, and Notifications. Production ships a **Profile +
+Home** floating dock and local Home search. Module strip and contextual tabs are omitted when no
+real modules are available. Chat is **not** faked — the three-item dock with Chat, plus
+modules/tabs, remains test-fixture coverage only. Settings is guest-accessible; Notifications is
+protected with honest empty async states until a real source is approved (O3).
 
 This document freezes adaptive shell behavior. Diagrams use generic labels only (`Module 1`,
 `Item 1`). Do not invent production modules or dummy content.
@@ -181,8 +182,8 @@ stop for a scoped product decision or omit the unavailable action until a real d
 | Settings | `start` | top-right |
 | Notifications | `end` | top-left |
 
-Production omits an action until its real route exists (M03_WP05 ships the reusable header
-contract without dead Settings/Notifications controls; M03_WP06 wires the real destinations).
+Production Profile header wires Settings (`start`) and Notifications (`end`) to their real
+routes (M03_WP06). Do not invent unread badges without a real notification source.
 
 Notifications may show an unread badge when real notification data exists.
 
@@ -190,22 +191,20 @@ Notifications may show an unread badge when real notification data exists.
 
 ## 10. Settings and Notifications
 
-### Settings (guest-accessible)
+### Settings (guest-accessible) — implemented (M03_WP06)
 
-Initially documents:
-
-- Appearance: System / Light / Dark
+- Appearance: System / Light / Dark (existing appearance controller)
 - App / about information
-- Account/security and Logout **only when authenticated**
+- Account/security and Logout **only when authenticated**; logout remains on `/settings`
 
 No language switcher. No speculative settings catalog.
 
-### Notifications (protected)
+### Notifications (protected) — implemented (M03_WP06)
 
-- Guests enter phone OTP with Notifications preserved.
-- Initial implemented states: loading, empty, error, data — when a real notification source exists.
+- Guests enter phone OTP with Notifications preserved and resume after auth.
+- Presentation states: loading, empty, error, data (production settles to empty; no fake inbox).
 - O3 remains unresolved. Do not add FCM, a regional push SDK, permissions, background handlers,
-  tokens, or push-provider configuration in M03_WP01 or M03_WP06 unless O3 is separately resolved.
+  tokens, or push-provider configuration unless O3 is separately resolved.
 
 ---
 
@@ -309,14 +308,13 @@ Documentation-only ASCII states. Production must not ship dummy content.
 
 - Profile dock selected.
 - Direct phone OTP UI.
-- Settings remains reachable when the Settings route exists (M03_WP06).
+- Settings and Notifications header actions are wired (Settings public; Notifications protected).
 
 ### Profile — authenticated
 
 - Profile dock selected.
 - Editable profile fields + read-only verified phone.
-- Settings (`start`) and Notifications (`end`) header actions when those routes exist
-  (omitted in production until M03_WP06).
+- Settings (`start`) and Notifications (`end`) header actions to real destinations.
 
 ---
 
@@ -351,8 +349,7 @@ Documentation-only ASCII states. Production must not ship dummy content.
 | Guest-first routing + phone-only auth | M03_WP03 |
 | Adaptive strip, search, tabs, dock | M03_WP04 |
 | Profile vertical slice | M03_WP05 |
-| Settings + Notifications | M03_WP06 |
-| Route matrix + visual hardening | M03_WP07 |
+| Settings + Notifications | M03_WP06 ✅ |
+| Route matrix + visual hardening | M03_WP07 ← next |
 
-M03_WP01 documents only. Current authenticated-first Home and placeholder theme are known temporary
-gaps until the packages above close them.
+M03_WP01 documents only. Remaining transition hardening is M03_WP07.

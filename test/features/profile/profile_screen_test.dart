@@ -14,6 +14,7 @@ import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/home/home.dart';
 import 'package:laforika/features/profile/profile.dart';
+import 'package:laforika/features/settings/settings.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../../support/fake_auth_repository.dart';
@@ -146,10 +147,18 @@ void main() {
     expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
     expect(find.byKey(const Key('profile_logout')), findsNothing);
     expect(find.byKey(const Key('profile_account_security')), findsNothing);
-    expect(find.byKey(const Key('profile_header_settings')), findsNothing);
+    expect(find.byKey(const Key('profile_header_settings')), findsOneWidget);
+    expect(
+      find.byKey(const Key('profile_header_notifications')),
+      findsOneWidget,
+    );
     expect(find.textContaining('رمز'), findsNothing);
     expect(find.byIcon(Icons.home_outlined), findsOneWidget);
     expect(find.byIcon(Icons.person), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('profile_header_settings')));
+    await tester.pumpAndSettle();
+    expect(container.read(goRouterProvider).state.uri.path, settingsRoutePath);
   });
 
   testWidgets('authenticated Profile loads editor and supports save/logout', (
