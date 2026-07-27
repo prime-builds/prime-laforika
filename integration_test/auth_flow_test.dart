@@ -295,15 +295,19 @@ void main() {
         notificationsRoutePath,
       );
 
-      await tester.enterText(find.byKey(const Key('auth_phone_field')), phone);
+      final phoneField = find
+          .byKey(const Key('auth_phone_field'))
+          .hitTestable();
+      expect(phoneField, findsOneWidget);
+      await tester.enterText(phoneField, phone);
       await tester.pumpAndSettle();
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('auth_phone_send')));
+      await tester.tap(find.byKey(const Key('auth_phone_send')).hitTestable());
       await tester.pump();
       await _pumpUntilFound(
         tester,
-        find.byKey(const Key('auth_otp_field')),
+        find.byKey(const Key('auth_otp_field')).hitTestable(),
         timeout: const Duration(seconds: 30),
       );
 
@@ -313,10 +317,10 @@ void main() {
         fixtureKey: fixtureKey,
       );
       await tester.enterText(
-        find.byKey(const Key('auth_otp_field')),
+        find.byKey(const Key('auth_otp_field')).hitTestable(),
         phoneCode,
       );
-      await tester.tap(find.byKey(const Key('auth_otp_verify')));
+      await tester.tap(find.byKey(const Key('auth_otp_verify')).hitTestable());
       await _pumpUntilFound(
         tester,
         find.byKey(const Key('notifications_empty')),
