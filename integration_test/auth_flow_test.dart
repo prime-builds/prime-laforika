@@ -130,8 +130,11 @@ void main() {
         find.byKey(const Key('profile_email')),
         uniqueEmail,
       );
-      await tester.tap(find.byKey(const Key('profile_save')));
       FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      final saveButton = find.byKey(const Key('profile_save'));
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
       await _pumpUntilFound(
         tester,
         find.text(l10n.profileSaved, skipOffstage: false),
