@@ -137,10 +137,7 @@ void main() {
         find.text(l10n.profileSaved, skipOffstage: false),
         timeout: const Duration(seconds: 15),
       );
-      expect(
-        find.text(l10n.profileSaved, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.profileSaved, skipOffstage: false), findsOneWidget);
 
       // Re-enter Profile and verify persisted values came from GET.
       // Prefer router go() — stacked shells can leave duplicate dock keys.
