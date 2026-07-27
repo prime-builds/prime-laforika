@@ -16,6 +16,8 @@ import 'package:laforika/core/error/failure.dart';
 import 'package:laforika/core/theme/app_theme.dart';
 import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/profile/profile.dart';
+import 'package:laforika/features/settings/settings.dart';
+import 'package:laforika/features/notifications/notifications.dart';
 import 'package:laforika/features/shell/shell.dart';
 
 import '../../core/theme/tolerant_golden_comparator.dart';
@@ -200,6 +202,85 @@ Future<void> _pumpProductionProfile(
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpProductionSettings(
+  WidgetTester tester, {
+  required ThemeMode themeMode,
+  required AuthState hydrate,
+}) async {
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  tester.view.devicePixelRatio = 1.0;
+  late ProviderContainer container;
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConfigProvider.overrideWithValue(_config),
+        authSessionGatewayProvider.overrideWithValue(_GoldenGateway(hydrate)),
+        testPrefsOverride(),
+      ],
+      child: Consumer(
+        builder: (context, ref, _) {
+          container = ProviderScope.containerOf(context);
+          return const LaforikaApp();
+        },
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpAndSettle();
+  container.read(goRouterProvider).go(settingsRoutePath);
+  if (themeMode == ThemeMode.dark) {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  } else {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+  }
+  addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pumpProductionNotifications(
+  WidgetTester tester, {
+  required ThemeMode themeMode,
+}) async {
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  tester.view.devicePixelRatio = 1.0;
+  late ProviderContainer container;
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConfigProvider.overrideWithValue(_config),
+        authSessionGatewayProvider.overrideWithValue(
+          _GoldenGateway(
+            const AuthAuthenticated(AuthPrincipal(accountId: 'golden-account')),
+          ),
+        ),
+        testPrefsOverride(),
+      ],
+      child: Consumer(
+        builder: (context, ref, _) {
+          container = ProviderScope.containerOf(context);
+          return const LaforikaApp();
+        },
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpAndSettle();
+  container.read(goRouterProvider).go(notificationsRoutePath);
+  if (themeMode == ThemeMode.dark) {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+  } else {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+  }
+  addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -235,6 +316,11 @@ void main() {
     await _pumpProductionProfile(tester, themeMode: ThemeMode.light);
     expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
     expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+    expect(find.byKey(const Key('profile_header_settings')), findsOneWidget);
+    expect(
+      find.byKey(const Key('profile_header_notifications')),
+      findsOneWidget,
+    );
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/profile_light_rtl.png'),
@@ -245,9 +331,57 @@ void main() {
     await _pumpProductionProfile(tester, themeMode: ThemeMode.dark);
     expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
     expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+    expect(find.byKey(const Key('profile_header_settings')), findsOneWidget);
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/profile_dark_rtl.png'),
+    );
+  });
+
+  testWidgets('guest Settings golden light RTL', (tester) async {
+    await _pumpProductionSettings(
+      tester,
+      themeMode: ThemeMode.light,
+      hydrate: const AuthUnauthenticated(),
+    );
+    expect(find.byKey(const Key('settings_screen')), findsOneWidget);
+    expect(find.byKey(const Key('shell_dock_profile')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/settings_guest_light_rtl.png'),
+    );
+  });
+
+  testWidgets('authenticated Settings golden dark RTL', (tester) async {
+    await _pumpProductionSettings(
+      tester,
+      themeMode: ThemeMode.dark,
+      hydrate: const AuthAuthenticated(
+        AuthPrincipal(accountId: 'golden-account'),
+      ),
+    );
+    expect(find.byKey(const Key('settings_account_section')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/settings_auth_dark_rtl.png'),
+    );
+  });
+
+  testWidgets('Notifications empty golden light RTL', (tester) async {
+    await _pumpProductionNotifications(tester, themeMode: ThemeMode.light);
+    expect(find.byKey(const Key('notifications_empty')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/notifications_empty_light_rtl.png'),
+    );
+  });
+
+  testWidgets('Notifications empty golden dark RTL', (tester) async {
+    await _pumpProductionNotifications(tester, themeMode: ThemeMode.dark);
+    expect(find.byKey(const Key('notifications_empty')), findsOneWidget);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/notifications_empty_dark_rtl.png'),
     );
   });
 

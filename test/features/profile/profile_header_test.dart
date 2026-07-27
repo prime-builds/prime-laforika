@@ -46,7 +46,7 @@ void main() {
     expect(notificationsTaps, 1);
   });
 
-  testWidgets('production header omits dead Settings/Notifications', (
+  testWidgets('header without callbacks keeps title spacing spacers', (
     tester,
   ) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('fa', 'IR'));
@@ -60,5 +60,6 @@ void main() {
     );
     expect(find.byKey(const Key('profile_header_settings')), findsNothing);
     expect(find.byKey(const Key('profile_header_notifications')), findsNothing);
+    expect(find.text(l10n.profileTitle), findsOneWidget);
   });
 }

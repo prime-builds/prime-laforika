@@ -19,7 +19,9 @@ import 'package:laforika/features/auth/auth.dart';
 import 'package:laforika/features/auth/data/auth_dtos.dart';
 import 'package:laforika/features/auth/presentation/account_security_screen.dart';
 import 'package:laforika/features/home/home.dart';
+import 'package:laforika/features/notifications/notifications.dart';
 import 'package:laforika/features/profile/profile.dart';
+import 'package:laforika/features/settings/settings.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
 import '../support/fake_auth_repository.dart';
@@ -172,6 +174,119 @@ void main() {
     expect(router.state.uri.queryParameters['from'], accountSecurityRoutePath);
     expect(find.text(l10n.authPhoneTitle), findsOneWidget);
   });
+
+  testWidgets(
+    'guest Settings is public; guest Notifications redirects to OTP',
+    (tester) async {
+      final gateway = _ControllableGateway(const AuthUnauthenticated());
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final router = container.read(goRouterProvider);
+      router.go(settingsRoutePath);
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, settingsRoutePath);
+      expect(find.byKey(const Key('settings_screen')), findsOneWidget);
+
+      router.go(notificationsRoutePath);
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, authRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+    },
+  );
+
+  testWidgets('OTP acceptance resumes protected Notifications', (tester) async {
+    final gateway = _ControllableGateway(const AuthUnauthenticated());
+    final repository = FakeAuthRepository()
+      ..meResult = const Success(AccountMeDto(accountId: 'acc-secure'))
+      ..sessionsResult = const Success(<SessionDto>[]);
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
+          authRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final router = container.read(goRouterProvider);
+    router.go(
+      '$authRoutePath?from=${Uri.encodeComponent(notificationsRoutePath)}',
+    );
+    await tester.pumpAndSettle();
+
+    await container
+        .read(authControllerProvider.notifier)
+        .onCredentialsAccepted(
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          principal: _principal,
+        );
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, notificationsRoutePath);
+    expect(find.byKey(const Key('notifications_screen')), findsOneWidget);
+  });
+
+  testWidgets(
+    'authenticated /auth with notifications from resumes Notifications',
+    (tester) async {
+      final gateway = _ControllableGateway(const AuthAuthenticated(_principal));
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final router = container.read(goRouterProvider);
+      router.go(
+        '$authRoutePath?from=${Uri.encodeComponent(notificationsRoutePath)}',
+      );
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, notificationsRoutePath);
+    },
+  );
 
   testWidgets('canonical /auth shows phone OTP directly', (tester) async {
     final gateway = _ControllableGateway(const AuthUnauthenticated());
@@ -331,48 +446,61 @@ void main() {
     expect(find.textContaining('ایمیل'), findsNothing);
   });
 
-  test('appRoutes and path registries aggregate auth, home, and profile', () {
-    final routes = appRoutes();
-    expect(routes, isNotEmpty);
-    expect(appRegisteredPaths, contains(homeRoutePath));
-    expect(appRegisteredPaths, contains(profileRoutePath));
-    expect(appRegisteredPaths, contains(authRoutePath));
-    expect(appRegisteredPaths, contains(accountSecurityRoutePath));
-    expect(appPublicPaths, contains(homeRoutePath));
-    expect(appPublicPaths, contains(profileRoutePath));
-    expect(appProtectedPaths, contains(accountSecurityRoutePath));
-    expect(appPublicPaths, isNot(contains(accountSecurityRoutePath)));
-    expect(authOnlyPaths, equals(<String>{authRoutePath}));
-    expect(appProtectedPaths, isNot(contains(profileRoutePath)));
-    expect(authOnlyPaths, isNot(contains(profileRoutePath)));
+  test(
+    'appRoutes and path registries aggregate auth, home, profile, settings, notifications',
+    () {
+      final routes = appRoutes();
+      expect(routes, isNotEmpty);
+      expect(appRegisteredPaths, contains(homeRoutePath));
+      expect(appRegisteredPaths, contains(profileRoutePath));
+      expect(appRegisteredPaths, contains(settingsRoutePath));
+      expect(appRegisteredPaths, contains(notificationsRoutePath));
+      expect(appRegisteredPaths, contains(authRoutePath));
+      expect(appRegisteredPaths, contains(accountSecurityRoutePath));
+      expect(appPublicPaths, contains(homeRoutePath));
+      expect(appPublicPaths, contains(profileRoutePath));
+      expect(appPublicPaths, contains(settingsRoutePath));
+      expect(appPublicPaths, isNot(contains(notificationsRoutePath)));
+      expect(appProtectedPaths, contains(accountSecurityRoutePath));
+      expect(appProtectedPaths, contains(notificationsRoutePath));
+      expect(appPublicPaths, isNot(contains(accountSecurityRoutePath)));
+      expect(authOnlyPaths, equals(<String>{authRoutePath}));
+      expect(appProtectedPaths, isNot(contains(profileRoutePath)));
+      expect(authOnlyPaths, isNot(contains(profileRoutePath)));
 
-    final names = <String>[];
-    final paths = <String>[];
-    void walk(List<RouteBase> bases) {
-      for (final route in bases) {
-        if (route is GoRoute) {
-          if (route.name != null) {
-            names.add(route.name!);
+      final names = <String>[];
+      final paths = <String>[];
+      void walk(List<RouteBase> bases) {
+        for (final route in bases) {
+          if (route is GoRoute) {
+            if (route.name != null) {
+              names.add(route.name!);
+            }
+            paths.add(route.path);
+            walk(route.routes);
+          } else if (route is ShellRoute) {
+            walk(route.routes);
           }
-          paths.add(route.path);
-          walk(route.routes);
-        } else if (route is ShellRoute) {
-          walk(route.routes);
         }
       }
-    }
 
-    walk(routes);
-    expect(names.toSet().length, names.length);
-    expect(paths.toSet().length, paths.length);
-    expect(names, contains(homeRouteName));
-    expect(names, contains(profileRouteName));
-    expect(paths, contains(homeRoutePath));
-    expect(paths, contains(profileRoutePath));
-    expect(paths, isNot(contains('/auth/phone')));
-    expect(paths, isNot(contains('/auth/email')));
-    expect(paths, isNot(contains('/auth/password-reset')));
-  });
+      walk(routes);
+      expect(names.toSet().length, names.length);
+      expect(paths.toSet().length, paths.length);
+      expect(names, contains(homeRouteName));
+      expect(names, contains(profileRouteName));
+      expect(names, contains(settingsRouteName));
+      expect(names, contains(notificationsRouteName));
+      expect(paths, contains(homeRoutePath));
+      expect(paths, contains(profileRoutePath));
+      expect(paths, contains(settingsRoutePath));
+      expect(paths, contains(notificationsRoutePath));
+      expect(paths, isNot(contains('/auth/phone')));
+      expect(paths, isNot(contains('/auth/email')));
+      expect(paths, isNot(contains('/auth/password-reset')));
+      expect(paths, isNot(contains('/chat')));
+    },
+  );
 
   test('return destinations accept public/protected and reject unsafe', () {
     expect(
@@ -392,6 +520,24 @@ void main() {
         startupPath: authStartupRoutePath,
       ),
       profileRoutePath,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        settingsRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      settingsRoutePath,
+    );
+    expect(
+      canonicalizeReturnDestination(
+        notificationsRoutePath,
+        registeredPaths: appRegisteredPaths,
+        authOnlyPaths: authOnlyPaths,
+        startupPath: authStartupRoutePath,
+      ),
+      notificationsRoutePath,
     );
     expect(
       canonicalizeReturnDestination(
