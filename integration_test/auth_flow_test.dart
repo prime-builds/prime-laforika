@@ -131,10 +131,15 @@ void main() {
         uniqueEmail,
       );
       await tester.tap(find.byKey(const Key('profile_save')));
+      FocusManager.instance.primaryFocus?.unfocus();
       await _pumpUntilFound(
         tester,
-        find.text(l10n.profileSaved),
+        find.text(l10n.profileSaved, skipOffstage: false),
         timeout: const Duration(seconds: 15),
+      );
+      expect(
+        find.text(l10n.profileSaved, skipOffstage: false),
+        findsOneWidget,
       );
 
       // Re-enter Profile and verify persisted values came from GET.
