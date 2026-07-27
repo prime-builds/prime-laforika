@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:laforika/core/theme/app_tokens.dart';
 
-/// Focused Profile app-bar style header with optional directional actions.
+/// Focused Profile app-bar style header with directional Settings/Notifications.
 ///
-/// Production omits Settings/Notifications until those routes exist. Tests may
-/// pass callbacks to verify RTL start/end placement.
+/// Settings is directional start (visual top-right in RTL); Notifications is
+/// directional end (visual top-left in RTL).
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({
     super.key,

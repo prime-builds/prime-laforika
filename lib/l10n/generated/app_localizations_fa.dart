@@ -225,4 +225,55 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get authErrorGeneric => 'خطایی رخ داد. لطفاً دوباره تلاش کنید.';
+
+  @override
+  String get settingsTitle => 'تنظیمات';
+
+  @override
+  String get settingsBack => 'بازگشت به پروفایل';
+
+  @override
+  String get settingsAppearanceSection => 'ظاهر';
+
+  @override
+  String get settingsAppearanceSystem => 'سیستم';
+
+  @override
+  String get settingsAppearanceLight => 'روشن';
+
+  @override
+  String get settingsAppearanceDark => 'تیره';
+
+  @override
+  String get settingsAboutSection => 'درباره';
+
+  @override
+  String get settingsAboutDescription =>
+      'لفوریکا یک برنامه فارسی‌محور برای کشف و استفاده از خدمات در دسترس شماست.';
+
+  @override
+  String get settingsAccountSection => 'حساب';
+
+  @override
+  String get notificationsTitle => 'اعلان‌ها';
+
+  @override
+  String get notificationsBack => 'بازگشت به پروفایل';
+
+  @override
+  String get notificationsLoading => 'در حال بارگذاری اعلان‌ها…';
+
+  @override
+  String get notificationsEmptyTitle => 'اعلانی نیست';
+
+  @override
+  String get notificationsEmptyBody =>
+      'وقتی اعلان جدیدی داشته باشید، اینجا نمایش داده می‌شود.';
+
+  @override
+  String get notificationsError =>
+      'بارگذاری اعلان‌ها ممکن نشد. دوباره تلاش کنید.';
+
+  @override
+  String get notificationsRetry => 'تلاش دوباره';
 }
