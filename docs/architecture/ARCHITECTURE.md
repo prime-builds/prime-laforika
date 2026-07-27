@@ -14,10 +14,11 @@ document states the decisions and the rules that follow from them.
 
 Version 1.4 freezes the **approved target** for guest-first access, phone-only authentication,
 and the Fluent-inspired adaptive shell. M03_WP02 (theme), M03_WP03 (guest-first routing and
-phone-only authentication), M03_WP04 (adaptive application shell), and M03_WP05 (Profile vertical
-slice) are implemented. Remaining gaps are **known and bounded** to M03_WP06–M03_WP07
-(Settings/Notifications, visual hardening). It is **not** permission for new code to extend a
-deprecated direction. Architecture contradictions **outside** this approved transition remain defects.
+phone-only authentication), M03_WP04 (adaptive application shell), M03_WP05 (Profile vertical
+slice), and M03_WP06 (Settings and Notifications) are implemented. The remaining gap is
+**known and bounded** to M03_WP07 (integration and visual hardening). It is **not** permission
+for new code to extend a deprecated direction. Architecture contradictions **outside** this
+approved transition remain defects.
 
 Design specifications: [`../design/UI_FOUNDATION.md`](../design/UI_FOUNDATION.md),
 [`../design/APP_SHELL.md`](../design/APP_SHELL.md).
@@ -536,8 +537,8 @@ until a module needs it** — but the choices are pre-decided so no one improvis
   responsive framework. Tablet polish is opportunistic, not a launch requirement.
 
 > **Transition note:** Theme foundation (M03_WP02), guest-first / phone-only auth (M03_WP03),
-> adaptive shell (M03_WP04), and Profile (M03_WP05) are implemented. Settings/Notifications
-> (M03_WP06) and full visual hardening (M03_WP07) remain pending.
+> adaptive shell (M03_WP04), Profile (M03_WP05), and Settings/Notifications (M03_WP06) are
+> implemented. Full visual/route hardening (M03_WP07) remains pending.
 
 ---
 
@@ -665,13 +666,13 @@ These close the gap between the M2 code baseline and the v1.4 target.
 - **M03_WP05 — Profile vertical slice.** Guest direct-phone-login Profile; authenticated profile fields;
   staged Settings/Notifications header contract; backend profile contract as required. ✅
 - **M03_WP06 — Settings and Notifications.** Guest-accessible appearance settings; About/account
-  sections; protected Notifications with real states; no push SDK while O3 is unresolved.
-  ← **exact next package**
+  sections; protected Notifications with honest async states; no push SDK while O3 is unresolved. ✅
 - **M03_WP07 — Integration and visual hardening.** Complete guest/auth/public/protected route matrix;
   return destinations; light/dark RTL goldens; 320dp; 2.0 text scale; semantics; dock swipe;
   expanded/compact module header; documentation reconciliation.
+  ← **exact next package**
 
-**Exact next package after M03_WP05:** **M03_WP06 — Settings and Notifications**.
+**Exact next package after M03_WP06:** **M03_WP07 — Integration and visual hardening**.
 
 ### Later product milestones (after the M03_WP01–M03_WP07 transition)
 
@@ -723,7 +724,7 @@ ownership, token security, session revocation, fixture delivery, and server auth
 remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
 resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
 unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02,
-M03_WP03, M03_WP04, and M03_WP05 are implemented; M03_WP06–M03_WP07 close the remaining
+M03_WP03, M03_WP04, M03_WP05, and M03_WP06 are implemented; M03_WP07 closes the remaining
 documented code-to-target gaps. M03_WP01 itself changed documentation only.
 
 ---
