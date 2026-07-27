@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/profile/presentation/profile_header.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
@@ -39,6 +40,32 @@ void main() {
         .getCenter(find.byKey(const Key('profile_header_notifications')))
         .dx;
     expect(settingsX, greaterThan(notificationsX));
+
+    final settingsButton = tester.widget<IconButton>(
+      find.byKey(const Key('profile_header_settings')),
+    );
+    final notificationsButton = tester.widget<IconButton>(
+      find.byKey(const Key('profile_header_notifications')),
+    );
+    expect(settingsButton.tooltip, l10n.profileSettingsTooltip);
+    expect(notificationsButton.tooltip, l10n.profileNotificationsTooltip);
+
+    final settingsSize = tester.getSize(
+      find.byKey(const Key('profile_header_settings')),
+    );
+    final notificationsSize = tester.getSize(
+      find.byKey(const Key('profile_header_notifications')),
+    );
+    expect(settingsSize.width, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(settingsSize.height, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(
+      notificationsSize.width,
+      greaterThanOrEqualTo(AppTokens.minTouchTarget),
+    );
+    expect(
+      notificationsSize.height,
+      greaterThanOrEqualTo(AppTokens.minTouchTarget),
+    );
 
     await tester.tap(find.byKey(const Key('profile_header_settings')));
     await tester.tap(find.byKey(const Key('profile_header_notifications')));

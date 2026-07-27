@@ -12,7 +12,9 @@ import 'package:laforika/core/auth/auth_state.dart';
 import 'package:laforika/core/config/app_config.dart';
 import 'package:laforika/core/config/app_config_provider.dart';
 import 'package:laforika/core/error/failure.dart';
+import 'package:laforika/core/theme/app_tokens.dart';
 import 'package:laforika/features/notifications/notifications.dart';
+import 'package:laforika/features/notifications/presentation/notifications_controller.dart';
 import 'package:laforika/features/shell/shell.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
@@ -65,6 +67,18 @@ const _config = AppConfig(
   logLevel: AppLogLevel.debug,
   featureFlags: <String, bool>{},
 );
+
+List<NotificationListItem> _manyItems({required int count}) {
+  return List<NotificationListItem>.generate(
+    count,
+    (index) => NotificationListItem(
+      id: 'n$index',
+      title: 'عنوان اعلان شماره $index برای پیچیدن و پیمایش',
+      body: 'متن بدنه طولانی اعلان نمونه برای اطمینان از پیمایش در عرض باریک.',
+      unread: index.isEven,
+    ),
+  );
+}
 
 Future<ProviderContainer> _pumpNotifications(
   WidgetTester tester, {
@@ -128,48 +142,89 @@ void main() {
     expect(find.byKey(const Key('shell_dock_home')), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
     expect(find.byType(AdaptiveModuleStrip), findsNothing);
+    expect(find.byType(ContextualTabStrip), findsNothing);
+    expect(find.byKey(const Key('home_search_field')), findsNothing);
     expect(find.byKey(const Key('notifications_back')), findsOneWidget);
+
+    final backSize = tester.getSize(
+      find.byKey(const Key('notifications_back')),
+    );
+    expect(backSize.width, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(backSize.height, greaterThanOrEqualTo(AppTokens.minTouchTarget));
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('notifications_back')))
+          .tooltip,
+      l10n.notificationsBack,
+    );
   });
 
   testWidgets('loading state shows progress', (tester) async {
     await _pumpNotifications(
       tester,
       extraOverrides: [
-        notificationsControllerProvider.overrideWith(_HangingInbox.new),
+        notificationsInboxLoaderProvider.overrideWithValue(
+          () => Completer<List<NotificationListItem>>().future,
+        ),
       ],
     );
     await tester.pump();
     expect(find.byKey(const Key('notifications_loading')), findsOneWidget);
   });
 
-  testWidgets('error state retries once', (tester) async {
+  testWidgets('error state retries once via shared loader', (tester) async {
+    var attempts = 0;
     await _pumpNotifications(
       tester,
       extraOverrides: [
-        notificationsControllerProvider.overrideWith(_ErrorThenEmpty.new),
+        notificationsInboxLoaderProvider.overrideWithValue(() async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw StateError('fixture');
+          }
+          return const <NotificationListItem>[];
+        }),
       ],
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('notifications_error')), findsOneWidget);
+    expect(attempts, 1);
     await tester.tap(find.byKey(const Key('notifications_retry')));
     await tester.pumpAndSettle();
+    expect(attempts, 2);
     expect(find.byKey(const Key('notifications_empty')), findsOneWidget);
   });
 
-  testWidgets('test-only data state lists items', (tester) async {
+  testWidgets('scrollable data fixture at 320dp and textScale 2.0', (
+    tester,
+  ) async {
     await _pumpNotifications(
       tester,
+      physicalSize: const Size(320, 640),
+      textScale: 2.0,
       extraOverrides: [
-        notificationsControllerProvider.overrideWith(_DataInbox.new),
+        notificationsInboxLoaderProvider.overrideWithValue(
+          () async => _manyItems(count: 12),
+        ),
       ],
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('notifications_list')), findsOneWidget);
-    expect(find.byKey(const Key('notifications_item_n1')), findsOneWidget);
-    expect(
-      find.text('عنوان طولانی اعلان برای پیچیدن متن فارسی'),
-      findsOneWidget,
+    expect(find.byKey(const Key('notifications_item_n0')), findsOneWidget);
+    final listScrollable = find.descendant(
+      of: find.byKey(const Key('notifications_list')),
+      matching: find.byType(Scrollable),
     );
+    expect(listScrollable, findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('notifications_item_n11')),
+      200,
+      scrollable: listScrollable,
+    );
+    expect(find.byKey(const Key('notifications_item_n11')), findsOneWidget);
+    expect(find.byType(AdaptiveModuleStrip), findsNothing);
+    expect(find.byType(ContextualTabStrip), findsNothing);
+    expect(find.byKey(const Key('home_search_field')), findsNothing);
   });
 
   testWidgets('320dp and textScale 2.0 empty state', (tester) async {
@@ -182,38 +237,4 @@ void main() {
     expect(find.byKey(const Key('notifications_empty')), findsOneWidget);
     expect(find.byKey(const Key('notifications_back')), findsOneWidget);
   });
-}
-
-class _HangingInbox extends NotificationsController {
-  @override
-  Future<List<NotificationListItem>> build() =>
-      Completer<List<NotificationListItem>>().future;
-}
-
-class _ErrorThenEmpty extends NotificationsController {
-  var _attempt = 0;
-
-  @override
-  Future<List<NotificationListItem>> build() async {
-    _attempt += 1;
-    if (_attempt == 1) {
-      throw StateError('fixture');
-    }
-    return const <NotificationListItem>[];
-  }
-}
-
-class _DataInbox extends NotificationsController {
-  @override
-  Future<List<NotificationListItem>> build() async {
-    return const [
-      NotificationListItem(
-        id: 'n1',
-        title: 'عنوان طولانی اعلان برای پیچیدن متن فارسی',
-        body: 'متن بدنه اعلان نمونه برای آزمون نمایش و پیمایش.',
-        unread: true,
-      ),
-      NotificationListItem(id: 'n2', title: 'خوانده‌شده', body: 'بدنه کوتاه'),
-    ];
-  }
 }

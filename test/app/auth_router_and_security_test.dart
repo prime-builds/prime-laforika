@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,6 +66,51 @@ class _ControllableGateway implements AuthSessionGateway {
       const FailureResult(AuthFailure(code: 'AUTH_NO_REFRESH'));
 }
 
+/// Hydration stays pending until [complete] is called.
+class _DelayedHydrationGateway implements AuthSessionGateway {
+  _DelayedHydrationGateway();
+
+  final Completer<AuthState> _hydrate = Completer<AuthState>();
+  String? _accessToken;
+
+  void complete(AuthState state) {
+    if (!_hydrate.isCompleted) {
+      _hydrate.complete(state);
+    }
+  }
+
+  @override
+  String? get accessToken => _accessToken;
+
+  @override
+  Future<AuthPrincipal> acceptCredentials({
+    required String accessToken,
+    required String refreshToken,
+    required AuthPrincipal principal,
+  }) async {
+    _accessToken = accessToken;
+    return principal;
+  }
+
+  @override
+  Future<void> clearLocalSession() async {
+    _accessToken = null;
+  }
+
+  @override
+  Future<AuthState> hydrate() => _hydrate.future;
+
+  @override
+  Future<Result<void>> logoutAll() async => const Success(null);
+
+  @override
+  Future<Result<void>> logoutCurrent() async => const Success(null);
+
+  @override
+  Future<Result<String>> refreshAccessToken() async =>
+      const FailureResult(AuthFailure(code: 'AUTH_NO_REFRESH'));
+}
+
 const _config = AppConfig(
   environment: AppEnvironment.dev,
   apiBaseUrl: 'http://10.0.2.2:3000/v1',
@@ -97,6 +144,121 @@ void main() {
     expect(find.text(l10n.authPhoneTitle), findsNothing);
     expect(find.text(l10n.homeWelcomeTitle), findsNothing);
   });
+
+  testWidgets('cold-start /settings resumes after delayed guest hydration', (
+    tester,
+  ) async {
+    final gateway = _DelayedHydrationGateway();
+    late final ProviderContainer container;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appConfigProvider.overrideWithValue(_config),
+          authSessionGatewayProvider.overrideWithValue(gateway),
+          testPrefsOverride(),
+          routerInitialLocationProvider.overrideWithValue(settingsRoutePath),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            container = ProviderScope.containerOf(context);
+            return const LaforikaApp();
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final router = container.read(goRouterProvider);
+    expect(router.state.uri.path, authStartupRoutePath);
+    expect(router.state.uri.queryParameters['from'], settingsRoutePath);
+    expect(container.read(authControllerProvider), isA<AuthUnknown>());
+
+    gateway.complete(const AuthUnauthenticated());
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.path, settingsRoutePath);
+    expect(find.byKey(const Key('settings_screen')), findsOneWidget);
+  });
+
+  testWidgets(
+    'cold-start /notifications resumes OTP after delayed guest hydration',
+    (tester) async {
+      final gateway = _DelayedHydrationGateway();
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+            routerInitialLocationProvider.overrideWithValue(
+              notificationsRoutePath,
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final router = container.read(goRouterProvider);
+      expect(router.state.uri.path, authStartupRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+
+      gateway.complete(const AuthUnauthenticated());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, authRoutePath);
+      expect(router.state.uri.queryParameters['from'], notificationsRoutePath);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'cold-start query-bearing destination falls back to Home after hydration',
+    (tester) async {
+      final gateway = _DelayedHydrationGateway();
+      late final ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appConfigProvider.overrideWithValue(_config),
+            authSessionGatewayProvider.overrideWithValue(gateway),
+            testPrefsOverride(),
+            routerInitialLocationProvider.overrideWithValue(
+              '$settingsRoutePath?x=1',
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return const LaforikaApp();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final router = container.read(goRouterProvider);
+      expect(router.state.uri.path, authStartupRoutePath);
+      expect(router.state.uri.queryParameters.containsKey('from'), isFalse);
+
+      gateway.complete(const AuthUnauthenticated());
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, homeRoutePath);
+    },
+  );
 
   testWidgets('unauthenticated hydration lands on guest Home', (tester) async {
     final gateway = _ControllableGateway(const AuthUnauthenticated());

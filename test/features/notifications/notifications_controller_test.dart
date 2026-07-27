@@ -13,10 +13,17 @@ void main() {
     expect(items, isEmpty);
   });
 
-  test('reload recovers from error to empty', () async {
+  test('failed load then Retry invokes the same loader twice', () async {
+    var attempts = 0;
     final container = ProviderContainer(
       overrides: [
-        notificationsControllerProvider.overrideWith(_ErrorThenEmpty.new),
+        notificationsInboxLoaderProvider.overrideWithValue(() async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw StateError('fixture_load_failed');
+          }
+          return const <NotificationListItem>[];
+        }),
       ],
     );
     addTearDown(container.dispose);
@@ -25,61 +32,86 @@ void main() {
       container.read(notificationsControllerProvider.future),
       throwsA(isA<StateError>()),
     );
+    expect(attempts, 1);
+    expect(container.read(notificationsControllerProvider).hasError, isTrue);
 
     await container.read(notificationsControllerProvider.notifier).reload();
     final items = await container.read(notificationsControllerProvider.future);
+    expect(attempts, 2);
     expect(items, isEmpty);
+    expect(container.read(notificationsControllerProvider).hasValue, isTrue);
   });
 
-  test(
-    'hanging load exposes loading then completes empty after dispose-safe reload',
-    () async {
-      final container = ProviderContainer(
-        overrides: [
-          notificationsControllerProvider.overrideWith(_HangingThenEmpty.new),
-        ],
-      );
-      addTearDown(container.dispose);
+  test('Retry transitions through loading then empty', () async {
+    final gate = Completer<void>();
+    var attempts = 0;
+    final container = ProviderContainer(
+      overrides: [
+        notificationsInboxLoaderProvider.overrideWithValue(() async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw StateError('fixture');
+          }
+          await gate.future;
+          return const <NotificationListItem>[];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(notificationsControllerProvider, (_, _) {});
+    addTearDown(sub.close);
 
-      final sub = container.listen(notificationsControllerProvider, (_, _) {});
-      addTearDown(sub.close);
-      expect(container.read(notificationsControllerProvider).isLoading, isTrue);
+    await expectLater(
+      container.read(notificationsControllerProvider.future),
+      throwsA(isA<StateError>()),
+    );
 
-      final hanging =
-          container.read(notificationsControllerProvider.notifier)
-              as _HangingThenEmpty;
-      hanging.completeEmpty();
-      final items = await container.read(
-        notificationsControllerProvider.future,
-      );
-      expect(items, isEmpty);
-    },
-  );
-}
+    final reloadFuture = container
+        .read(notificationsControllerProvider.notifier)
+        .reload();
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(notificationsControllerProvider).isLoading, isTrue);
 
-class _ErrorThenEmpty extends NotificationsController {
-  var _attempt = 0;
+    gate.complete();
+    await reloadFuture;
+    expect(
+      container.read(notificationsControllerProvider).asData?.value,
+      isEmpty,
+    );
+  });
 
-  @override
-  Future<List<NotificationListItem>> build() async {
-    _attempt += 1;
-    if (_attempt == 1) {
-      throw StateError('fixture_load_failed');
-    }
-    return const <NotificationListItem>[];
-  }
-}
+  test('pending reload after dispose does not throw or mutate', () async {
+    final gate = Completer<List<NotificationListItem>>();
+    var attempts = 0;
+    final container = ProviderContainer(
+      overrides: [
+        notificationsInboxLoaderProvider.overrideWithValue(() {
+          attempts += 1;
+          if (attempts == 1) {
+            return Future<List<NotificationListItem>>.value(
+              const <NotificationListItem>[],
+            );
+          }
+          return gate.future;
+        }),
+      ],
+    );
 
-class _HangingThenEmpty extends NotificationsController {
-  final Completer<List<NotificationListItem>> _completer =
-      Completer<List<NotificationListItem>>();
+    final sub = container.listen(notificationsControllerProvider, (_, _) {});
+    await container.read(notificationsControllerProvider.future);
+    expect(attempts, 1);
 
-  @override
-  Future<List<NotificationListItem>> build() => _completer.future;
+    final reloadFuture = container
+        .read(notificationsControllerProvider.notifier)
+        .reload();
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(notificationsControllerProvider).isLoading, isTrue);
 
-  void completeEmpty() {
-    if (!_completer.isCompleted) {
-      _completer.complete(const <NotificationListItem>[]);
-    }
-  }
+    sub.close();
+    container.dispose();
+
+    gate.complete(const <NotificationListItem>[]);
+    await expectLater(reloadFuture, completes);
+    expect(attempts, 2);
+  });
 }

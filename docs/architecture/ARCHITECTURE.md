@@ -368,10 +368,11 @@ rework.
 | `authenticated` | public or protected | allow |
 
 Home is public. Public modules/content are guest-explorable. Authentication is required only at
-protected-capability boundaries (for example Account Security today; Chat and Notifications later).
+protected-capability boundaries (for example Account Security and Notifications today; Chat later).
 A preserved destination must resolve to a registered internal **path only** (query parameters and
-fragments are rejected). External, malformed, or unknown locations fall back to Home. Router tests
-cover the guest/authenticated/public/protected matrix and loop prevention.
+fragments are rejected). External, malformed, or unknown locations fall back to Home. Cold-start
+deep links preserve a canonical registered path through session hydration. Router tests cover the
+guest/authenticated/public/protected matrix, hydration resume, and loop prevention.
 
 **Shell selection (implemented in M03_WP04; Profile added in M03_WP05):** Home is selected after session
 restoration with no module and no module-internal tabs active. Selecting a module clears bottom-dock
@@ -710,7 +711,7 @@ architect should not decide them unilaterally. Each has a safe default so work i
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
 | O5 | **Distribution channel** — Google Play vs. Cafe Bazaar / Myket vs. direct APK | Determines signing, update mechanism, store policies, CI publish step. | CI produces debug-signed, non-publishable APKs only. |
 | O6 | **Jalali (Persian) calendar** for user-facing dates | Product/UX behavior for a Persian audience. | Gregorian storage; display calendar TBD. |
-| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP05 implement the approved in-app system; do not invent external brand assets. |
+| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP06 implement the approved in-app system; do not invent external brand assets. |
 | O8 | **Legal/privacy** — privacy policy, terms, data retention, age policy | Legal obligation; gates telemetry and any real-account build leaving controlled testing. | Real auth remains test-only; no telemetry; account-data lifecycle must be approved before external distribution. |
 
 ---

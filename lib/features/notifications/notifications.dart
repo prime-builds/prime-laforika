@@ -5,7 +5,6 @@ import 'package:laforika/features/notifications/presentation/notifications_scree
 import 'package:laforika/features/shell/shell.dart';
 import 'package:laforika/l10n/generated/app_localizations.dart';
 
-export 'package:laforika/features/notifications/presentation/notifications_controller.dart';
 export 'package:laforika/features/notifications/presentation/notifications_screen.dart'
     show
         NotificationsScreen,
