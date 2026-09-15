@@ -10,9 +10,13 @@ Widget shellHarness({
   ThemeData? theme,
   TextDirection textDirection = TextDirection.rtl,
   double textScale = 1.0,
+  bool disableAnimations = false,
 }) {
   return MediaQuery(
-    data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+    data: MediaQueryData(
+      textScaler: TextScaler.linear(textScale),
+      disableAnimations: disableAnimations,
+    ),
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: theme ?? buildLightTheme(),

@@ -36,6 +36,7 @@ class _SessionStartupScreenState extends ConsumerState<SessionStartupScreen> {
             padding: const EdgeInsetsDirectional.all(AppTokens.spaceLg),
             child: switch (state) {
               AuthHydrationError() => Column(
+                key: const Key('startup_error'),
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
@@ -44,17 +45,25 @@ class _SessionStartupScreenState extends ConsumerState<SessionStartupScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppTokens.spaceMd),
-                  FilledButton(
-                    onPressed: () {
-                      ref
-                          .read(authControllerProvider.notifier)
-                          .retryHydration();
-                    },
-                    child: Text(l10n.authRetry),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: AppTokens.minTouchTarget,
+                      minHeight: AppTokens.minTouchTarget,
+                    ),
+                    child: FilledButton(
+                      key: const Key('startup_retry'),
+                      onPressed: () {
+                        ref
+                            .read(authControllerProvider.notifier)
+                            .retryHydration();
+                      },
+                      child: Text(l10n.authRetry),
+                    ),
                   ),
                 ],
               ),
               _ => Column(
+                key: const Key('startup_loading'),
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(

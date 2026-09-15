@@ -75,6 +75,7 @@ class _ModuleChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final animationsDisabled = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: true,
       selected: selected,
@@ -97,7 +98,7 @@ class _ModuleChip extends StatelessWidget {
             compact ? AppTokens.radiusSm : AppTokens.radiusMd,
           ),
           child: AnimatedSize(
-            duration: AppTokens.motionStandard,
+            duration: animationsDisabled ? Duration.zero : AppTokens.motionStandard,
             curve: Curves.easeInOut,
             alignment: AlignmentDirectional.centerStart,
             child: ConstrainedBox(
