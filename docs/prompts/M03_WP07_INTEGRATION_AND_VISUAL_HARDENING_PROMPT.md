@@ -8,7 +8,7 @@ This work package is **partially implemented**. Continue from the existing pushe
 |---|---|
 | Base branch | `main` at `5aa2ef8b2310e5fc49809ee6b839658ff3c4fe31` |
 | Working branch | `test/m03-wp07-integration-visual-hardening` |
-| Current pushed HEAD | `76725112` — `test(m03-wp07): harden integration and visual coverage` |
+| Current pushed HEAD | `320c9b35` — `docs(m03-wp07): add continuation handoff` |
 | Remote | `origin/test/m03-wp07-integration-visual-hardening` |
 | Merge status | Not merged; do not merge |
 | Inventory status | Not updated; do not update before external approval |
@@ -28,7 +28,7 @@ Treat these files as existing work to inspect, validate, repair, or extend. Do n
 
 ### Required continuation sequence
 
-1. Verify that `HEAD` is `76725112` and the worktree is clean before editing. If the branch has advanced, inspect the newer commits and preserve them.
+1. Fetch `origin`, switch to `test/m03-wp07-integration-visual-hardening`, fast-forward to the latest remote HEAD, and verify that the worktree is clean before editing. The latest known HEAD is `320c9b35`; if the branch has advanced, inspect the newer commits and preserve them.
 2. Read `AGENTS.md` and all authority/context files required by this prompt before changing code.
 3. Inspect the current diff and run targeted tests first. Fix failures in the existing slice before adding another slice.
 4. Continue implementation on this same branch with minimal, focused commits. Preserve the architecture, dependency, backend, platform, flavor, and CI constraints below.
@@ -36,6 +36,26 @@ Treat these files as existing work to inspect, validate, repair, or extend. Do n
 6. Push the completed implementation and stop for external review. Do not update `docs/project_inventory.md` and do not merge in this continuation phase.
 
 The original task, acceptance criteria, required test plan, temporary Actions deviation, and delivery rules below remain authoritative. This handoff supplements the original baseline instructions; it does not reduce their scope.
+
+### Google Studio kickoff prompt
+
+Use the following prompt to resume this package in Google Studio:
+
+```text
+Import the latest state of the GitHub repository `prime-builds/prime-laforika` and continue the incomplete M03_WP07 work package.
+
+1. Fetch the latest remote refs and open the branch `test/m03-wp07-integration-visual-hardening`.
+2. Use the latest remote commit on that branch. Do not reset, discard, rebase away, or recreate the branch. Do not start from `main` unless the branch is missing and you report that blocker first.
+3. Read `AGENTS.md` fully.
+4. Read `docs/prompts/M03_WP07_INTEGRATION_AND_VISUAL_HARDENING_PROMPT.md` fully, including its continuation handoff, acceptance criteria, constraints, test plan, and delivery rules.
+5. Inspect the current branch diff and run focused tests before adding new work. Treat the existing implementation as partial, not complete.
+6. Continue M03_WP07 from the current HEAD with minimal, focused changes. Preserve all architecture, dependency, backend, platform, flavor, CI, localization, RTL, accessibility, and no-merge constraints in the repository instructions and WP07 prompt.
+7. Do not invent a production module, Chat, route, backend contract, dependency, palette redesign, or M04 choice. Do not update `docs/project_inventory.md`.
+8. Run every applicable local verification command and report actual results. Never claim GitHub Actions passed if hosted runners are unavailable.
+9. Commit and push the completed implementation to the same branch using Conventional Commits. Do not merge. Stop for external review and report the branch, final commit, tests, remaining blockers, and archive/CI status.
+
+Begin by reporting the imported branch name, exact HEAD SHA, worktree status, and the first targeted validation command. Then continue implementation; do not stop at a plan unless a repository guardrail or explicit owner decision blocks the work.
+```
 
 ## TASK
 
