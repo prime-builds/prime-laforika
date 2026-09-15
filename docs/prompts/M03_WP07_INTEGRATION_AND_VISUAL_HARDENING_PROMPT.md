@@ -1,5 +1,42 @@
 # Laforika M03_WP07 — Integration and Visual Hardening Prompt
 
+## CONTINUATION HANDOFF — READ FIRST
+
+This work package is **partially implemented**. Continue from the existing pushed branch and commit below; do not restart from `main`, reset the branch, discard its changes, or create a replacement branch.
+
+| Item | Current value |
+|---|---|
+| Base branch | `main` at `5aa2ef8b2310e5fc49809ee6b839658ff3c4fe31` |
+| Working branch | `test/m03-wp07-integration-visual-hardening` |
+| Current pushed HEAD | `76725112` — `test(m03-wp07): harden integration and visual coverage` |
+| Remote | `origin/test/m03-wp07-integration-visual-hardening` |
+| Merge status | Not merged; do not merge |
+| Inventory status | Not updated; do not update before external approval |
+| Verification status | Not established in this handoff; run the required checks yourself and report their actual results |
+
+### Already present at the current HEAD
+
+The partial implementation already contains focused work in:
+
+- auth startup/session hydration and preserved-destination behavior;
+- production dock interaction coverage;
+- shell fixture harness and widget coverage;
+- router/security, production dock, and shell tests;
+- the committed test support file `test/tmp_repro_test.dart`.
+
+Treat these files as existing work to inspect, validate, repair, or extend. Do not assume that their presence means the related acceptance criteria are complete. The remaining package still includes the full route matrix, responsive and text-scale coverage, accessibility and contrast audits, visual/golden review, emulator integration hardening, documentation reconciliation, local quality gates, and the external-review handoff described below.
+
+### Required continuation sequence
+
+1. Verify that `HEAD` is `76725112` and the worktree is clean before editing. If the branch has advanced, inspect the newer commits and preserve them.
+2. Read `AGENTS.md` and all authority/context files required by this prompt before changing code.
+3. Inspect the current diff and run targeted tests first. Fix failures in the existing slice before adding another slice.
+4. Continue implementation on this same branch with minimal, focused commits. Preserve the architecture, dependency, backend, platform, flavor, and CI constraints below.
+5. Run and report every applicable local verification gate. Do not claim GitHub Actions passed while hosted runners are unavailable.
+6. Push the completed implementation and stop for external review. Do not update `docs/project_inventory.md` and do not merge in this continuation phase.
+
+The original task, acceptance criteria, required test plan, temporary Actions deviation, and delivery rules below remain authoritative. This handoff supplements the original baseline instructions; it does not reduce their scope.
+
 ## TASK
 
 Deliver **M03_WP07 — Integration and visual hardening**, the final work package in the M03 transition program.
