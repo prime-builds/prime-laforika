@@ -1,18 +1,20 @@
 # Laforika M03_WP07 — Integration and Visual Hardening Prompt
 
-## CONTINUATION HANDOFF — READ FIRST
+## CONTINUATION STATUS / IMPLEMENTATION STATUS
 
-This work package is **partially implemented**. Continue from the existing pushed branch and commit below; do not restart from `main`, reset the branch, discard its changes, or create a replacement branch.
+This work package is **implemented** and prepared for external review handoff.
 
 | Item | Current value |
 |---|---|
 | Base branch | `main` at `5aa2ef8b2310e5fc49809ee6b839658ff3c4fe31` |
 | Working branch | `test/m03-wp07-integration-visual-hardening` |
-| Current pushed HEAD | `320c9b35` — `docs(m03-wp07): add continuation handoff` |
+| Implementation status | M03_WP07 is implemented; the M03 transition is complete; architecture remains v1.4 |
+| Decisions | O7 is implemented for the in-app visual system through M03_WP07; O7 external logo/store/marketing assets remain unresolved; O2–O6 and O8 remain unresolved as currently documented; O3 remains unresolved and Notifications remains presentation-only with no push provider |
+| Next planning action | Owner chooses and specifies **M04 — First specialized production module** (do not name or scaffold a module by assumption) |
 | Remote | `origin/test/m03-wp07-integration-visual-hardening` |
-| Merge status | Not merged; do not merge |
+| Merge status | Not merged; held for external review |
 | Inventory status | Not updated; do not update before external approval |
-| Verification status | Not established in this handoff; run the required checks yourself and report their actual results |
+| Verification status | All local quality gates passed (Flutter format, analyze, 196 tests, boundaries, diff-check, backend format/lint/typecheck/prisma/unit/e2e/openapi, dev/staging/prod debug APK matrix, and Android emulator integration test) |
 
 ### Already present at the current HEAD
 

@@ -9,13 +9,17 @@ targets System / Light / Dark (System default) with a Fluent-inspired but Lafori
 system. See [`docs/design/UI_FOUNDATION.md`](docs/design/UI_FOUNDATION.md) and
 [`docs/design/APP_SHELL.md`](docs/design/APP_SHELL.md).
 
-**Current implementation vs approved target:** M03_WP06 delivers guest-accessible Settings
-(Appearance System/Light/Dark, About, authenticated Account Security/Logout) and protected
-Notifications with honest empty async states, wired from the Profile header. M03_WP03–M03_WP05
-guest-first routing, adaptive shell, and Profile remain in place. Remaining transition gap is
-visual/route hardening (**M03_WP07**).
+**Current implementation vs approved target:** M03_WP07 is implemented and the M03
+transition is complete. Guest-first routing, phone-only authentication, adaptive shell, Profile,
+guest-accessible Settings, and protected Notifications are hardened across the route-state
+matrix, 320dp / 2.0 text scale, WCAG AA contrast, semantics, light/dark RTL goldens, and
+real-backend emulator integration. Architecture remains v1.4. O7 is implemented for the in-app
+visual system through M03_WP07; O7 external logo/store/marketing assets remain unresolved.
+O2–O6 and O8 remain unresolved as currently documented; O3 remains unresolved and
+Notifications remains presentation-only with no push provider.
 
-Exact next work package: **M03_WP07 — Integration and visual hardening**.
+Exact next planning action: owner chooses and specifies **M04 — First specialized production module**
+(do not name or scaffold a module by assumption).
 
 ## Technical baseline
 
@@ -211,14 +215,16 @@ Architecture, toolchain, identity, flavor, CI/CD, signing, deployment-target, an
 - **M03_WP04:** Adaptive application shell ✅
 - **M03_WP05:** Profile vertical slice ✅
 - **M03_WP06:** Settings and Notifications ✅
-- **M03_WP07:** Integration and visual hardening ← **exact next package**
+- **M03_WP07:** Integration and visual hardening ✅
+
+The M03 transition is complete. Architecture remains v1.4.
 
 ### Later product milestones
 
-- **M04:** First specialized production module (owner chooses; do not invent during M03_WP01–M03_WP07)
+- **M04:** First specialized production module (owner chooses and specifies; do not name or scaffold a module by assumption)
 - **M05:** First justified complex/offline module
 
-Do not create future modules or infrastructure before a concrete milestone need. **O1** is resolved (custom NestJS/PostgreSQL; phone OTP only per ADR-0008). **O7** is partially resolved for the in-app visual system; external brand assets remain open. **O2–O6** and **O8** remain unresolved. Real-account builds remain controlled-test-only until **O8**.
+Do not create future modules or infrastructure before a concrete milestone need. **O1** is resolved (custom NestJS/PostgreSQL; phone OTP only per ADR-0008). **O7** is implemented for the in-app visual system through M03_WP07; external brand assets (logo, launch/store icons, marketing identity) remain unresolved. **O2–O6** and **O8** remain unresolved as currently documented. **O3** remains unresolved and Notifications remains presentation-only with no push provider. Real-account builds remain controlled-test-only until **O8**.
 
 ## Feature route integration
 

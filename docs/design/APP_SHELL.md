@@ -1,13 +1,17 @@
 # Laforika — Application Shell
 
-**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening)
+**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP04 (shell), M03_WP03 (guest routing), M03_WP05–M03_WP06 (Profile/Settings/Notifications), M03_WP07 (hardening — implemented)
 
-**Current implementation (M03_WP04–M03_WP06):** Shell primitives live under `lib/features/shell/`
+**Current implementation (M03 complete):** Shell primitives live under `lib/features/shell/`
 and are composed on Home, Profile, Settings, and Notifications. Production ships a **Profile +
 Home** floating dock and local Home search. Module strip and contextual tabs are omitted when no
 real modules are available. Chat is **not** faked — the three-item dock with Chat, plus
 modules/tabs, remains test-fixture coverage only. Settings is guest-accessible; Notifications is
-protected with honest empty async states until a real source is approved (O3).
+protected with honest empty async states until a real source is approved (O3). M03_WP07
+completes integration and visual hardening across the route-state matrix, 320dp / 2.0 text scale,
+semantics, contrast, and real-backend emulator flow. Architecture remains v1.4. The M03
+transition is complete. Exact next planning action: owner chooses and specifies
+**M04 — First specialized production module** (do not name or scaffold a module by assumption).
 
 This document freezes adaptive shell behavior. Diagrams use generic labels only (`Module 1`,
 `Item 1`). Do not invent production modules or dummy content.
@@ -345,11 +349,11 @@ Documentation-only ASCII states. Production must not ship dummy content.
 
 | Behavior | Package |
 |---|---|
-| Theme tokens / System·Light·Dark | M03_WP02 |
-| Guest-first routing + phone-only auth | M03_WP03 |
-| Adaptive strip, search, tabs, dock | M03_WP04 |
-| Profile vertical slice | M03_WP05 |
+| Theme tokens / System·Light·Dark | M03_WP02 ✅ |
+| Guest-first routing + phone-only auth | M03_WP03 ✅ |
+| Adaptive strip, search, tabs, dock | M03_WP04 ✅ |
+| Profile vertical slice | M03_WP05 ✅ |
 | Settings + Notifications | M03_WP06 ✅ |
-| Route matrix + visual hardening | M03_WP07 ← next |
+| Route matrix + visual hardening | M03_WP07 ✅ (M03 complete) |
 
-M03_WP01 documents only. Remaining transition hardening is M03_WP07.
+M03_WP01 documents only. The M03 transition is complete.
