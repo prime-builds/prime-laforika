@@ -32,7 +32,7 @@ class _SessionStartupScreenState extends ConsumerState<SessionStartupScreen> {
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsetsDirectional.all(AppTokens.spaceLg),
             child: switch (state) {
               AuthHydrationError() => Column(

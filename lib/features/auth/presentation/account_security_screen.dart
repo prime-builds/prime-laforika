@@ -147,31 +147,45 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                     for (final session in _sessions)
                       Card(
                         key: Key('account_session_${session.sessionId}'),
-                        child: ListTile(
-                          contentPadding: const EdgeInsetsDirectional.all(
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.all(
                             AppTokens.spaceMd,
                           ),
-                          title: Text(
-                            session.deviceLabel?.trim().isNotEmpty == true
-                                ? session.deviceLabel!
-                                : l10n.accountSessionDevice,
-                          ),
-                          subtitle: Text(
-                            session.isCurrent
-                                ? l10n.accountSessionCurrent
-                                : session.lastSeenAt,
-                          ),
-                          trailing: session.isCurrent
-                              ? null
-                              : TextButton(
-                                  key: Key(
-                                    'account_revoke_${session.sessionId}',
-                                  ),
-                                  onPressed: _loading
-                                      ? null
-                                      : () => _revoke(session.sessionId),
-                                  child: Text(l10n.accountRevokeSession),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                session.deviceLabel?.trim().isNotEmpty == true
+                                    ? session.deviceLabel!
+                                    : l10n.accountSessionDevice,
+                                style: theme.textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: AppTokens.spaceSm / 2),
+                              Text(
+                                session.isCurrent
+                                    ? l10n.accountSessionCurrent
+                                    : session.lastSeenAt,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
+                              ),
+                              if (!session.isCurrent) ...[
+                                const SizedBox(height: AppTokens.spaceSm),
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: TextButton(
+                                    key: Key(
+                                      'account_revoke_${session.sessionId}',
+                                    ),
+                                    onPressed: _loading
+                                        ? null
+                                        : () => _revoke(session.sessionId),
+                                    child: Text(l10n.accountRevokeSession),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
                     const SizedBox(height: AppTokens.spaceLg),
