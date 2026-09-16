@@ -115,17 +115,30 @@ void main() {
 
   group('WCAG AA contrast', () {
     const aa = 4.5;
+    const aaGraphic = 3.0;
 
-    test('light pairs meet AA for normal text', () {
+    test('light pairs meet AA for normal text and controls', () {
       const c = AppSemanticColors.light;
-      expect(
-        contrastRatio(c.primaryText, c.appBackground),
-        greaterThanOrEqualTo(aa),
-      );
-      expect(
-        contrastRatio(c.secondaryText, c.primarySurface),
-        greaterThanOrEqualTo(aa),
-      );
+      final surfaces = [
+        c.appBackground,
+        c.primarySurface,
+        c.secondarySurface,
+        c.elevatedSurface,
+      ];
+
+      for (final surface in surfaces) {
+        expect(
+          contrastRatio(c.primaryText, surface),
+          greaterThanOrEqualTo(aa),
+          reason: 'primaryText on $surface',
+        );
+        expect(
+          contrastRatio(c.secondaryText, surface),
+          greaterThanOrEqualTo(aa),
+          reason: 'secondaryText on $surface',
+        );
+      }
+
       expect(
         contrastRatio(c.onBrandAccent, c.brandAccent),
         greaterThanOrEqualTo(aa),
@@ -135,21 +148,56 @@ void main() {
         greaterThanOrEqualTo(aa),
       );
       expect(
+        contrastRatio(c.error, c.elevatedSurface),
+        greaterThanOrEqualTo(aa),
+      );
+      expect(
         contrastRatio(c.success, c.primarySurface),
         greaterThanOrEqualTo(aa),
+      );
+      expect(
+        contrastRatio(c.success, c.elevatedSurface),
+        greaterThanOrEqualTo(aa),
+      );
+      expect(
+        contrastRatio(c.brandAccent, c.subtleSelection),
+        greaterThanOrEqualTo(aaGraphic),
+      );
+
+      // Composited translucent dock surface (elevatedSurface @ 0.92 alpha over appBackground)
+      final dockSurface = compositeOver(
+        c.elevatedSurface.withValues(alpha: 0.92),
+        c.appBackground,
+      );
+      expect(
+        contrastRatio(c.secondaryText, dockSurface),
+        greaterThanOrEqualTo(aa),
+        reason: 'inactive dock icon on composited dock surface',
       );
     });
 
-    test('dark pairs meet AA for normal text', () {
+    test('dark pairs meet AA for normal text and controls', () {
       const c = AppSemanticColors.dark;
-      expect(
-        contrastRatio(c.primaryText, c.appBackground),
-        greaterThanOrEqualTo(aa),
-      );
-      expect(
-        contrastRatio(c.secondaryText, c.primarySurface),
-        greaterThanOrEqualTo(aa),
-      );
+      final surfaces = [
+        c.appBackground,
+        c.primarySurface,
+        c.secondarySurface,
+        c.elevatedSurface,
+      ];
+
+      for (final surface in surfaces) {
+        expect(
+          contrastRatio(c.primaryText, surface),
+          greaterThanOrEqualTo(aa),
+          reason: 'primaryText on $surface',
+        );
+        expect(
+          contrastRatio(c.secondaryText, surface),
+          greaterThanOrEqualTo(aa),
+          reason: 'secondaryText on $surface',
+        );
+      }
+
       expect(
         contrastRatio(c.onBrandAccent, c.brandAccent),
         greaterThanOrEqualTo(aa),
@@ -159,8 +207,31 @@ void main() {
         greaterThanOrEqualTo(aa),
       );
       expect(
+        contrastRatio(c.error, c.elevatedSurface),
+        greaterThanOrEqualTo(aa),
+      );
+      expect(
         contrastRatio(c.success, c.primarySurface),
         greaterThanOrEqualTo(aa),
+      );
+      expect(
+        contrastRatio(c.success, c.elevatedSurface),
+        greaterThanOrEqualTo(aa),
+      );
+      expect(
+        contrastRatio(c.brandAccent, c.subtleSelection),
+        greaterThanOrEqualTo(aaGraphic),
+      );
+
+      // Composited translucent dock surface (elevatedSurface @ 0.92 alpha over appBackground)
+      final dockSurface = compositeOver(
+        c.elevatedSurface.withValues(alpha: 0.92),
+        c.appBackground,
+      );
+      expect(
+        contrastRatio(c.secondaryText, dockSurface),
+        greaterThanOrEqualTo(aa),
+        reason: 'inactive dock icon on composited dock surface',
       );
     });
   });
