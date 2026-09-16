@@ -97,11 +97,8 @@ class _ModuleChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             compact ? AppTokens.radiusSm : AppTokens.radiusMd,
           ),
-          child: AnimatedSize(
-            duration: animationsDisabled ? Duration.zero : AppTokens.motionStandard,
-            curve: Curves.easeInOut,
-            alignment: AlignmentDirectional.centerStart,
-            child: ConstrainedBox(
+          child: () {
+            final content = ConstrainedBox(
               constraints: const BoxConstraints(
                 minWidth: AppTokens.minTouchTarget,
                 minHeight: AppTokens.minTouchTarget,
@@ -143,8 +140,19 @@ class _ModuleChip extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          ),
+            );
+
+            if (animationsDisabled) {
+              return content;
+            }
+
+            return AnimatedSize(
+              duration: AppTokens.motionStandard,
+              curve: Curves.easeInOut,
+              alignment: AlignmentDirectional.centerStart,
+              child: content,
+            );
+          }(),
         ),
       ),
     );

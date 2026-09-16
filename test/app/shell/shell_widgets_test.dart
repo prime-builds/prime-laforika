@@ -236,11 +236,30 @@ void main() {
   });
 
   testWidgets(
-    'reduced motion: module chip AnimatedSize duration is zero',
+    'reduced motion: module chip omits AnimatedSize for immediate transitions',
     (tester) async {
       await tester.pumpWidget(
         shellHarness(
           disableAnimations: true,
+          child: AdaptiveModuleStrip(
+            modules: fixtureModules(),
+            selectedId: 'm1',
+            compact: false,
+            onSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(AnimatedSize), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'normal motion: module chip AnimatedSize keeps standard duration',
+    (tester) async {
+      await tester.pumpWidget(
+        shellHarness(
           child: AdaptiveModuleStrip(
             modules: fixtureModules(),
             selectedId: 'm1',
@@ -256,34 +275,10 @@ void main() {
       );
       expect(animatedSizes, isNotEmpty);
       for (final widget in animatedSizes) {
-        expect(widget.duration, Duration.zero);
+        expect(widget.duration, AppTokens.motionStandard);
       }
     },
   );
-
-  testWidgets('normal motion: module chip AnimatedSize keeps standard duration', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      shellHarness(
-        child: AdaptiveModuleStrip(
-          modules: fixtureModules(),
-          selectedId: 'm1',
-          compact: false,
-          onSelected: (_) {},
-        ),
-      ),
-    );
-    await tester.pump();
-
-    final animatedSizes = tester.widgetList<AnimatedSize>(
-      find.byType(AnimatedSize),
-    );
-    expect(animatedSizes, isNotEmpty);
-    for (final widget in animatedSizes) {
-      expect(widget.duration, AppTokens.motionStandard);
-    }
-  });
 
   testWidgets(
     'reduced motion: module strip compact transition still applies in one pump',
@@ -317,6 +312,33 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('reduced motion: toggle compact via rebuild does not throw', (
+    tester,
+  ) async {
+    var compact = false;
+    late void Function(void Function()) rebuild;
+    await tester.pumpWidget(
+      shellHarness(
+        disableAnimations: true,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return AdaptiveModuleStrip(
+              modules: fixtureModules(),
+              selectedId: 'm1',
+              compact: compact,
+              onSelected: (_) {},
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    rebuild(() => compact = true);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('320dp width and text scale 2.0 together remain usable', (
     tester,
