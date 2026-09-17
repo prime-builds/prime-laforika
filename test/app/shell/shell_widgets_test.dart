@@ -235,6 +235,134 @@ void main() {
     expect(find.text('ماژول ۱'), findsOneWidget);
   });
 
+  testWidgets(
+    'reduced motion: module chip omits AnimatedSize for immediate transitions',
+    (tester) async {
+      await tester.pumpWidget(
+        shellHarness(
+          disableAnimations: true,
+          child: AdaptiveModuleStrip(
+            modules: fixtureModules(),
+            selectedId: 'm1',
+            compact: false,
+            onSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(AnimatedSize), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'normal motion: module chip AnimatedSize keeps standard duration',
+    (tester) async {
+      await tester.pumpWidget(
+        shellHarness(
+          child: AdaptiveModuleStrip(
+            modules: fixtureModules(),
+            selectedId: 'm1',
+            compact: false,
+            onSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final animatedSizes = tester.widgetList<AnimatedSize>(
+        find.byType(AnimatedSize),
+      );
+      expect(animatedSizes, isNotEmpty);
+      for (final widget in animatedSizes) {
+        expect(widget.duration, AppTokens.motionStandard);
+      }
+    },
+  );
+
+  testWidgets(
+    'reduced motion: module strip compact transition still applies in one pump',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 740));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        shellHarness(disableAnimations: true, child: const ShellFixtureHost()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ماژول ۲'));
+      await tester.pumpAndSettle();
+
+      final state = tester.state<ShellFixtureHostState>(
+        find.byType(ShellFixtureHost),
+      );
+      expect(state.compact, isFalse);
+
+      await tester.drag(
+        find.byKey(const Key('fixture_body')),
+        const Offset(0, -80),
+      );
+      // Single pump — no motionStandard wait needed when animations disabled.
+      await tester.pump();
+
+      expect(state.compact, isTrue);
+      expect(find.byIcon(Icons.extension), findsNothing);
+      expect(find.text('ماژول ۲'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('reduced motion: toggle compact via rebuild does not throw', (
+    tester,
+  ) async {
+    var compact = false;
+    late void Function(void Function()) rebuild;
+    await tester.pumpWidget(
+      shellHarness(
+        disableAnimations: true,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return AdaptiveModuleStrip(
+              modules: fixtureModules(),
+              selectedId: 'm1',
+              compact: compact,
+              onSelected: (_) {},
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+    rebuild(() => compact = true);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('320dp width and text scale 2.0 together remain usable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      shellHarness(textScale: 2.0, child: const ShellFixtureHost()),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(FloatingBottomDock), findsOneWidget);
+
+    await tester.tap(find.text('ماژول ۱'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text('زبانه ۱'), findsOneWidget);
+  });
+
   testWidgets('empty modules omit strip; invalid tab falls back to first', (
     tester,
   ) async {

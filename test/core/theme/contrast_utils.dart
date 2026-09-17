@@ -29,3 +29,21 @@ double contrastRatio(Color foreground, Color background) {
   );
   return (lighter + 0.05) / (darker + 0.05);
 }
+
+/// Composites [foreground] with alpha over an opaque [background].
+Color compositeOver(Color foreground, Color background) {
+  final alpha = foreground.a;
+  final r = (foreground.r * alpha + background.r * (1.0 - alpha)).clamp(
+    0.0,
+    1.0,
+  );
+  final g = (foreground.g * alpha + background.g * (1.0 - alpha)).clamp(
+    0.0,
+    1.0,
+  );
+  final b = (foreground.b * alpha + background.b * (1.0 - alpha)).clamp(
+    0.0,
+    1.0,
+  );
+  return Color.from(alpha: 1.0, red: r, green: g, blue: b);
+}

@@ -277,6 +277,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(goRouterProvider).state.uri.path, profileRoutePath);
   });
+
+  testWidgets(
+    'authenticated Settings at 320dp and textScale 2.0 renders without overflow',
+    (tester) async {
+      final authRepo = FakeAuthRepository()
+        ..meResult = const Success(AccountMeDto(accountId: 'acc-s'))
+        ..sessionsResult = const Success(<SessionDto>[]);
+      await _pumpSettings(
+        tester,
+        hydrate: const AuthAuthenticated(AuthPrincipal(accountId: 'acc-s')),
+        authRepository: authRepo,
+        physicalSize: const Size(320, 640),
+        textScale: 2.0,
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.descendant(
+        of: find.byKey(const Key('settings_screen')),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('settings_logout')),
+        200,
+        scrollable: scrollable,
+      );
+
+      expect(find.byKey(const Key('settings_account_section')), findsOneWidget);
+      expect(
+        find.byKey(const Key('settings_account_security')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('settings_logout')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 void _expectAppearanceSelected(WidgetTester tester, AppAppearance selected) {

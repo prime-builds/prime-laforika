@@ -711,7 +711,7 @@ architect should not decide them unilaterally. Each has a safe default so work i
 | O4 | **Crash/analytics vendor** — Sentry vs. Crashlytics vs. none | Sends user data (privacy policy), paid tiers, Google-service reliance. | No remote telemetry ships; default debug error presentation and sanitized local diagnostics remain active. |
 | O5 | **Distribution channel** — Google Play vs. Cafe Bazaar / Myket vs. direct APK | Determines signing, update mechanism, store policies, CI publish step. | CI produces debug-signed, non-publishable APKs only. |
 | O6 | **Jalali (Persian) calendar** for user-facing dates | Product/UX behavior for a Persian audience. | Gregorian storage; display calendar TBD. |
-| O7 | **Branding** — **PARTIALLY RESOLVED:** in-app visual system, semantic palette, typography direction, and shell behavior via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | M03_WP02–M03_WP06 implement the approved in-app system; do not invent external brand assets. |
+| O7 | **Branding** — **IN-APP RESOLVED:** in-app visual system, semantic palette, typography direction, shell behavior, and visual hardening implemented through M03_WP07 via [ADR-0009](./adr/0009-fluent-inspired-visual-foundation-and-adaptive-app-shell.md) and [`../design/`](../design/). **Still open:** logo, launch/store icons, marketing identity, illustrations. | External brand assets and store presence. | In-app visual system implemented through M03_WP07; do not invent external brand assets. |
 | O8 | **Legal/privacy** — privacy policy, terms, data retention, age policy | Legal obligation; gates telemetry and any real-account build leaving controlled testing. | Real auth remains test-only; no telemetry; account-data lifecycle must be approved before external distribution. |
 
 ---
@@ -722,11 +722,14 @@ Version 1.4 records the approved guest-first, phone-only, Fluent-inspired adapti
 ADR-0008 and ADR-0009 on top of the M2 baseline. ADR-0008 **partially supersedes** only the
 dual-credential and authenticated-first product implications of ADR-0007; NestJS/PostgreSQL
 ownership, token security, session revocation, fixture delivery, and server authority from ADR-0007
-remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. O7 is partially
-resolved for the in-app visual foundation; external brand assets remain open. O2–O6 and O8 remain
-unresolved. O8 continues to gate external distribution of real-account builds. M03_WP02,
-M03_WP03, M03_WP04, M03_WP05, and M03_WP06 are implemented; M03_WP07 closes the remaining
-documented code-to-target gaps. M03_WP01 itself changed documentation only.
+remain in force. ADR-0006 remains the provider-neutral Flutter session boundary. M03_WP07 is
+implemented and the M03 transition is complete. Architecture remains v1.4. O7 is implemented
+for the in-app visual system through M03_WP07; O7 external logo/store/marketing assets remain
+unresolved. O2–O6 and O8 remain unresolved as currently documented. O3 remains unresolved and
+Notifications remains presentation-only with no push provider. O8 continues to gate external
+distribution of real-account builds. Exact next planning action: owner chooses and specifies
+**M04 — First specialized production module** (do not name or scaffold a module by assumption).
+M03_WP01 itself changed documentation only.
 
 ---
 

@@ -1,10 +1,13 @@
 # Laforika — UI Foundation
 
-**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP02 (theme tokens — implemented), M03_WP07 (visual hardening — pending)
+**Status:** Approved target specification · **Date:** 2026-07-25 · **Implements in:** M03_WP02 (theme tokens — implemented), M03_WP07 (visual hardening — implemented)
 
 This document freezes the in-app visual foundation. The M03_WP02 theme/token foundation is
-implemented in `core/theme/` and appearance persistence. Broader app-wide visual hardening remains
-M03_WP07.
+implemented in `core/theme/` and appearance persistence. Broader app-wide visual hardening is
+implemented in M03_WP07. The M03 transition is complete. Architecture remains v1.4. O7 is
+implemented for the in-app visual system through M03_WP07; external brand assets (logo, store icons,
+marketing identity) remain open. Exact next planning action: owner chooses and specifies
+**M04 — First specialized production module** (do not name or scaffold a module by assumption).
 
 ## 1. Authority
 
@@ -171,4 +174,4 @@ Implementations and visual tests should cover, where applicable:
 | M03_WP02 | Semantic tokens, Material 3 light/dark, System/Light/Dark + persistence |
 | M03_WP04 | Shell geometry consuming these tokens |
 | M03_WP06 | Settings appearance selector + Settings/Notifications surfaces |
-| M03_WP07 | Goldens, 320dp, 2.0 text scale, contrast hardening |
+| M03_WP07 | Goldens, 320dp, 2.0 text scale, contrast hardening ✅ (M03 complete) |

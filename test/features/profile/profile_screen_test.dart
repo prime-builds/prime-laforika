@@ -248,6 +248,56 @@ void main() {
     expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
   });
 
+  testWidgets(
+    'guest Profile shows direct phone OTP at 320dp and textScale 2.0 without overflow',
+    (tester) async {
+      final container = await _pumpApp(
+        tester,
+        hydrate: const AuthUnauthenticated(),
+        physicalSize: const Size(320, 568),
+        textScale: 2.0,
+      );
+      container.read(goRouterProvider).go(profileRoutePath);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile_guest_auth')), findsOneWidget);
+      expect(find.byKey(const Key('auth_phone_field')), findsOneWidget);
+      expect(find.byKey(const Key('auth_phone_send')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'authenticated Profile editor at 320dp and textScale 2.0 scrolls and saves without overflow',
+    (tester) async {
+      final profileRepo = FakeProfileRepository()
+        ..getResult = const Success(_profile);
+      final container = await _pumpApp(
+        tester,
+        hydrate: const AuthAuthenticated(_principal),
+        profileRepository: profileRepo,
+        physicalSize: const Size(320, 568),
+        textScale: 2.0,
+      );
+      container.read(goRouterProvider).go(profileRoutePath);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('profile_first_name')), findsOneWidget);
+      final editorList = find.ancestor(
+        of: find.byKey(const Key('profile_first_name')),
+        matching: find.byType(ListView),
+      );
+      await tester.drag(editorList, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      final saveButton = find.byKey(const Key('profile_save'));
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Account Security opens focused protected screen', (
     tester,
   ) async {

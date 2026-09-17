@@ -237,4 +237,42 @@ void main() {
     expect(find.byKey(const Key('notifications_empty')), findsOneWidget);
     expect(find.byKey(const Key('notifications_back')), findsOneWidget);
   });
+
+  testWidgets('loading state at 320dp and textScale 2.0 shows progress', (
+    tester,
+  ) async {
+    await _pumpNotifications(
+      tester,
+      physicalSize: const Size(320, 640),
+      textScale: 2.0,
+      extraOverrides: [
+        notificationsInboxLoaderProvider.overrideWithValue(
+          () => Completer<List<NotificationListItem>>().future,
+        ),
+      ],
+    );
+    await tester.pump();
+    expect(find.byKey(const Key('notifications_loading')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'error state at 320dp and textScale 2.0 renders without overflow',
+    (tester) async {
+      await _pumpNotifications(
+        tester,
+        physicalSize: const Size(320, 640),
+        textScale: 2.0,
+        extraOverrides: [
+          notificationsInboxLoaderProvider.overrideWithValue(() async {
+            throw StateError('network failure');
+          }),
+        ],
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('notifications_error')), findsOneWidget);
+      expect(find.byKey(const Key('notifications_retry')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
